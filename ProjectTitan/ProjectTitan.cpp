@@ -1,7 +1,7 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <GLFW/glfw3.h>
+#include <glfw/glfw3.h>
 
 int main(void)
 {
