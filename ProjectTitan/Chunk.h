@@ -27,6 +27,9 @@ private:
 
 	void genFace(int no, float vertexMap[6][36], float x, float y, float z, glm::vec3 color);
 
+	bool isTransparent(int x, int y, int z);
+	Block getBlock(int x, int y, int z);
+
 public:
 	Chunk(Shader shader, glm::vec3 position);
 	~Chunk();

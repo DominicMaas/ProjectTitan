@@ -67,12 +67,12 @@ void Chunk::render(Camera& c, glm::mat4 proj)
 	_shader.setVec3("viewPos", c.getPosition());
 
 	// Set in block? todo
-	_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-	_shader.setVec3("lightPos", glm::vec3(0.2f, -1.0f, 0.3f));
+	_shader.setVec3("lightColor", 1, 1, 1);
+	_shader.setVec3("lightPos", glm::vec3(0.1f, -0.8f, 0.4f));
 
 	// Render
 	glBindVertexArray(_vao);
-	glDrawArrays(GL_TRIANGLES, 0, chunkFaces.size());
+	glDrawArrays(GL_TRIANGLES, 0, chunkFaces.size() / 9);
 	glBindVertexArray(0);
 }
 
@@ -100,6 +100,27 @@ void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, g
 			chunkFaces.push_back(color.z);
 		}
 	}
+}
+
+bool Chunk::isTransparent(int x, int y, int z)
+{
+	Block b = getBlock(x, y, z);
+	if (b.getId() == Block::BLOCK_AIR)
+		return true;
+
+	return false;
+}
+
+Block Chunk::getBlock(int x, int y, int z)
+{
+	// TODO, check on other chunks
+	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+		return Block();
+
+	if (x < 0 || y < 0 || x < 0)
+		return Block();
+
+	return _blocks[x][y][z];
 }
 
 void Chunk::rebuild()
@@ -176,12 +197,23 @@ void Chunk::rebuild()
 				glm::vec3 color = BlockManager::getColorFromId(b.getId());
 
 				// Render block
-				genFace(faceFront, vertexMap, x, y, z, color);
-				genFace(faceBack, vertexMap, x, y, z, color);
-				genFace(faceRight, vertexMap, x, y, z, color);
-				genFace(faceLeft, vertexMap, x, y, z, color);
-				genFace(faceDown, vertexMap, x, y, z, color);
-				genFace(faceUp, vertexMap, x, y, z, color);
+				if (isTransparent(x, y, z - 1))
+					genFace(faceFront, vertexMap, x, y, z, color);
+
+				if (isTransparent(x, y, z + 1))
+					genFace(faceBack, vertexMap, x, y, z, color);
+
+				if (isTransparent(x - 1, y, z))
+					genFace(faceRight, vertexMap, x, y, z, color);
+
+				if (isTransparent(x + 1, y, z))
+					genFace(faceLeft, vertexMap, x, y, z, color);
+
+				if (isTransparent(x, y - 1, z))
+					genFace(faceDown, vertexMap, x, y, z, color);
+
+				if (isTransparent(x, y + 1, z))
+					genFace(faceUp, vertexMap, x, y, z, color);
 			}
 		}
 	}
