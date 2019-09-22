@@ -13,6 +13,7 @@
 #include "World.h"
 
 Camera camera(glm::vec3(8, 40, 8));
+World* currentWorld;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -46,6 +47,11 @@ void processKeyboardInput(GLFWwindow* window)
 
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+	{
+		currentWorld->reset(true);
+	}
 }
 
 int main(void)
@@ -98,11 +104,11 @@ int main(void)
 	glfwSetCursorPosCallback(window, processMouseInput);
 
 	// Projection Matrix
-	glm::mat4 proj = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 100.0f);
+	glm::mat4 proj = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 1000.0f);
 
 	glfwSwapInterval(1);
 
-	World* w = new World(4567573453, "Test World");
+	currentWorld = new World("Test World");
 
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
@@ -120,7 +126,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Render
-		w->update(camera, proj, deltaTime);
+		currentWorld->update(camera, proj, deltaTime);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

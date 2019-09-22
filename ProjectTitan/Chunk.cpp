@@ -5,27 +5,24 @@ Chunk::Chunk(glm::vec3 position, World* world)
 	_position = position;
 	_world = world;
 
-	glGenBuffers(1, &_vbo);
-	glGenVertexArrays(1, &_vao);
-
 	// Create the blocks
-	_blocks = new Block * *[CHUNK_SIZE];
-	for (int i = 0; i < CHUNK_SIZE; i++)
+	_blocks = new Block * *[CHUNK_WIDTH];
+	for (int i = 0; i < CHUNK_WIDTH; i++)
 	{
-		_blocks[i] = new Block * [CHUNK_SIZE];
+		_blocks[i] = new Block * [CHUNK_HEIGHT];
 
-		for (int j = 0; j < CHUNK_SIZE; j++)
+		for (int j = 0; j < CHUNK_HEIGHT; j++)
 		{
-			_blocks[i][j] = new Block[CHUNK_SIZE];
+			_blocks[i][j] = new Block[CHUNK_WIDTH];
 		}
 	}
 
 	// Build terrain
-	for (int x = 0; x < CHUNK_SIZE; x++)
+	for (int x = 0; x < CHUNK_WIDTH; x++)
 	{
-		for (int y = 0; y < CHUNK_SIZE; y++)
+		for (int y = 0; y < CHUNK_HEIGHT; y++)
 		{
-			for (int z = 0; z < CHUNK_SIZE; z++)
+			for (int z = 0; z < CHUNK_WIDTH; z++)
 			{
 				unsigned int type = _world->getBlockTypeAtPosition(_position.x + x, _position.y + y, _position.z + z);
 				_blocks[x][y][z].setId(type);
@@ -37,9 +34,9 @@ Chunk::Chunk(glm::vec3 position, World* world)
 Chunk::~Chunk()
 {
 	// Delete the blocks
-	for (int i = 0; i < CHUNK_SIZE; ++i)
+	for (int i = 0; i < CHUNK_WIDTH; ++i)
 	{
-		for (int j = 0; j < CHUNK_SIZE; ++j)
+		for (int j = 0; j < CHUNK_HEIGHT; ++j)
 		{
 			delete[] _blocks[i][j];
 		}
@@ -97,7 +94,7 @@ bool Chunk::isTransparent(int x, int y, int z)
 Block Chunk::getBlock(int x, int y, int z)
 {
 	// TODO, check on other chunks
-	if (x >= CHUNK_SIZE || y >= CHUNK_SIZE || z >= CHUNK_SIZE)
+	if (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_WIDTH)
 		return Block();
 
 	if (x < 0 || y < 0 || x < 0)
@@ -167,9 +164,9 @@ void Chunk::rebuild()
 			0, 1, 0, 0.0f,  1.0f,  0.0f
 		} };
 
-	for (int x = 0; x < CHUNK_SIZE; x++) {
-		for (int y = 0; y < CHUNK_SIZE; y++) {
-			for (int z = 0; z < CHUNK_SIZE; z++) {
+	for (int x = 0; x < CHUNK_WIDTH; x++) {
+		for (int y = 0; y < CHUNK_HEIGHT; y++) {
+			for (int z = 0; z < CHUNK_WIDTH; z++) {
 				// Get the id at this position
 				Block b = _blocks[x][y][z];
 
@@ -201,6 +198,10 @@ void Chunk::rebuild()
 			}
 		}
 	}
+
+	// Create IDs
+	glGenBuffers(1, &_vbo);
+	glGenVertexArrays(1, &_vao);
 
 	// Bind Vertex Array Object
 	glBindVertexArray(_vao);

@@ -36,7 +36,8 @@ private:
 
 public:
 	// Constants
-	static const int CHUNK_SIZE = 32;
+	static const int CHUNK_WIDTH = 32;
+	static const int CHUNK_HEIGHT = 64;
 
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();
