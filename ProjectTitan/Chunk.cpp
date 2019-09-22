@@ -1,9 +1,9 @@
 #include "Chunk.h"
 
-Chunk::Chunk(World* world, glm::vec3 position)
+Chunk::Chunk(glm::vec3 position, World* world)
 {
-	_world = world;
 	_position = position;
+	_world = world;
 
 	// Create the blocks
 	_blocks = new Block * *[CHUNK_SIZE];

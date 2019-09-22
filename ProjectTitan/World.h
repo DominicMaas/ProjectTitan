@@ -1,9 +1,13 @@
 #pragma once
+
 #include <string>
 #include <vector>
 #include "Chunk.h"
 #include "Camera.h"
 #include <glm/glm.hpp>
+
+// Define Chunk class to prevent compile Issues (Probably a better way to do it)
+class Chunk;
 
 class World
 {

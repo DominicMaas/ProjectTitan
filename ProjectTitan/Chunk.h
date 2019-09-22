@@ -9,14 +9,15 @@
 #include "BlockManager.h"
 #include "World.h"
 
+// Define World class to prevent compile Issues (Probably a better way to do it)
+class World;
+
 class Chunk
 {
 private:
 	// Data
 	glm::vec3 _position;
 	Block*** _blocks;
-
-	World* _world;
 
 	// Rendering
 	unsigned int _vbo;
@@ -29,11 +30,13 @@ private:
 	bool isTransparent(int x, int y, int z);
 	Block getBlock(int x, int y, int z);
 
+	World* _world;
+
 public:
 	// Constants
 	static const int CHUNK_SIZE = 16;
 
-	Chunk(World* world, glm::vec3 position);
+	Chunk(glm::vec3 position, World* world);
 	~Chunk();
 
 	void render();

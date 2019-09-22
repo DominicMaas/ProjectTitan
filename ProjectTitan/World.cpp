@@ -4,7 +4,7 @@ World::World(std::string seed, std::string worldName) : _worldShader(Shader("Tes
 {
 	for (int x = -8; x < 8; x++) {
 		for (int z = -8; z < 8; z++) {
-			_chunks.push_back(new Chunk(this, glm::vec3(x * Chunk::CHUNK_SIZE, 0, z * Chunk::CHUNK_SIZE)));
+			_chunks.push_back(new Chunk(glm::vec3(x * Chunk::CHUNK_SIZE, 0, z * Chunk::CHUNK_SIZE), this));
 		}
 	}
 
