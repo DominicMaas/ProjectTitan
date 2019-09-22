@@ -5,11 +5,17 @@
 #include "Camera.h"
 #include <glm/glm.hpp>
 #include <vector>
+#include "Block.h"
 
 class Chunk
 {
 private:
+	// Data
 	glm::vec3 _position;
+	Block*** _blocks;
+
+	// Constants
+	static const int CHUNK_SIZE = 16;
 
 	// Rendering
 	unsigned int _vbo;
@@ -22,6 +28,7 @@ private:
 
 public:
 	Chunk(Shader shader, glm::vec3 position);
+	~Chunk();
 
 	void render(Camera& c, glm::mat4 proj);
 	void rebuild();

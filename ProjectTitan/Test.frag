@@ -11,13 +11,13 @@ in vec3 BlockColor;
 
 void main()
 {
-	float specularStrength = 0.5;
-	float ambientStrength = 0.1;
+	float specularStrength = 0.4;
+	float ambientStrength = 0.2;
 
     vec3 ambient = ambientStrength * lightColor;
 
 	vec3 norm = normalize(Normal);
-	vec3 lightDir = normalize(lightPos - FragPos);  
+	vec3 lightDir = normalize(-lightPos);  
 
 	float diff = max(dot(norm, lightDir), 0.0);
 	vec3 diffuse = diff * lightColor;

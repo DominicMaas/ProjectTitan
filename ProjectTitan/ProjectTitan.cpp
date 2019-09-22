@@ -5,13 +5,13 @@
 #include <glfw/glfw3.h>
 #include <iostream>
 #include "Shader.h"
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
 #include "Chunk.h"
 
-Camera camera(glm::vec3(6, 18, 6));
+Camera camera(glm::vec3(8, 18, 8));
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -103,7 +103,7 @@ int main(void)
 
 	Shader testShader("Test.vert", "Test.frag");
 
-	Chunk chunk = Chunk(testShader, glm::vec3(10, 10, 10));
+	Chunk chunk = Chunk(testShader, glm::vec3(0, 0, 0));
 	chunk.rebuild();
 
 	// Loop until the user closes the window

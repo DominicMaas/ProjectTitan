@@ -4,6 +4,33 @@ Chunk::Chunk(Shader shader, glm::vec3 position) : _shader(shader)
 {
 	_shader = shader;
 	_position = position;
+
+	// Create the blocks
+	_blocks = new Block * *[CHUNK_SIZE];
+	for (int i = 0; i < CHUNK_SIZE; i++)
+	{
+		_blocks[i] = new Block * [CHUNK_SIZE];
+
+		for (int j = 0; j < CHUNK_SIZE; j++)
+		{
+			_blocks[i][j] = new Block[CHUNK_SIZE];
+		}
+	}
+}
+
+Chunk::~Chunk()
+{
+	// Delete the blocks
+	for (int i = 0; i < CHUNK_SIZE; ++i)
+	{
+		for (int j = 0; j < CHUNK_SIZE; ++j)
+		{
+			delete[] _blocks[i][j];
+		}
+
+		delete[] _blocks[i];
+	}
+	delete[] _blocks;
 }
 
 void Chunk::render(Camera& c, glm::mat4 proj)
@@ -19,7 +46,7 @@ void Chunk::render(Camera& c, glm::mat4 proj)
 
 	// Set in block? todo
 	_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-	_shader.setVec3("lightPos", glm::vec3(1.2f, 1.0f, 2.0f));
+	_shader.setVec3("lightPos", glm::vec3(0.2f, -1.0f, 0.3f));
 
 	// Render
 	glBindVertexArray(_vao);
@@ -114,9 +141,11 @@ void Chunk::rebuild()
 			0, 1, 0, 0.0f,  1.0f,  0.0f
 		} };
 
-	for (float x = 0; x < 8; x++) {
-		for (float y = 0; y < 8; y++) {
-			for (float z = 0; z < 8; z++) {
+	for (int x = 0; x < CHUNK_SIZE; x++) {
+		for (int y = 0; y < CHUNK_SIZE; y++) {
+			for (int z = 0; z < CHUNK_SIZE; z++) {
+				Block b = _blocks[x][y][z];
+
 				genFace(faceFront, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
 				genFace(faceBack, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
 				genFace(faceRight, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
