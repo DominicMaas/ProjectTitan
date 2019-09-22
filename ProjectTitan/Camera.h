@@ -38,6 +38,8 @@ public:
 	glm::mat4 getProjectionMatrix();
 	glm::mat4 getViewMatrix();
 
+	glm::vec3 getPosition();
+
 	void processKeyboardInput(GLFWwindow* window, float deltaTime);
 	void processMouseInput(float xPos, float yPos, GLboolean constrainPitch = true);
 };

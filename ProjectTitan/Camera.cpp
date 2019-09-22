@@ -16,6 +16,11 @@ glm::mat4 Camera::getViewMatrix()
 	return glm::lookAt(_position, _position + _front, _up);
 }
 
+glm::vec3 Camera::getPosition()
+{
+	return _position;
+}
+
 void Camera::processUpdates()
 {
 	// Calculate the new Front vector
