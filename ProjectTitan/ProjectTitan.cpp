@@ -95,14 +95,50 @@ int main(void)
 	Shader testShader("Test.vert", "Test.frag");
 
 	float vertices[] = {
-	 0.5f,  0.5f, 0.0f,  // top right
-	 0.5f, -0.5f, 0.0f,  // bottom right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	-0.5f,  0.5f, 0.0f   // top left
+		// Front
+		-1.0, -1.0, 1.0,
+		 1.0, -1.0, 1.0,
+		 1.0,  1.0, 1.0,
+		-1.0,  1.0, 1.0,
+
+		// Right
+		 1.0,  1.0,  1.0,
+		 1.0,  1.0, -1.0,
+		 1.0, -1.0, -1.0,
+		 1.0, -1.0,  1.0,
+
+		 // Back
+		 -1.0, -1.0, -1.0,
+		  1.0, -1.0, -1.0,
+		  1.0,  1.0, -1.0,
+		 -1.0,  1.0, -1.0,
+
+		 // Left
+		 -1.0, -1.0, -1.0,
+		 -1.0, -1.0,  1.0,
+		 -1.0,  1.0,  1.0,
+		 -1.0,  1.0, -1.0,
+
+		 // Top
+		 1.0, 1.0,  1.0,
+		-1.0, 1.0,  1.0,
+		-1.0, 1.0, -1.0,
+		 1.0, 1.0, -1.0,
+
+		 // Bottom
+		 -1.0, -1.0, -1.0,
+		  1.0, -1.0, -1.0,
+		  1.0, -1.0, 1.0,
+		 -1.0, -1.0, 1.0
 	};
-	unsigned int indices[] = {  // note that we start from 0!
-		0, 1, 3,   // first triangle
-		1, 2, 3    // second triangle
+
+	unsigned int indices[] = {
+		0, 1, 2, 0, 2, 3, // Front
+		4, 5, 6, 4, 6, 7, // Right
+		8, 9, 10, 8, 10, 11, // Back
+		12, 13, 14, 12, 14, 15, // Left
+		16, 17, 18, 16, 18, 19, // Top
+		20, 21, 22, 20, 22, 23 // Bottom
 	};
 
 	unsigned int VBO;
@@ -160,7 +196,7 @@ int main(void)
 		testShader.setMat4("projection", proj);
 
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
