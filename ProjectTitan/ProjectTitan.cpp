@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
+#include "Chunk.h"
 
 Camera camera(glm::vec3(0, 0, 3));
 
@@ -98,7 +99,7 @@ int main(void)
 	Shader testShader("Test.vert", "Test.frag");
 
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -183,6 +184,9 @@ int main(void)
 
 	glfwSwapInterval(1);
 
+	Chunk chunk = Chunk(testShader, glm::vec3(10, 10, 10));
+	chunk.rebuild();
+
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
 	{
@@ -199,24 +203,26 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Render
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		chunk.render(camera, proj);
 
-		testShader.use();
-		testShader.setMat4("model", model);
-		testShader.setMat4("view", camera.getViewMatrix());
-		testShader.setMat4("projection", proj);
+		//glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
-		testShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		testShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		//testShader.use();
+		//testShader.setMat4("model", model);
+		//testShader.setMat4("view", camera.getViewMatrix());
+		//testShader.setMat4("projection", proj);
 
-		testShader.setVec3("lightPos", glm::vec3(1.2f, 1.0f, 2.0f));
-		testShader.setVec3("viewPos", camera.getPosition());
+		//testShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		//testShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glBindVertexArray(0);
+		//testShader.setVec3("lightPos", glm::vec3(1.2f, 1.0f, 2.0f));
+		//testShader.setVec3("viewPos", camera.getPosition());
+
+		//glBindVertexArray(VAO);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
