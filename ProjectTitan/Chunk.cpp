@@ -18,7 +18,6 @@ void Chunk::render(Camera& c, glm::mat4 proj)
 	_shader.setVec3("viewPos", c.getPosition());
 
 	// Set in block? todo
-	_shader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	_shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 	_shader.setVec3("lightPos", glm::vec3(1.2f, 1.0f, 2.0f));
 
@@ -28,7 +27,7 @@ void Chunk::render(Camera& c, glm::mat4 proj)
 	glBindVertexArray(0);
 }
 
-void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z)
+void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, float r, float g, float b)
 {
 	for (int l = 0; l < 36; l++)
 	{
@@ -43,7 +42,14 @@ void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z)
 		else if ((l - 4) % 6 == 0)
 			chunkFaces.push_back(vertexMap[no][l]);
 		else
+		{
 			chunkFaces.push_back(vertexMap[no][l]);
+
+			// Colors at the end
+			chunkFaces.push_back(r);
+			chunkFaces.push_back(g);
+			chunkFaces.push_back(b);
+		}
 	}
 }
 
@@ -111,12 +117,12 @@ void Chunk::rebuild()
 	for (float x = 0; x < 8; x++) {
 		for (float y = 0; y < 8; y++) {
 			for (float z = 0; z < 8; z++) {
-				genFace(faceFront, vertexMap, x, y, z);
-				genFace(faceBack, vertexMap, x, y, z);
-				genFace(faceRight, vertexMap, x, y, z);
-				genFace(faceLeft, vertexMap, x, y, z);
-				genFace(faceDown, vertexMap, x, y, z);
-				genFace(faceUp, vertexMap, x, y, z);
+				genFace(faceFront, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				genFace(faceBack, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				genFace(faceRight, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				genFace(faceLeft, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				genFace(faceDown, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				genFace(faceUp, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
 			}
 		}
 	}
@@ -132,12 +138,16 @@ void Chunk::rebuild()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * chunkFaces.size(), chunkFaces.data(), GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// color attribute
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// Setup world position
 	_modelMatrix = glm::translate(glm::mat4(1.0f), _position);

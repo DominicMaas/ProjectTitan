@@ -18,7 +18,7 @@ private:
 	glm::mat4 _modelMatrix;
 	std::vector<float> chunkFaces;
 
-	void genFace(int no, float vertexMap[6][36], float x, float y, float z);
+	void genFace(int no, float vertexMap[6][36], float x, float y, float z, float r, float g, float b);
 
 public:
 	Chunk(Shader shader, glm::vec3 position);

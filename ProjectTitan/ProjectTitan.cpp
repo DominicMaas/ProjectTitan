@@ -11,7 +11,7 @@
 #include "Camera.h"
 #include "Chunk.h"
 
-Camera camera(glm::vec3(0, 0, 3));
+Camera camera(glm::vec3(6, 18, 6));
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
