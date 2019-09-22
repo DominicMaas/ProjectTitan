@@ -12,7 +12,7 @@
 #include "Chunk.h"
 #include "World.h"
 
-Camera camera(glm::vec3(8, 18, 8));
+Camera camera(glm::vec3(8, 40, 8));
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -102,7 +102,7 @@ int main(void)
 
 	glfwSwapInterval(1);
 
-	World* w = new World("", "Test World");
+	World* w = new World(4567573453, "Test World");
 
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
@@ -120,7 +120,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Render
-		w->update(camera, proj);
+		w->update(camera, proj, deltaTime);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

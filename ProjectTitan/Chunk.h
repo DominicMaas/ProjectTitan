@@ -5,9 +5,9 @@
 #include "Camera.h"
 #include <glm/glm.hpp>
 #include <vector>
-#include "Block.h"
 #include "BlockManager.h"
 #include "World.h"
+#include "Block.h"
 
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
@@ -32,13 +32,17 @@ private:
 
 	World* _world;
 
+	bool _changed = true;
+
 public:
 	// Constants
-	static const int CHUNK_SIZE = 16;
+	static const int CHUNK_SIZE = 32;
 
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();
 
 	void render();
 	void rebuild();
+
+	bool shouldRebuildChunk() { return _changed; }
 };

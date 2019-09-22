@@ -4,7 +4,9 @@
 #include <vector>
 #include "Chunk.h"
 #include "Camera.h"
+#include <thread>
 #include <glm/glm.hpp>
+#include "FastNoise.h"
 
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)
 class Chunk;
@@ -21,10 +23,16 @@ private:
 	float _sunSpeed;
 	float _sunAmbient;
 
-public:
-	World(std::string seed, std::string worldName);
+	FastNoise _noise;
 
-	void update(Camera& c, glm::mat4 proj);
+	void rebuildChunks();
+
+public:
+	World(int seed, std::string worldName);
+
+	void update(Camera& c, glm::mat4 proj, float delta);
 
 	Shader* getWorldShader();
+
+	unsigned int getBlockTypeAtPosition(int x, int y, int z);
 };

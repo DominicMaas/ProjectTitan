@@ -5,6 +5,9 @@ Chunk::Chunk(glm::vec3 position, World* world)
 	_position = position;
 	_world = world;
 
+	glGenBuffers(1, &_vbo);
+	glGenVertexArrays(1, &_vao);
+
 	// Create the blocks
 	_blocks = new Block * *[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; i++)
@@ -24,17 +27,8 @@ Chunk::Chunk(glm::vec3 position, World* world)
 		{
 			for (int z = 0; z < CHUNK_SIZE; z++)
 			{
-				//if (sqrt((float)(x - CHUNK_SIZE / 2) * (x - CHUNK_SIZE / 2) + (y - CHUNK_SIZE / 2) * (y - CHUNK_SIZE / 2) + (z - CHUNK_SIZE / 2) * (z - CHUNK_SIZE / 2)) <= CHUNK_SIZE / 2)
-				//{
-				if (y > 14)
-				{
-					_blocks[x][y][z].setId(Block::BLOCK_GRASS);
-				}
-				else
-				{
-					_blocks[x][y][z].setId(Block::BLOCK_DIRT);
-				}
-				//}
+				unsigned int type = _world->getBlockTypeAtPosition(_position.x + x, _position.y + y, _position.z + z);
+				_blocks[x][y][z].setId(type);
 			}
 		}
 	}
@@ -94,8 +88,7 @@ void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, g
 
 bool Chunk::isTransparent(int x, int y, int z)
 {
-	Block b = getBlock(x, y, z);
-	if (b.getId() == Block::BLOCK_AIR)
+	if (getBlock(x, y, z).getId() == BlockManager::BLOCK_AIR)
 		return true;
 
 	return false;
@@ -177,10 +170,11 @@ void Chunk::rebuild()
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int y = 0; y < CHUNK_SIZE; y++) {
 			for (int z = 0; z < CHUNK_SIZE; z++) {
+				// Get the id at this position
 				Block b = _blocks[x][y][z];
 
 				// Don't render Air
-				if (b.getId() == Block::BLOCK_AIR)
+				if (b.getId() == BlockManager::BLOCK_AIR)
 					continue;
 
 				// Get block data
@@ -208,9 +202,6 @@ void Chunk::rebuild()
 		}
 	}
 
-	glGenBuffers(1, &_vbo);
-	glGenVertexArrays(1, &_vao);
-
 	// Bind Vertex Array Object
 	glBindVertexArray(_vao);
 
@@ -232,4 +223,7 @@ void Chunk::rebuild()
 
 	// Setup world position
 	_modelMatrix = glm::translate(glm::mat4(1.0f), _position);
+
+	// The chunk has been rebuilt
+	_changed = false;
 }
