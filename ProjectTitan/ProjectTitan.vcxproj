@@ -101,6 +101,7 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="ProjectTitan.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Block.h" />
@@ -110,6 +111,7 @@
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Test.frag" />

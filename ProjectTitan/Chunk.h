@@ -15,13 +15,10 @@ private:
 	glm::vec3 _position;
 	Block*** _blocks;
 
-	// Constants
-	static const int CHUNK_SIZE = 16;
-
 	// Rendering
 	unsigned int _vbo;
 	unsigned int _vao;
-	Shader _shader;
+	Shader* _shader;
 	glm::mat4 _modelMatrix;
 	std::vector<float> chunkFaces;
 
@@ -31,7 +28,10 @@ private:
 	Block getBlock(int x, int y, int z);
 
 public:
-	Chunk(Shader shader, glm::vec3 position);
+	// Constants
+	static const int CHUNK_SIZE = 16;
+
+	Chunk(Shader* shader, glm::vec3 position);
 	~Chunk();
 
 	void render(Camera& c, glm::mat4 proj);

@@ -57,6 +57,9 @@
     <ClCompile Include="BlockManager.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Entity.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="BlockManager.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
   </ItemGroup>

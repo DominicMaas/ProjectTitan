@@ -1,6 +1,6 @@
 #include "Chunk.h"
 
-Chunk::Chunk(Shader shader, glm::vec3 position) : _shader(shader)
+Chunk::Chunk(Shader* shader, glm::vec3 position) : _shader(shader)
 {
 	_shader = shader;
 	_position = position;
@@ -24,17 +24,17 @@ Chunk::Chunk(Shader shader, glm::vec3 position) : _shader(shader)
 		{
 			for (int z = 0; z < CHUNK_SIZE; z++)
 			{
-				if (sqrt((float)(x - CHUNK_SIZE / 2) * (x - CHUNK_SIZE / 2) + (y - CHUNK_SIZE / 2) * (y - CHUNK_SIZE / 2) + (z - CHUNK_SIZE / 2) * (z - CHUNK_SIZE / 2)) <= CHUNK_SIZE / 2)
+				//if (sqrt((float)(x - CHUNK_SIZE / 2) * (x - CHUNK_SIZE / 2) + (y - CHUNK_SIZE / 2) * (y - CHUNK_SIZE / 2) + (z - CHUNK_SIZE / 2) * (z - CHUNK_SIZE / 2)) <= CHUNK_SIZE / 2)
+				//{
+				if (y > 14)
 				{
-					if (y > 14)
-					{
-						_blocks[x][y][z].setId(Block::BLOCK_GRASS);
-					}
-					else
-					{
-						_blocks[x][y][z].setId(Block::BLOCK_DIRT);
-					}
+					_blocks[x][y][z].setId(Block::BLOCK_GRASS);
 				}
+				else
+				{
+					_blocks[x][y][z].setId(Block::BLOCK_DIRT);
+				}
+				//}
 			}
 		}
 	}
@@ -58,17 +58,17 @@ Chunk::~Chunk()
 void Chunk::render(Camera& c, glm::mat4 proj)
 {
 	// Use shader
-	_shader.use();
+	_shader->use();
 
 	// TODO, cleanup
-	_shader.setMat4("model", _modelMatrix);
-	_shader.setMat4("view", c.getViewMatrix());
-	_shader.setMat4("projection", proj);
-	_shader.setVec3("viewPos", c.getPosition());
+	_shader->setMat4("model", _modelMatrix);
+	_shader->setMat4("view", c.getViewMatrix());
+	_shader->setMat4("projection", proj);
+	_shader->setVec3("viewPos", c.getPosition());
 
 	// Set in block? todo
-	_shader.setVec3("lightColor", 1, 1, 1);
-	_shader.setVec3("lightPos", glm::vec3(0.1f, -0.8f, 0.4f));
+	_shader->setVec3("lightColor", 1, 1, 1);
+	_shader->setVec3("lightPos", glm::vec3(0.1f, -0.8f, 0.4f));
 
 	// Render
 	glBindVertexArray(_vao);

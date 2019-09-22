@@ -10,6 +10,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
 #include "Chunk.h"
+#include "World.h"
 
 Camera camera(glm::vec3(8, 18, 8));
 
@@ -97,14 +98,11 @@ int main(void)
 	glfwSetCursorPosCallback(window, processMouseInput);
 
 	// Projection Matrix
-	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+	glm::mat4 proj = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 100.0f);
 
 	glfwSwapInterval(1);
 
-	Shader testShader("Test.vert", "Test.frag");
-
-	Chunk chunk = Chunk(testShader, glm::vec3(0, 0, 0));
-	chunk.rebuild();
+	World* w = new World("", "Test World");
 
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
@@ -122,7 +120,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Render
-		chunk.render(camera, proj);
+		w->update(camera, proj);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
