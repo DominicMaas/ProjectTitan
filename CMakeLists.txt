@@ -2,13 +2,23 @@
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.8)
-project ("ProjectTitan")
+project (ProjectTitan)
 
-if(WIN32)
-    link_directories(${CMAKE_SOURCE_DIR}/lib)
-    SET(PLATFORM_LIBRARIES opengl32 glfw3)
-endif(WIN32)
+# Read in all source files
+file(GLOB SOURCE_FILES
+    "src/*.cpp",
+	"src/*.c"
+)
 
+# Ger libraries
+link_directories("${CMAKE_SOURCE_DIR}/lib")
+SET(PLATFORM_LIBRARIES opengl32 glfw3.lib glfw3dll.lib)
+
+# Include includes
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-add_executable (ProjectTitan "src/ProjectTitan.cpp")
+# EXE for source
+add_executable (ProjectTitan ${SOURCE_FILES})
+
+# Link libraries
+target_link_libraries (ProjectTitan ${PLATFORM_LIBRARIES})
