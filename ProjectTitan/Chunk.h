@@ -7,6 +7,7 @@
 #include <vector>
 #include "Block.h"
 #include "BlockManager.h"
+#include "World.h"
 
 class Chunk
 {
@@ -15,10 +16,11 @@ private:
 	glm::vec3 _position;
 	Block*** _blocks;
 
+	World* _world;
+
 	// Rendering
 	unsigned int _vbo;
 	unsigned int _vao;
-	Shader* _shader;
 	glm::mat4 _modelMatrix;
 	std::vector<float> chunkFaces;
 
@@ -31,9 +33,9 @@ public:
 	// Constants
 	static const int CHUNK_SIZE = 16;
 
-	Chunk(Shader* shader, glm::vec3 position);
+	Chunk(World* world, glm::vec3 position);
 	~Chunk();
 
-	void render(Camera& c, glm::mat4 proj);
+	void render();
 	void rebuild();
 };

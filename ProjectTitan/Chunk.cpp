@@ -1,8 +1,8 @@
 #include "Chunk.h"
 
-Chunk::Chunk(Shader* shader, glm::vec3 position) : _shader(shader)
+Chunk::Chunk(World* world, glm::vec3 position)
 {
-	_shader = shader;
+	_world = world;
 	_position = position;
 
 	// Create the blocks
@@ -55,20 +55,10 @@ Chunk::~Chunk()
 	delete[] _blocks;
 }
 
-void Chunk::render(Camera& c, glm::mat4 proj)
+void Chunk::render()
 {
-	// Use shader
-	_shader->use();
-
-	// TODO, cleanup
-	_shader->setMat4("model", _modelMatrix);
-	_shader->setMat4("view", c.getViewMatrix());
-	_shader->setMat4("projection", proj);
-	_shader->setVec3("viewPos", c.getPosition());
-
-	// Set in block? todo
-	_shader->setVec3("lightColor", 1, 1, 1);
-	_shader->setVec3("lightPos", glm::vec3(0.1f, -0.8f, 0.4f));
+	// Set the position of this chunk in the shader
+	_world->getWorldShader()->setMat4("model", _modelMatrix);
 
 	// Render
 	glBindVertexArray(_vao);
