@@ -63,4 +63,12 @@
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Test.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Test.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

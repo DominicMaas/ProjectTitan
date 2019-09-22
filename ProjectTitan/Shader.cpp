@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include <glm/gtc/type_ptr.hpp>
 
 unsigned int Shader::getId()
 {
@@ -80,6 +81,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	glAttachShader(_id, vertex);
 	glAttachShader(_id, fragment);
 	glLinkProgram(_id);
+
 	// print linking errors if any
 	glGetProgramiv(_id, GL_LINK_STATUS, &success);
 	if (!success)
@@ -96,19 +98,4 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 void Shader::use()
 {
 	glUseProgram(_id);
-}
-
-void Shader::setBool(const std::string& name, bool value) const
-{
-	glUniform1i(glGetUniformLocation(_id, name.c_str()), (int)value);
-}
-
-void Shader::setInt(const std::string& name, int value) const
-{
-	glUniform1i(glGetUniformLocation(_id, name.c_str()), value);
-}
-
-void Shader::setFloat(const std::string& name, float value) const
-{
-	glUniform1f(glGetUniformLocation(_id, name.c_str()), value);
 }
