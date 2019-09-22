@@ -11,8 +11,8 @@ in vec3 BlockColor;
 
 void main()
 {
-	float specularStrength = 0.4;
-	float ambientStrength = 0.2;
+	float specularStrength = 0.8;
+	float ambientStrength = 0.15;
 
     vec3 ambient = ambientStrength * lightColor;
 

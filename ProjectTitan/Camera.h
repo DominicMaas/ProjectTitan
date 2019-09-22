@@ -21,7 +21,7 @@ private:
 	glm::vec3 _right;
 
 	// Constants
-	float _speed = 2.5f;
+	float _speed = 5.5f;
 	float _mouseSensitivity = 0.1f;
 	float _yaw = -90;
 	float _pitch = 0;

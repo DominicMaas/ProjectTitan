@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "Block.h"
+#include "BlockManager.h"
 
 class Chunk
 {
@@ -24,7 +25,7 @@ private:
 	glm::mat4 _modelMatrix;
 	std::vector<float> chunkFaces;
 
-	void genFace(int no, float vertexMap[6][36], float x, float y, float z, float r, float g, float b);
+	void genFace(int no, float vertexMap[6][36], float x, float y, float z, glm::vec3 color);
 
 public:
 	Chunk(Shader shader, glm::vec3 position);

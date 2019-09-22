@@ -16,6 +16,28 @@ Chunk::Chunk(Shader shader, glm::vec3 position) : _shader(shader)
 			_blocks[i][j] = new Block[CHUNK_SIZE];
 		}
 	}
+
+	// Build terrain
+	for (int x = 0; x < CHUNK_SIZE; x++)
+	{
+		for (int y = 0; y < CHUNK_SIZE; y++)
+		{
+			for (int z = 0; z < CHUNK_SIZE; z++)
+			{
+				if (sqrt((float)(x - CHUNK_SIZE / 2) * (x - CHUNK_SIZE / 2) + (y - CHUNK_SIZE / 2) * (y - CHUNK_SIZE / 2) + (z - CHUNK_SIZE / 2) * (z - CHUNK_SIZE / 2)) <= CHUNK_SIZE / 2)
+				{
+					if (y > 14)
+					{
+						_blocks[x][y][z].setId(Block::BLOCK_GRASS);
+					}
+					else
+					{
+						_blocks[x][y][z].setId(Block::BLOCK_DIRT);
+					}
+				}
+			}
+		}
+	}
 }
 
 Chunk::~Chunk()
@@ -54,7 +76,7 @@ void Chunk::render(Camera& c, glm::mat4 proj)
 	glBindVertexArray(0);
 }
 
-void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, float r, float g, float b)
+void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, glm::vec3 color)
 {
 	for (int l = 0; l < 36; l++)
 	{
@@ -73,9 +95,9 @@ void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, f
 			chunkFaces.push_back(vertexMap[no][l]);
 
 			// Colors at the end
-			chunkFaces.push_back(r);
-			chunkFaces.push_back(g);
-			chunkFaces.push_back(b);
+			chunkFaces.push_back(color.x);
+			chunkFaces.push_back(color.y);
+			chunkFaces.push_back(color.z);
 		}
 	}
 }
@@ -146,12 +168,20 @@ void Chunk::rebuild()
 			for (int z = 0; z < CHUNK_SIZE; z++) {
 				Block b = _blocks[x][y][z];
 
-				genFace(faceFront, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
-				genFace(faceBack, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
-				genFace(faceRight, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
-				genFace(faceLeft, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
-				genFace(faceDown, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
-				genFace(faceUp, vertexMap, x, y, z, 0.0f, 0.5f, 0.31f);
+				// Don't render Air
+				if (b.getId() == Block::BLOCK_AIR)
+					continue;
+
+				// Get block data
+				glm::vec3 color = BlockManager::getColorFromId(b.getId());
+
+				// Render block
+				genFace(faceFront, vertexMap, x, y, z, color);
+				genFace(faceBack, vertexMap, x, y, z, color);
+				genFace(faceRight, vertexMap, x, y, z, color);
+				genFace(faceLeft, vertexMap, x, y, z, color);
+				genFace(faceDown, vertexMap, x, y, z, color);
+				genFace(faceUp, vertexMap, x, y, z, color);
 			}
 		}
 	}
