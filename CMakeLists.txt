@@ -22,3 +22,9 @@ add_executable (ProjectTitan ${SOURCE_FILES})
 
 # Link libraries
 target_link_libraries (ProjectTitan ${PLATFORM_LIBRARIES})
+
+# Copy resources
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${PROJECT_SOURCE_DIR}/res"
+		$<TARGET_FILE_DIR:${PROJECT_NAME}>)

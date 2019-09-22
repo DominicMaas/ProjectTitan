@@ -32,7 +32,7 @@ void World::genChunks()
 	}
 }
 
-World::World(int seed, std::string worldName) : _worldShader(Shader("Test.vert", "Test.frag"))
+World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
 {
 	// World properties
 	_sunDirection = glm::vec3(0.1f, -0.8f, 0.4f);
