@@ -15,6 +15,7 @@ link_directories("${CMAKE_SOURCE_DIR}/lib")
 SET(PLATFORM_LIBRARIES opengl32 glfw3.lib glfw3dll.lib)
 
 # Include includes
+include_directories("${CMAKE_SOURCE_DIR}/dependencies")
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
 # EXE for source

@@ -25,11 +25,7 @@ void World::genChunk(int x, int y, int z)
 
 void World::genChunks()
 {
-	for (int x = -2; x < 2; x++) {
-		for (int z = -2; z < 2; z++) {
-			genChunk(x, 0, z);
-		}
-	}
+	genChunk(0, 0, 0);
 }
 
 World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
@@ -50,19 +46,22 @@ World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chu
 	_noise.SetSeed(_seed);
 
 	// Run on another thread
-	std::thread t(&World::genChunks, this);
-	t.detach();
+	genChunks();
+	// std::thread t(&World::genChunks, this);
+	// t.detach();
 }
 
 World::World(std::string worldName) : World(0, worldName) { }
 
 World::~World()
 {
-	std::vector<Chunk*>::iterator it;
-	for (it = _chunks.begin(); it != _chunks.end(); ) {
-		delete* it;
-		it = _chunks.erase(it);
+	// Remove all chunks
+	for (Chunk* b : _chunks)
+	{
+		delete b;
 	}
+
+	_chunks.clear();
 }
 
 void World::update(Camera& c, glm::mat4 proj, float delta)
@@ -99,22 +98,11 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 
 void World::reset(bool resetSeed)
 {
-	if (resetSeed)
+	// Rebuild all chunks
+	for (Chunk* b : _chunks)
 	{
-		_seed = rand() % 1000000;
-		_noise.SetSeed(_seed);
+		b->setChanged();
 	}
-
-	// Remove all chunks
-	std::vector<Chunk*>::iterator it;
-	for (it = _chunks.begin(); it != _chunks.end(); ) {
-		delete* it;
-		it = _chunks.erase(it);
-	}
-
-	// Run on another thread
-	std::thread t(&World::genChunks, this);
-	t.detach();
 }
 
 Shader* World::getWorldShader()
@@ -124,21 +112,11 @@ Shader* World::getWorldShader()
 
 unsigned int World::getBlockTypeAtPosition(int x, int y, int z)
 {
-	float scale = 10.0f;
+	float noise = _noise.GetNoise(x, y, z);
 
-	float noise = abs(_noise.GetNoise(x * scale, y * scale, z * scale));
-	float mappedNoise = (noise - 0) / (1 - 0) * (0 - 100) + 100;
-
-	if (mappedNoise <= 80)
+	if (noise > 0)
 	{
-		if (y > 26)
-		{
-			return BlockManager::BLOCK_GRASS;
-		}
-		else
-		{
-			return BlockManager::BLOCK_DIRT;
-		}
+		return BlockManager::BLOCK_GRASS;
 	}
 	else
 	{

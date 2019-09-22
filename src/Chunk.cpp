@@ -6,6 +6,7 @@ Chunk::Chunk(glm::vec3 position, World* world)
 	_world = world;
 
 	// Create the blocks
+	ExecutionTimer allocateMemTimer("Allocating memory for chunk");
 	_blocks = new Block * *[CHUNK_WIDTH];
 	for (int i = 0; i < CHUNK_WIDTH; i++)
 	{
@@ -16,8 +17,10 @@ Chunk::Chunk(glm::vec3 position, World* world)
 			_blocks[i][j] = new Block[CHUNK_WIDTH];
 		}
 	}
+	allocateMemTimer.stop();
 
 	// Build terrain
+	ExecutionTimer genTerrianTimer("Generating terrain");
 	for (int x = 0; x < CHUNK_WIDTH; x++)
 	{
 		for (int y = 0; y < CHUNK_HEIGHT; y++)
@@ -29,6 +32,10 @@ Chunk::Chunk(glm::vec3 position, World* world)
 			}
 		}
 	}
+	genTerrianTimer.stop();
+
+	glGenBuffers(1, &_vbo);
+	glGenVertexArrays(1, &_vao);
 }
 
 Chunk::~Chunk()
@@ -44,6 +51,9 @@ Chunk::~Chunk()
 		delete[] _blocks[i];
 	}
 	delete[] _blocks;
+
+	glDeleteVertexArrays(1, &_vao);
+	glDeleteBuffers(1, &_vbo);
 }
 
 void Chunk::render()
@@ -57,23 +67,23 @@ void Chunk::render()
 	glBindVertexArray(0);
 }
 
-void Chunk::genFace(int no, float vertexMap[6][36], float x, float y, float z, glm::vec3 color)
+void Chunk::genFace(int face, float x, float y, float z, glm::vec3 color)
 {
 	for (int l = 0; l < 36; l++)
 	{
 		if ((l) % 6 == 0)
-			chunkFaces.push_back(vertexMap[no][l] + x);
+			chunkFaces.push_back(VertexMap[face][l] + x);
 		else if ((l - 1) % 6 == 0)
-			chunkFaces.push_back(vertexMap[no][l] + y);
+			chunkFaces.push_back(VertexMap[face][l] + y);
 		else if ((l - 2) % 6 == 0)
-			chunkFaces.push_back(vertexMap[no][l] + z);
+			chunkFaces.push_back(VertexMap[face][l] + z);
 		else if ((l - 3) % 6 == 0)
-			chunkFaces.push_back(vertexMap[no][l]);
+			chunkFaces.push_back(VertexMap[face][l]);
 		else if ((l - 4) % 6 == 0)
-			chunkFaces.push_back(vertexMap[no][l]);
+			chunkFaces.push_back(VertexMap[face][l]);
 		else
 		{
-			chunkFaces.push_back(vertexMap[no][l]);
+			chunkFaces.push_back(VertexMap[face][l]);
 
 			// Colors at the end
 			chunkFaces.push_back(color.x);
@@ -97,7 +107,7 @@ Block Chunk::getBlock(int x, int y, int z)
 	if (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_WIDTH)
 		return Block();
 
-	if (x < 0 || y < 0 || x < 0)
+	if (x <= 0 || y <= 0 || x <= 0)
 		return Block();
 
 	return _blocks[x][y][z];
@@ -105,64 +115,13 @@ Block Chunk::getBlock(int x, int y, int z)
 
 void Chunk::rebuild()
 {
+	ExecutionTimer rebuildTimer("Rebuilding chunk");
 	int faceFront = 0;
 	int faceBack = 1;
 	int faceRight = 2;
 	int faceLeft = 3;
 	int faceDown = 4;
 	int faceUp = 5;
-
-	// Pos: X, Y, Z, Normal: X, Y, Z
-	float vertexMap[6][36] = {
-		{
-			// Front
-			0, 0, 0, 0, 0, -1,
-			1, 0, 0, 0, 0, -1,
-			1, 1, 0, 0, 0, -1,
-			1, 1, 0, 0, 0, -1,
-			0, 1, 0, 0, 0, -1,
-			0, 0, 0, 0, 0, -1
-		},{
-			// Back
-			0, 0, 1,  0.0f,  0.0f, 1.0f,
-			1, 0, 1,  0.0f,  0.0f, 1.0f,
-			1, 1, 1,  0.0f,  0.0f, 1.0f,
-			1, 1, 1,  0.0f,  0.0f, 1.0f,
-			0, 1, 1,  0.0f,  0.0f, 1.0f,
-			0, 0, 1,  0.0f,  0.0f, 1.0f
-		},{
-			// Right
-			0, 1, 1, -1.0f,  0.0f,  0.0f,
-			0, 1, 0, -1.0f,  0.0f,  0.0f,
-			0, 0, 0, -1.0f,  0.0f,  0.0f,
-			0, 0, 0, -1.0f,  0.0f,  0.0f,
-			0, 0, 1, -1.0f,  0.0f,  0.0f,
-			0, 1, 1, -1.0f,  0.0f,  0.0f
-		},{
-			// Left
-			1, 1, 1, 1.0f,  0.0f,  0.0f,
-			1, 1, 0, 1.0f,  0.0f,  0.0f,
-			1, 0, 0, 1.0f,  0.0f,  0.0f,
-			1, 0, 0, 1.0f,  0.0f,  0.0f,
-			1, 0, 1, 1.0f,  0.0f,  0.0f,
-			1, 1, 1, 1.0f,  0.0f,  0.0f
-		},{
-			// Down
-			0, 0, 0, 0.0f, -1.0f,  0.0f,
-			1, 0, 0, 0.0f, -1.0f,  0.0f,
-			1, 0, 1, 0.0f, -1.0f,  0.0f,
-			1, 0, 1, 0.0f, -1.0f,  0.0f,
-			0, 0, 1, 0.0f, -1.0f,  0.0f,
-			0, 0, 0, 0.0f, -1.0f,  0.0f
-		},{
-			// UP
-			0, 1, 0, 0.0f,  1.0f,  0.0f,
-			1, 1, 0, 0.0f,  1.0f,  0.0f,
-			1, 1, 1, 0.0f,  1.0f,  0.0f,
-			1, 1, 1, 0.0f,  1.0f,  0.0f,
-			0, 1, 1, 0.0f,  1.0f,  0.0f,
-			0, 1, 0, 0.0f,  1.0f,  0.0f
-		} };
 
 	for (int x = 0; x < CHUNK_WIDTH; x++) {
 		for (int y = 0; y < CHUNK_HEIGHT; y++) {
@@ -179,30 +138,28 @@ void Chunk::rebuild()
 
 				// Render block
 				if (isTransparent(x, y, z - 1))
-					genFace(faceFront, vertexMap, x, y, z, color);
+					genFace(faceFront, x, y, z, color);
 
 				if (isTransparent(x, y, z + 1))
-					genFace(faceBack, vertexMap, x, y, z, color);
+					genFace(faceBack, x, y, z, color);
 
 				if (isTransparent(x - 1, y, z))
-					genFace(faceRight, vertexMap, x, y, z, color);
+					genFace(faceRight, x, y, z, color);
 
 				if (isTransparent(x + 1, y, z))
-					genFace(faceLeft, vertexMap, x, y, z, color);
+					genFace(faceLeft, x, y, z, color);
 
 				if (isTransparent(x, y - 1, z))
-					genFace(faceDown, vertexMap, x, y, z, color);
+					genFace(faceDown, x, y, z, color);
 
 				if (isTransparent(x, y + 1, z))
-					genFace(faceUp, vertexMap, x, y, z, color);
+					genFace(faceUp, x, y, z, color);
 			}
 		}
 	}
+	rebuildTimer.stop();
 
-	// Create IDs
-	glGenBuffers(1, &_vbo);
-	glGenVertexArrays(1, &_vao);
-
+	ExecutionTimer openGlTimer("Binding OpenGL");
 	// Bind Vertex Array Object
 	glBindVertexArray(_vao);
 
@@ -227,4 +184,5 @@ void Chunk::rebuild()
 
 	// The chunk has been rebuilt
 	_changed = false;
+	openGlTimer.stop();
 }
