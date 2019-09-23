@@ -40,11 +40,10 @@ private:
 	Block*** _blocks;
 
 	// Rendering
-	unsigned int _vbo;
-	unsigned int _vao;
+	unsigned int _vbo = 0;
+	unsigned int _vao = 0;
 	glm::mat4 _modelMatrix;
 	int _vertices;
-	void genFace(int face, float x, float y, float z, glm::vec3 color, std::vector<float>* chunkFaces);
 
 	bool isTransparent(int x, int y, int z);
 	unsigned int getBlockType(int x, int y, int z);

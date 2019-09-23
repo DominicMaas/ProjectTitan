@@ -35,9 +35,6 @@ Chunk::Chunk(glm::vec3 position, World* world)
 		}
 	}
 	genTerrianTimer.stop();
-
-	glGenBuffers(1, &_vbo);
-	glGenVertexArrays(1, &_vao);
 }
 
 Chunk::~Chunk()
@@ -67,99 +64,6 @@ void Chunk::render()
 	glBindVertexArray(_vao);
 	glDrawArrays(GL_TRIANGLES, 0, _vertices);
 	glBindVertexArray(0);
-}
-
-void Chunk::genFace(int face, float x, float y, float z, glm::vec3 color, std::vector<float>* chunkFaces)
-{
-	// Position
-	chunkFaces->push_back(VertexMap[face][0] + x);
-	chunkFaces->push_back(VertexMap[face][1] + y);
-	chunkFaces->push_back(VertexMap[face][2] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][3]);
-	chunkFaces->push_back(VertexMap[face][4]);
-	chunkFaces->push_back(VertexMap[face][5]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
-
-	// Position
-	chunkFaces->push_back(VertexMap[face][6] + x);
-	chunkFaces->push_back(VertexMap[face][7] + y);
-	chunkFaces->push_back(VertexMap[face][8] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][9]);
-	chunkFaces->push_back(VertexMap[face][10]);
-	chunkFaces->push_back(VertexMap[face][11]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
-
-	// Position
-	chunkFaces->push_back(VertexMap[face][12] + x);
-	chunkFaces->push_back(VertexMap[face][13] + y);
-	chunkFaces->push_back(VertexMap[face][14] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][15]);
-	chunkFaces->push_back(VertexMap[face][16]);
-	chunkFaces->push_back(VertexMap[face][17]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
-
-	// Position
-	chunkFaces->push_back(VertexMap[face][18] + x);
-	chunkFaces->push_back(VertexMap[face][19] + y);
-	chunkFaces->push_back(VertexMap[face][20] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][21]);
-	chunkFaces->push_back(VertexMap[face][22]);
-	chunkFaces->push_back(VertexMap[face][23]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
-
-	// Position
-	chunkFaces->push_back(VertexMap[face][24] + x);
-	chunkFaces->push_back(VertexMap[face][25] + y);
-	chunkFaces->push_back(VertexMap[face][26] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][27]);
-	chunkFaces->push_back(VertexMap[face][28]);
-	chunkFaces->push_back(VertexMap[face][29]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
-
-	// Position
-	chunkFaces->push_back(VertexMap[face][30] + x);
-	chunkFaces->push_back(VertexMap[face][31] + y);
-	chunkFaces->push_back(VertexMap[face][32] + z);
-
-	// Normals
-	chunkFaces->push_back(VertexMap[face][33]);
-	chunkFaces->push_back(VertexMap[face][34]);
-	chunkFaces->push_back(VertexMap[face][35]);
-
-	// Colors
-	chunkFaces->push_back(color.x);
-	chunkFaces->push_back(color.y);
-	chunkFaces->push_back(color.z);
 }
 
 bool Chunk::isTransparent(int x, int y, int z)
@@ -296,6 +200,11 @@ void Chunk::rebuild()
 	rebuildTimer.stop();
 
 	ExecutionTimer openGlTimer("Binding OpenGL");
+	
+	// Gen first time
+	if (_vbo == 0) glGenBuffers(1, &_vbo);
+	if (_vao == 0) glGenVertexArrays(1, &_vao);
+
 	// Bind Vertex Array Object
 	glBindVertexArray(_vao);
 

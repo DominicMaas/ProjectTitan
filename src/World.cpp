@@ -25,7 +25,7 @@ void World::genChunk(glm::vec3 position)
 
 void World::genChunks()
 {
-	int size = 4;
+	int size = 8;
 
 	for (int x = -size; x < size; x++)
 	{
@@ -72,9 +72,9 @@ World::World(int seed, std::string worldName)
 	this->_worldSkybox.setup(faces);
 
 	// Run on another thread
-	genChunks();
-	// std::thread t(&World::genChunks, this);
-	// t.detach();
+	// genChunks();
+	std::thread t(&World::genChunks, this);
+	t.detach();
 }
 
 World::World(std::string worldName) : World(0, worldName) { }
