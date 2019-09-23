@@ -32,7 +32,7 @@ private:
 
 	// Chunk generation
 	int _generatedChunksThisFrame;
-	void genChunk(int x, int y, int z);
+	void genChunk(glm::vec3 position);
 	void genChunks();
 
 public:
@@ -46,9 +46,11 @@ public:
 
 	Shader* getWorldShader();
 
-	unsigned int getBlockTypeAtPosition(int x, int y, int z);
+	unsigned int getBlockTypeAtPosition(glm::vec3 position);
 
 	// Constants
-	static const int GEN_CHUNKS_PER_FRAME = 1;
-	static const int REBUILD_CHUNKS_PER_FRAME = 1;
+	static const int GEN_CHUNKS_PER_FRAME = 8;
+	static const int REBUILD_CHUNKS_PER_FRAME = 8;
+
+	Chunk* findChunk(glm::vec3 position);
 };

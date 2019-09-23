@@ -95,6 +95,7 @@ int main(void)
 	// 3D
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_CULL_FACE);
 
 	// Capture the mouse input
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

@@ -18,14 +18,22 @@ void World::rebuildChunks()
 	}
 }
 
-void World::genChunk(int x, int y, int z)
+void World::genChunk(glm::vec3 position)
 {
-	_chunks.push_back(new Chunk(glm::vec3(x * Chunk::CHUNK_WIDTH, 0, z * Chunk::CHUNK_WIDTH), this));
+	_chunks.push_back(new Chunk(glm::vec3(position.x * Chunk::CHUNK_WIDTH, 0, position.z * Chunk::CHUNK_WIDTH), this));
 }
 
 void World::genChunks()
 {
-	genChunk(0, 0, 0);
+	int size = 4;
+
+	for (int x = -size; x < size; x++)
+	{
+		for (int z = -size; z < size; z++)
+		{
+			genChunk(glm::vec3(x, 0, z));
+		}
+	}
 }
 
 World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
@@ -42,7 +50,7 @@ World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chu
 		_seed = rand() % 1000000;
 
 	// Noise generation
-	_noise.SetNoiseType(FastNoise::PerlinFractal);
+	_noise.SetNoiseType(FastNoise::Perlin);
 	_noise.SetSeed(_seed);
 
 	// Run on another thread
@@ -110,11 +118,11 @@ Shader* World::getWorldShader()
 	return &_worldShader;
 }
 
-unsigned int World::getBlockTypeAtPosition(int x, int y, int z)
+unsigned int World::getBlockTypeAtPosition(glm::vec3 position)
 {
-	float noise = _noise.GetNoise(x, y, z);
+	float noise = abs(_noise.GetNoise(position.x * 20, position.y * 0.5, position.z * 20));
 
-	if (noise > 0)
+	if (noise > 0.2)
 	{
 		return BlockManager::BLOCK_GRASS;
 	}
@@ -122,4 +130,19 @@ unsigned int World::getBlockTypeAtPosition(int x, int y, int z)
 	{
 		return BlockManager::BLOCK_AIR;
 	}
+}
+
+Chunk* World::findChunk(glm::vec3 position)
+{
+	for (Chunk* c : _chunks)
+	{
+		glm::vec3 chunkPos = c->getPosition();
+
+		if ((position.x < chunkPos.x) || (position.z < chunkPos.z) || (position.x >= chunkPos.x + Chunk::CHUNK_WIDTH) || (position.z >= chunkPos.z + Chunk::CHUNK_WIDTH))
+		{
+			return c;
+		}
+	}
+
+	return NULL;
 }

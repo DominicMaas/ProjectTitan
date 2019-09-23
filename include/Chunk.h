@@ -26,19 +26,18 @@ private:
 	unsigned int _vbo;
 	unsigned int _vao;
 	glm::mat4 _modelMatrix;
-	std::vector<float> chunkFaces;
+	int _vertices;
+	void genFace(int face, float x, float y, float z, glm::vec3 color, std::vector<float>* chunkFaces);
 
-	void genFace(int face, float x, float y, float z, glm::vec3 color);
-
-	bool isTransparent(int x, int y, int z);
-	Block getBlock(int x, int y, int z);
+	bool isTransparent(glm::vec3 position);
+	unsigned int getBlockType(glm::vec3 position);
 
 	World* _world;
 
 	bool _changed = true;
 public:
 	// Constants
-	static const int CHUNK_WIDTH = 64;
+	static const int CHUNK_WIDTH = 16;
 	static const int CHUNK_HEIGHT = 64;
 
 	Chunk(glm::vec3 position, World* world);
@@ -50,4 +49,6 @@ public:
 	bool shouldRebuildChunk() { return _changed; }
 
 	void setChanged() { _changed = true; }
+
+	glm::vec3 getPosition() { return _position; }
 };
