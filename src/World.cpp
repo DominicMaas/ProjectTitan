@@ -25,7 +25,7 @@ void World::genChunk(glm::vec3 position)
 
 void World::genChunks()
 {
-	int size = 4;
+	int size = 0;
 
 	for (int x = -size; x < size; x++)
 	{
@@ -34,6 +34,8 @@ void World::genChunks()
 			genChunk(glm::vec3(x, 0, z));
 		}
 	}
+
+	genChunk(glm::vec3(0, 0, 0));
 }
 
 World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
@@ -120,9 +122,9 @@ Shader* World::getWorldShader()
 
 unsigned int World::getBlockTypeAtPosition(glm::vec3 position)
 {
-	float noise = abs(_noise.GetNoise(position.x * 20, position.y * 0.5, position.z * 20));
+	float noise = abs(_noise.GetNoise(position.x, position.y, position.z));
 
-	if (noise > 0.2)
+	if (noise < 0.1)
 	{
 		return BlockManager::BLOCK_GRASS;
 	}
