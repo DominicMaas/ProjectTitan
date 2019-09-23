@@ -7,6 +7,7 @@
 #include <thread>
 #include <glm/glm.hpp>
 #include "FastNoise.h"
+#include "Skybox.h"
 
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)
 class Chunk;
@@ -16,6 +17,8 @@ class World
 private:
 	std::vector<Chunk*> _chunks;
 	Shader _worldShader;
+	Skybox _worldSkybox;
+
 	int _seed;
 
 	// Lighting

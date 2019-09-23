@@ -38,7 +38,9 @@ void World::genChunks()
 	genChunk(glm::vec3(0, 0, 0));
 }
 
-World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
+World::World(int seed, std::string worldName)
+	: _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
+	, _worldSkybox(Shader("shaders/skybox_shader.vert", "shaders/skybox_shader.frag"))
 {
 	// World properties
 	_sunDirection = glm::vec3(0.1f, -0.8f, 0.4f);
@@ -49,11 +51,27 @@ World::World(int seed, std::string worldName) : _worldShader(Shader("shaders/chu
 
 	// If no seed, generate seed
 	if (_seed == 0)
+	{
+		srand((unsigned)time(0));
 		_seed = rand() % 1000000;
+	}
 
 	// Noise generation
 	_noise.SetNoiseType(FastNoise::Perlin);
 	_noise.SetSeed(_seed);
+
+	// Setup skybox
+	std::vector<std::string> faces
+	{
+		"textures/skybox/right.jpg",
+		"textures/skybox/left.jpg",
+		"textures/skybox/top.jpg",
+		"textures/skybox/bottom.jpg",
+		"textures/skybox/front.jpg",
+		"textures/skybox/back.jpg"
+	};
+
+	this->_worldSkybox.setup(faces);
 
 	// Run on another thread
 	genChunks();
@@ -104,6 +122,8 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 
 		_chunks[i]->render();
 	}
+
+	this->_worldSkybox.render(c.getViewMatrix(), proj);
 }
 
 void World::reset(bool resetSeed)
@@ -122,15 +142,23 @@ Shader* World::getWorldShader()
 
 unsigned int World::getBlockTypeAtPosition(glm::vec3 position)
 {
-	float noise = abs(_noise.GetNoise(position.x, position.y, position.z));
+	float h = abs(_noise.GetNoise(position.x, position.y + 10, position.z)) * 100;
 
-	if (noise < 0.1)
+	if (position.y > h)
+	{
+		return BlockManager::BLOCK_AIR;
+	}
+	else if (position.y > h - 2)
 	{
 		return BlockManager::BLOCK_GRASS;
 	}
+	else if (position.y > h - 5)
+	{
+		return BlockManager::BLOCK_DIRT;
+	}
 	else
 	{
-		return BlockManager::BLOCK_AIR;
+		return BlockManager::BLOCK_STONE;
 	}
 }
 

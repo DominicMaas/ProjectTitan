@@ -10,4 +10,5 @@ public:
 	static const int BLOCK_AIR = 0;
 	static const int BLOCK_GRASS = 1;
 	static const int BLOCK_DIRT = 2;
+	static const int BLOCK_STONE = 3;
 };
