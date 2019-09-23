@@ -203,15 +203,6 @@ void Chunk::rebuild()
 	std::vector<ChunkVertex> vertices;
 
 	ExecutionTimer rebuildTimer("Rebuilding chunk");
-	int faceFront = 0;
-	int faceBack = 1;
-	int faceRight = 2;
-	int faceLeft = 3;
-	int faceDown = 4;
-	int faceUp = 5;
-
-	int i = 0;
-
 	for (int x = 0; x < CHUNK_WIDTH; x++) {
 		for (int y = 0; y < CHUNK_HEIGHT; y++) {
 			for (int z = 0; z < CHUNK_WIDTH; z++) {
@@ -222,27 +213,8 @@ void Chunk::rebuild()
 				if (b.getId() == BlockManager::BLOCK_AIR)
 					continue;
 
-				// Calculate cube index
-				int cubeIndex = 0;
-				//if (isTransparent(glm::vec3(x - 1, y - 1, z - 1))) cubeIndex |= 1;
-				//if (isTransparent(glm::vec3(x + 1, y - 1, z - 1))) cubeIndex |= 2;
-				//if (isTransparent(glm::vec3(x + 1, y - 1, z + 1))) cubeIndex |= 4;
-				//if (isTransparent(glm::vec3(x - 1, y - 1, z + 1))) cubeIndex |= 8;
-				//if (isTransparent(glm::vec3(x - 1, y + 1, z - 1))) cubeIndex |= 16;
-				//if (isTransparent(glm::vec3(x + 1, y + 1, z - 1))) cubeIndex |= 32;
-				//if (isTransparent(glm::vec3(x + 1, y + 1, z + 1))) cubeIndex |= 64;
-				//if (isTransparent(glm::vec3(x - 1, y + 1, z + 1))) cubeIndex |= 128;
-
-				// This is either completely in or out of the surface
-				//if (cubeIndex == 0)
-				//	continue;
-
-				//Logger::LogMessage("Index: " + std::to_string(cubeIndex));
-
 				// Get block data
 				glm::vec3 color = BlockManager::getColorFromId(b.getId());
-
-				// Render block
 
 				// Front
 				if (isTransparent(x, y, z - 1))
