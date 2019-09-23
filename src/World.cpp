@@ -25,7 +25,7 @@ void World::genChunk(glm::vec3 position)
 
 void World::genChunks()
 {
-	int size = 0;
+	int size = 4;
 
 	for (int x = -size; x < size; x++)
 	{
@@ -34,8 +34,6 @@ void World::genChunks()
 			genChunk(glm::vec3(x, 0, z));
 		}
 	}
-
-	genChunk(glm::vec3(0, 0, 0));
 }
 
 World::World(int seed, std::string worldName)
@@ -168,7 +166,7 @@ Chunk* World::findChunk(glm::vec3 position)
 	{
 		glm::vec3 chunkPos = c->getPosition();
 
-		if ((position.x < chunkPos.x) || (position.z < chunkPos.z) || (position.x >= chunkPos.x + Chunk::CHUNK_WIDTH) || (position.z >= chunkPos.z + Chunk::CHUNK_WIDTH))
+		if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + Chunk::CHUNK_WIDTH) && (position.z < chunkPos.z + Chunk::CHUNK_WIDTH))
 		{
 			return c;
 		}

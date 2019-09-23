@@ -15,6 +15,23 @@
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
 
+struct ChunkVertex
+{
+	ChunkVertex()
+	{ }
+
+	ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec3 color)
+	{
+		Position = glm::vec3(px, py, pz);
+		Normal = glm::vec3(nx, ny, nz);
+		Color = color;
+	}
+
+	glm::vec3 Position;
+	glm::vec3 Normal;
+	glm::vec3 Color;
+};
+
 class Chunk
 {
 private:
@@ -29,16 +46,16 @@ private:
 	int _vertices;
 	void genFace(int face, float x, float y, float z, glm::vec3 color, std::vector<float>* chunkFaces);
 
-	bool isTransparent(glm::vec3 position);
-	unsigned int getBlockType(glm::vec3 position);
+	bool isTransparent(int x, int y, int z);
+	unsigned int getBlockType(int x, int y, int z);
 
 	World* _world;
 
 	bool _changed = true;
 public:
 	// Constants
-	static const int CHUNK_WIDTH = 32;
-	static const int CHUNK_HEIGHT = 32;
+	static const int CHUNK_WIDTH = 16;
+	static const int CHUNK_HEIGHT = 64;
 
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();

@@ -52,8 +52,8 @@ public:
 	unsigned int getBlockTypeAtPosition(glm::vec3 position);
 
 	// Constants
-	static const int GEN_CHUNKS_PER_FRAME = 8;
-	static const int REBUILD_CHUNKS_PER_FRAME = 8;
+	static const int GEN_CHUNKS_PER_FRAME = 4;
+	static const int REBUILD_CHUNKS_PER_FRAME = 4;
 
 	Chunk* findChunk(glm::vec3 position);
 };

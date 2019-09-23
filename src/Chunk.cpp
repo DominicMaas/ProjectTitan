@@ -65,7 +65,7 @@ void Chunk::render()
 
 	// Render
 	glBindVertexArray(_vao);
-	glDrawArrays(GL_TRIANGLES, 0, _vertices / 9);
+	glDrawArrays(GL_TRIANGLES, 0, _vertices);
 	glBindVertexArray(0);
 }
 
@@ -162,27 +162,25 @@ void Chunk::genFace(int face, float x, float y, float z, glm::vec3 color, std::v
 	chunkFaces->push_back(color.z);
 }
 
-bool Chunk::isTransparent(glm::vec3 position)
+bool Chunk::isTransparent(int x, int y, int z)
 {
-	if (position.y < 0) return false;
+	if (y < 0) return false;
 
-	if (getBlockType(position) == BlockManager::BLOCK_AIR)
+	if (getBlockType(x, y, z) == BlockManager::BLOCK_AIR)
 		return true;
 
 	return false;
 }
 
-unsigned int Chunk::getBlockType(glm::vec3 position)
+unsigned int Chunk::getBlockType(int x, int y, int z)
 {
-	if ((position.y < 0) || (position.y >= CHUNK_HEIGHT))
+	if ((y < 0) || (y >= CHUNK_HEIGHT))
 		return BlockManager::BLOCK_AIR;
 
-	if ((position.x < 0) || (position.z < 0) || (position.x >= CHUNK_WIDTH) || (position.z >= CHUNK_WIDTH))
+	if ((x < 0) || (z < 0) || (x >= CHUNK_WIDTH) || (z >= CHUNK_WIDTH))
 	{
-		return BlockManager::BLOCK_AIR;
-
 		// Calculate world coordinates
-		glm::vec3 worldPos(position);
+		glm::vec3 worldPos(x, y, z);
 		worldPos += _position;
 
 		// Find the chunk that contains these coordinates
@@ -192,15 +190,17 @@ unsigned int Chunk::getBlockType(glm::vec3 position)
 		if (c == NULL)
 			return _world->getBlockTypeAtPosition(worldPos);
 
-		return c->getBlockType(worldPos - c->getPosition());
+		// Calculate local space coordinates
+		glm::vec3 cLocal = worldPos -= c->getPosition();
+		return c->getBlockType(cLocal.x, cLocal.y, cLocal.z);
 	}
 
-	return _blocks[(int)position.x][(int)position.y][(int)position.z].getId();
+	return _blocks[x][y][z].getId();
 }
 
 void Chunk::rebuild()
 {
-	std::vector<float> chunkFaces;
+	std::vector<ChunkVertex> vertices;
 
 	ExecutionTimer rebuildTimer("Rebuilding chunk");
 	int faceFront = 0;
@@ -209,6 +209,8 @@ void Chunk::rebuild()
 	int faceLeft = 3;
 	int faceDown = 4;
 	int faceUp = 5;
+
+	int i = 0;
 
 	for (int x = 0; x < CHUNK_WIDTH; x++) {
 		for (int y = 0; y < CHUNK_HEIGHT; y++) {
@@ -222,18 +224,18 @@ void Chunk::rebuild()
 
 				// Calculate cube index
 				int cubeIndex = 0;
-				if (isTransparent(glm::vec3(x - 1, y - 1, z - 1))) cubeIndex |= 1;
-				if (isTransparent(glm::vec3(x + 1, y - 1, z - 1))) cubeIndex |= 2;
-				if (isTransparent(glm::vec3(x + 1, y - 1, z + 1))) cubeIndex |= 4;
-				if (isTransparent(glm::vec3(x - 1, y - 1, z + 1))) cubeIndex |= 8;
-				if (isTransparent(glm::vec3(x - 1, y + 1, z - 1))) cubeIndex |= 16;
-				if (isTransparent(glm::vec3(x + 1, y + 1, z - 1))) cubeIndex |= 32;
-				if (isTransparent(glm::vec3(x + 1, y + 1, z + 1))) cubeIndex |= 64;
-				if (isTransparent(glm::vec3(x - 1, y + 1, z + 1))) cubeIndex |= 128;
+				//if (isTransparent(glm::vec3(x - 1, y - 1, z - 1))) cubeIndex |= 1;
+				//if (isTransparent(glm::vec3(x + 1, y - 1, z - 1))) cubeIndex |= 2;
+				//if (isTransparent(glm::vec3(x + 1, y - 1, z + 1))) cubeIndex |= 4;
+				//if (isTransparent(glm::vec3(x - 1, y - 1, z + 1))) cubeIndex |= 8;
+				//if (isTransparent(glm::vec3(x - 1, y + 1, z - 1))) cubeIndex |= 16;
+				//if (isTransparent(glm::vec3(x + 1, y + 1, z - 1))) cubeIndex |= 32;
+				//if (isTransparent(glm::vec3(x + 1, y + 1, z + 1))) cubeIndex |= 64;
+				//if (isTransparent(glm::vec3(x - 1, y + 1, z + 1))) cubeIndex |= 128;
 
 				// This is either completely in or out of the surface
-				if (cubeIndex == 0)
-					continue;
+				//if (cubeIndex == 0)
+				//	continue;
 
 				//Logger::LogMessage("Index: " + std::to_string(cubeIndex));
 
@@ -241,29 +243,83 @@ void Chunk::rebuild()
 				glm::vec3 color = BlockManager::getColorFromId(b.getId());
 
 				// Render block
-				if (isTransparent(glm::vec3(x, y, z - 1)))
-					genFace(faceFront, x, y, z, color, &chunkFaces);
 
-				if (isTransparent(glm::vec3(x, y, z + 1)))
-					genFace(faceBack, x, y, z, color, &chunkFaces);
+				// Front
+				if (isTransparent(x, y, z - 1))
+				{
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, 0, -1, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, 0, -1, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 0, -1, color));
 
-				if (isTransparent(glm::vec3(x - 1, y, z)))
-					genFace(faceRight, x, y, z, color, &chunkFaces);
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 0, -1, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 0, -1, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, 0, -1, color));
+				}
 
-				if (isTransparent(glm::vec3(x + 1, y, z)))
-					genFace(faceLeft, x, y, z, color, &chunkFaces);
+				// Back
+				if (isTransparent(x, y, z + 1))
+				{
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, 0, 1, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, 0, 1, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 0, 1, color));
 
-				if (isTransparent(glm::vec3(x, y - 1, z)))
-					genFace(faceDown, x, y, z, color, &chunkFaces);
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 0, 1, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 0, 1, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, 0, 1, color));
+				}
 
-				if (isTransparent(glm::vec3(x, y + 1, z)))
-					genFace(faceUp, x, y, z, color, &chunkFaces);
+				// Right
+				if (isTransparent(x - 1, y, z))
+				{
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, -1, 0, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, -1, 0, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, -1, 0, 0, color));
+
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, -1, 0, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, -1, 0, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, -1, 0, 0, color));
+				}
+
+				// Left
+				if (isTransparent(x + 1, y, z))
+				{
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 1, 0, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 1, 0, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 1, 0, 0, color));
+
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 1, 0, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 1, 0, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 1, 0, 0, color));
+				}
+
+				// Down
+				if (isTransparent(x, y - 1, z))
+				{
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, -1, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, -1, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, -1, 0, color));
+
+					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, -1, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, -1, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, -1, 0, color));
+				}
+
+				if (isTransparent(x, y + 1, z))
+				{
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 1, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 1, 0, color));
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 1, 0, color));
+
+					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 1, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 1, 0, color));
+					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 1, 0, color));
+				}
 			}
 		}
 	}
 
 	// Set the number of vertices
-	_vertices = chunkFaces.size();
+	_vertices = vertices.size();
 
 	rebuildTimer.stop();
 
@@ -273,18 +329,18 @@ void Chunk::rebuild()
 
 	// Copy our vertices's array in a vertex buffer for OpenGL to use
 	glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * _vertices, chunkFaces.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkVertex) * _vertices, vertices.data(), GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, Position));
 	glEnableVertexAttribArray(0);
 
 	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, Normal));
 	glEnableVertexAttribArray(1);
 
 	// color attribute
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, Color));
 	glEnableVertexAttribArray(2);
 
 	// Setup world position
