@@ -4,14 +4,15 @@ void World::rebuildChunks()
 {
 	_rebuiltChunksThisFrame = 0;
 
-	for (int i = 0; i < _chunks.size(); ++i)
+	// Loop through all the chunks
+	for (Chunk* chunk : _chunks)
 	{
-		if (_chunks[i]->shouldRebuildChunk())
+		if (chunk->isLoaded() && chunk->shouldRebuildChunk())
 		{
 			// Only reload a certain number of chunks per frame
 			if (_rebuiltChunksThisFrame != REBUILD_CHUNKS_PER_FRAME)
 			{
-				_chunks[i]->rebuild();
+				chunk->rebuild();
 				_rebuiltChunksThisFrame++;
 			}
 		}
@@ -32,6 +33,26 @@ void World::genChunks()
 		for (int z = -size; z < size; z++)
 		{
 			genChunk(glm::vec3(x, 0, z));
+		}
+	}
+}
+
+void World::loadChunks()
+{
+	_loadedChunksThisFrame = 0;
+
+	// Loop through all the chunks
+	for (Chunk* chunk : _chunks)
+	{
+		// Only run if the chunk is not loaded
+		if (!chunk->isLoaded())
+		{
+			// Only load a certain number of chunks per frame
+			if (_loadedChunksThisFrame != LOADED_CHUNKS_PER_FRAME)
+			{
+				chunk->load();
+				_loadedChunksThisFrame++;
+			}
 		}
 	}
 }
@@ -72,9 +93,7 @@ World::World(int seed, std::string worldName)
 	this->_worldSkybox.setup(faces);
 
 	// Run on another thread
-	// genChunks();
-	std::thread t(&World::genChunks, this);
-	t.detach();
+	genChunks();
 }
 
 World::World(std::string worldName) : World(0, worldName) { }
@@ -92,6 +111,9 @@ World::~World()
 
 void World::update(Camera& c, glm::mat4 proj, float delta)
 {
+	// Load any chunks
+	loadChunks();
+
 	// Rebuild any chunks
 	rebuildChunks();
 
@@ -101,8 +123,13 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
 	_sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
-	for (int i = 0; i < _chunks.size(); ++i)
+	// Loop through all the chunks
+	for (Chunk* chunk : _chunks)
 	{
+		// This chunk is not loaded
+		if (!chunk->isLoaded())
+			continue;
+
 		// Use world shader
 		_worldShader.use();
 
@@ -118,7 +145,7 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 		// TODO, move out
 		_worldShader.setMat4("projection", proj);
 
-		_chunks[i]->render();
+		chunk->render();
 	}
 
 	this->_worldSkybox.render(c.getViewMatrix(), proj);
@@ -162,13 +189,18 @@ unsigned int World::getBlockTypeAtPosition(glm::vec3 position)
 
 Chunk* World::findChunk(glm::vec3 position)
 {
-	for (Chunk* c : _chunks)
+	// Loop through all the chunks
+	for (Chunk* chunk : _chunks)
 	{
-		glm::vec3 chunkPos = c->getPosition();
+		// This chunk is not loaded
+		if (!chunk->isLoaded())
+			continue;
+
+		glm::vec3 chunkPos = chunk->getPosition();
 
 		if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + Chunk::CHUNK_WIDTH) && (position.z < chunkPos.z + Chunk::CHUNK_WIDTH))
 		{
-			return c;
+			return chunk;
 		}
 	}
 

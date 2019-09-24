@@ -17,9 +17,6 @@ class World;
 
 struct ChunkVertex
 {
-	ChunkVertex()
-	{ }
-
 	ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec3 color)
 	{
 		Position = glm::vec3(px, py, pz);
@@ -51,6 +48,7 @@ private:
 	World* _world;
 
 	bool _changed = true;
+	bool _loaded = false;
 public:
 	// Constants
 	static const int CHUNK_WIDTH = 16;
@@ -59,6 +57,7 @@ public:
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();
 
+	void load();
 	void render();
 	void rebuild();
 
@@ -67,4 +66,8 @@ public:
 	void setChanged() { _changed = true; }
 
 	glm::vec3 getPosition() { return _position; }
+
+	bool isLoaded() {
+		return _loaded;
+	}
 };

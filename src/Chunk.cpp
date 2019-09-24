@@ -4,37 +4,6 @@ Chunk::Chunk(glm::vec3 position, World* world)
 {
 	_position = position;
 	_world = world;
-
-	// Create the blocks
-	ExecutionTimer allocateMemTimer("Allocating memory for chunk");
-	_blocks = new Block * *[CHUNK_WIDTH];
-	for (int i = 0; i < CHUNK_WIDTH; i++)
-	{
-		_blocks[i] = new Block * [CHUNK_HEIGHT];
-
-		for (int j = 0; j < CHUNK_HEIGHT; j++)
-		{
-			_blocks[i][j] = new Block[CHUNK_WIDTH];
-		}
-	}
-	allocateMemTimer.stop();
-
-	// Build terrain
-	ExecutionTimer genTerrianTimer("Generating terrain");
-	for (int x = 0; x < CHUNK_WIDTH; x++)
-	{
-		for (int y = 0; y < CHUNK_HEIGHT; y++)
-		{
-			for (int z = 0; z < CHUNK_WIDTH; z++)
-			{
-				glm::vec3 worldPos = _position + glm::vec3(x, y, z);
-
-				unsigned int type = _world->getBlockTypeAtPosition(worldPos);
-				_blocks[x][y][z].setId(type);
-			}
-		}
-	}
-	genTerrianTimer.stop();
 }
 
 Chunk::~Chunk()
@@ -53,6 +22,38 @@ Chunk::~Chunk()
 
 	glDeleteVertexArrays(1, &_vao);
 	glDeleteBuffers(1, &_vbo);
+}
+
+void Chunk::load()
+{
+	// Create the blocks
+	_blocks = new Block * *[CHUNK_WIDTH];
+	for (int i = 0; i < CHUNK_WIDTH; i++)
+	{
+		_blocks[i] = new Block * [CHUNK_HEIGHT];
+
+		for (int j = 0; j < CHUNK_HEIGHT; j++)
+		{
+			_blocks[i][j] = new Block[CHUNK_WIDTH];
+		}
+	}
+
+	// Build terrain
+	for (int x = 0; x < CHUNK_WIDTH; x++)
+	{
+		for (int y = 0; y < CHUNK_HEIGHT; y++)
+		{
+			for (int z = 0; z < CHUNK_WIDTH; z++)
+			{
+				glm::vec3 worldPos = _position + glm::vec3(x, y, z);
+
+				unsigned int type = _world->getBlockTypeAtPosition(worldPos);
+				_blocks[x][y][z].setId(type);
+			}
+		}
+	}
+
+	_loaded = true;
 }
 
 void Chunk::render()
@@ -106,7 +107,6 @@ void Chunk::rebuild()
 {
 	std::vector<ChunkVertex> vertices;
 
-	ExecutionTimer rebuildTimer("Rebuilding chunk");
 	for (int x = 0; x < CHUNK_WIDTH; x++) {
 		for (int y = 0; y < CHUNK_HEIGHT; y++) {
 			for (int z = 0; z < CHUNK_WIDTH; z++) {
@@ -196,10 +196,6 @@ void Chunk::rebuild()
 
 	// Set the number of vertices
 	_vertices = vertices.size();
-
-	rebuildTimer.stop();
-
-	ExecutionTimer openGlTimer("Binding OpenGL");
 	
 	// Gen first time
 	if (_vbo == 0) glGenBuffers(1, &_vbo);
@@ -229,5 +225,4 @@ void Chunk::rebuild()
 
 	// The chunk has been rebuilt
 	_changed = false;
-	openGlTimer.stop();
 }
