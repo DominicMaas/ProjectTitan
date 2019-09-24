@@ -92,7 +92,7 @@ unsigned int Chunk::getBlockType(int x, int y, int z)
 		Chunk* c = _world->findChunk(worldPos);
 
 		// Get the block that would be here if the chunk were loaded
-		if (c == NULL)
+		if (c == NULL || !c->isLoaded())
 			return _world->getBlockTypeAtPosition(worldPos);
 
 		// Calculate local space coordinates

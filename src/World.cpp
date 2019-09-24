@@ -21,18 +21,18 @@ void World::rebuildChunks()
 
 void World::genChunk(glm::vec3 position)
 {
-	_chunks.push_back(new Chunk(glm::vec3(position.x * Chunk::CHUNK_WIDTH, 0, position.z * Chunk::CHUNK_WIDTH), this));
+	_chunks.push_back(new Chunk(glm::vec3(position.x, position.y, position.z), this));
 }
 
 void World::genChunks()
 {
-	int size = 8;
+	int size = 0;
 
 	for (int x = -size; x < size; x++)
 	{
 		for (int z = -size; z < size; z++)
 		{
-			genChunk(glm::vec3(x, 0, z));
+			genChunk(glm::vec3(x * Chunk::CHUNK_WIDTH, 0, z * Chunk::CHUNK_WIDTH));
 		}
 	}
 }
@@ -92,7 +92,7 @@ World::World(int seed, std::string worldName)
 
 	this->_worldSkybox.setup(faces);
 
-	// Run on another thread
+	// Temp until better system is implemented
 	genChunks();
 }
 
@@ -149,6 +149,27 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	}
 
 	this->_worldSkybox.render(c.getViewMatrix(), proj);
+
+	// Super basic chunk creation detection 
+	int cWorldX = (int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH;
+	int cWorldZ = (int)floor(c.getPosition().z / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH;
+
+	// How far to check
+	int d = 16;
+	int cD = (Chunk::CHUNK_WIDTH * d);
+
+	int cX = cWorldX + (Chunk::CHUNK_WIDTH * d);
+	int cZ = cWorldZ + (Chunk::CHUNK_WIDTH * d);
+
+	for (int x = cWorldX - cD; x < cWorldX + cD; x += Chunk::CHUNK_WIDTH)
+	{
+		for (int z = cWorldZ - cD; z < cWorldZ + cD; z += Chunk::CHUNK_WIDTH)
+		{
+			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
+				genChunk(glm::vec3(x, 0, z));
+			}
+		}
+	}
 }
 
 void World::reset(bool resetSeed)
@@ -192,10 +213,6 @@ Chunk* World::findChunk(glm::vec3 position)
 	// Loop through all the chunks
 	for (Chunk* chunk : _chunks)
 	{
-		// This chunk is not loaded
-		if (!chunk->isLoaded())
-			continue;
-
 		glm::vec3 chunkPos = chunk->getPosition();
 
 		if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + Chunk::CHUNK_WIDTH) && (position.z < chunkPos.z + Chunk::CHUNK_WIDTH))
