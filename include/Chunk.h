@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/constants.h"
 #include <glm/glm.hpp>
 #include "Shader.h"
 #include "Camera.h"
@@ -51,10 +52,6 @@ private:
 	bool _changed = true;
 	bool _loaded = false;
 public:
-	// Constants
-	static const int CHUNK_WIDTH = 16;
-	static const int CHUNK_HEIGHT = 64;
-
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();
 

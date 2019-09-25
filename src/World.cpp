@@ -109,11 +109,11 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
 	_sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
-	float renderDistance = 4 * Chunk::CHUNK_WIDTH;
+	float renderDistance = 4 * CHUNK_WIDTH;
 
 	// Calculation about the camera position and render distance
-	int cWorldX = ((int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
-	int cWorldZ = ((int)floor(c.getPosition().z / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
+	int cWorldX = ((int)floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
+	int cWorldZ = ((int)floor(c.getPosition().z / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
 
 	// Loop through all the chunks
 	for (Chunk* chunk : _chunks)
@@ -146,8 +146,8 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	this->_worldSkybox.render(c.getViewMatrix(), proj);
 
 	// Generate new chunks
-	for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += Chunk::CHUNK_WIDTH)
-		for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += Chunk::CHUNK_WIDTH)
+	for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
+		for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH)
 		{
 			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
 				_chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
@@ -176,7 +176,7 @@ Chunk* World::findChunk(glm::vec3 position)
 	{
 		glm::vec3 chunkPos = chunk->getPosition();
 
-		if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + Chunk::CHUNK_WIDTH) && (position.z < chunkPos.z + Chunk::CHUNK_WIDTH))
+		if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + CHUNK_WIDTH) && (position.z < chunkPos.z + CHUNK_WIDTH))
 		{
 			return chunk;
 		}
