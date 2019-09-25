@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include <glm/glm.hpp>
 #include <vector>
+#include <limits>
 #include "BlockManager.h"
 #include "World.h"
 #include "Block.h"

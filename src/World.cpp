@@ -50,7 +50,20 @@ void World::loadChunks()
 			// Only load a certain number of chunks per frame
 			if (_loadedChunksThisFrame != LOADED_CHUNKS_PER_FRAME)
 			{
+				// Load the chunk
 				chunk->load();
+
+				// Other chunks around this chunk must be rebuilt
+				Chunk* cXPos = findChunk(chunk->getPosition() + glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
+				Chunk* cXNeg = findChunk(chunk->getPosition() - glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
+				Chunk* cZPos = findChunk(chunk->getPosition() + glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
+				Chunk* cZNeg = findChunk(chunk->getPosition() - glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
+
+				if (cXPos != NULL && cXPos->isLoaded()) cXPos->setChanged();
+				if (cXNeg != NULL && cXNeg->isLoaded()) cXNeg->setChanged();
+				if (cZPos != NULL && cZPos->isLoaded()) cZPos->setChanged();
+				if (cZNeg != NULL && cZNeg->isLoaded()) cZNeg->setChanged();
+
 				_loadedChunksThisFrame++;
 			}
 		}
@@ -71,8 +84,9 @@ World::World(int seed, std::string worldName)
 	// If no seed, generate seed
 	if (_seed == 0)
 	{
+		// Generate a random seed
 		srand((unsigned)time(0));
-		_seed = rand() % 1000000;
+		_seed = rand();
 	}
 
 	// Noise generation
@@ -123,6 +137,17 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
 	_sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
+	float renderDistance = 6 * Chunk::CHUNK_WIDTH;
+
+	// Calculation about the camera position and render distance
+	int cWorldX = ((int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
+	int cWorldZ = ((int)floor(c.getPosition().z / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
+
+	int minX = cWorldX - (renderDistance + (Chunk::CHUNK_WIDTH * 2));
+	int maxX = cWorldX + (renderDistance + (Chunk::CHUNK_WIDTH * 2));
+	int minZ = cWorldZ - (renderDistance + (Chunk::CHUNK_WIDTH * 2));
+	int maxZ = cWorldZ + (renderDistance + (Chunk::CHUNK_WIDTH * 2));
+
 	// Loop through all the chunks
 	for (Chunk* chunk : _chunks)
 	{
@@ -130,46 +155,48 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 		if (!chunk->isLoaded())
 			continue;
 
-		// Use world shader
-		_worldShader.use();
+		// Check to see if chunk should be removed
+		if (minX > chunk->getPosition().x ||
+			minZ > chunk->getPosition().z ||
+			maxZ < chunk->getPosition().z ||
+			maxX < chunk->getPosition().x)
+		{
+			_chunks.erase(std::remove(_chunks.begin(), _chunks.end(), chunk), _chunks.end());
+			delete chunk;
+			continue;
+		}
+		else
+		{
+			// Use world shader
+			_worldShader.use();
 
-		// Set light color and direction
-		_worldShader.setVec3("light.color", _sunColor);
-		_worldShader.setVec3("light.direction", _sunDirection);
-		_worldShader.setFloat("light.ambient", _sunAmbient);
+			// Set light color and direction
+			_worldShader.setVec3("light.color", _sunColor);
+			_worldShader.setVec3("light.direction", _sunDirection);
+			_worldShader.setFloat("light.ambient", _sunAmbient);
 
-		// Set the camera view and view position matrix
-		_worldShader.setMat4("view", c.getViewMatrix());
-		_worldShader.setVec3("viewPos", c.getPosition());
+			// Set the camera view and view position matrix
+			_worldShader.setMat4("view", c.getViewMatrix());
+			_worldShader.setVec3("viewPos", c.getPosition());
 
-		// TODO, move out
-		_worldShader.setMat4("projection", proj);
+			// TODO, move out
+			_worldShader.setMat4("projection", proj);
 
-		chunk->render();
+			chunk->render();
+		}
 	}
 
+	// Render the skybox
 	this->_worldSkybox.render(c.getViewMatrix(), proj);
 
-	// Super basic chunk creation detection 
-	int cWorldX = (int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH;
-	int cWorldZ = (int)floor(c.getPosition().z / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH;
-
-	// How far to check
-	int d = 16;
-	int cD = (Chunk::CHUNK_WIDTH * d);
-
-	int cX = cWorldX + (Chunk::CHUNK_WIDTH * d);
-	int cZ = cWorldZ + (Chunk::CHUNK_WIDTH * d);
-
-	for (int x = cWorldX - cD; x < cWorldX + cD; x += Chunk::CHUNK_WIDTH)
-	{
-		for (int z = cWorldZ - cD; z < cWorldZ + cD; z += Chunk::CHUNK_WIDTH)
+	// Generate new chunks
+	for (int x = cWorldX - renderDistance; x < cWorldX + renderDistance; x += Chunk::CHUNK_WIDTH)
+		for (int z = cWorldZ - renderDistance; z < cWorldZ + renderDistance; z += Chunk::CHUNK_WIDTH)
 		{
 			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
 				genChunk(glm::vec3(x, 0, z));
 			}
 		}
-	}
 }
 
 void World::reset(bool resetSeed)
@@ -184,28 +211,6 @@ void World::reset(bool resetSeed)
 Shader* World::getWorldShader()
 {
 	return &_worldShader;
-}
-
-unsigned int World::getBlockTypeAtPosition(glm::vec3 position)
-{
-	float h = abs(_noise.GetNoise(position.x, position.y + 10, position.z)) * 100;
-
-	if (position.y > h)
-	{
-		return BlockManager::BLOCK_AIR;
-	}
-	else if (position.y > h - 2)
-	{
-		return BlockManager::BLOCK_GRASS;
-	}
-	else if (position.y > h - 5)
-	{
-		return BlockManager::BLOCK_DIRT;
-	}
-	else
-	{
-		return BlockManager::BLOCK_STONE;
-	}
 }
 
 Chunk* World::findChunk(glm::vec3 position)
