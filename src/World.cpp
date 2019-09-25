@@ -19,24 +19,6 @@ void World::rebuildChunks()
 	}
 }
 
-void World::genChunk(glm::vec3 position)
-{
-	_chunks.push_back(new Chunk(glm::vec3(position.x, position.y, position.z), this));
-}
-
-void World::genChunks()
-{
-	int size = 0;
-
-	for (int x = -size; x < size; x++)
-	{
-		for (int z = -size; z < size; z++)
-		{
-			genChunk(glm::vec3(x * Chunk::CHUNK_WIDTH, 0, z * Chunk::CHUNK_WIDTH));
-		}
-	}
-}
-
 void World::loadChunks()
 {
 	_loadedChunksThisFrame = 0;
@@ -53,17 +35,6 @@ void World::loadChunks()
 				// Load the chunk
 				chunk->load();
 
-				// Other chunks around this chunk must be rebuilt
-				//Chunk* cXPos = findChunk(chunk->getPosition() + glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
-				//Chunk* cXNeg = findChunk(chunk->getPosition() - glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
-				//Chunk* cZPos = findChunk(chunk->getPosition() + glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
-				//Chunk* cZNeg = findChunk(chunk->getPosition() - glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
-
-				//if (cXPos != NULL && cXPos->isLoaded()) cXPos->setChanged();
-				//if (cXNeg != NULL && cXNeg->isLoaded()) cXNeg->setChanged();
-				//if (cZPos != NULL && cZPos->isLoaded()) cZPos->setChanged();
-				//if (cZNeg != NULL && cZNeg->isLoaded()) cZNeg->setChanged();
-
 				_loadedChunksThisFrame++;
 			}
 		}
@@ -75,23 +46,25 @@ World::World(int seed, std::string worldName)
 	, _worldSkybox(Shader("shaders/skybox_shader.vert", "shaders/skybox_shader.frag"))
 {
 	// World properties
-	_sunDirection = glm::vec3(0.0f, -1.0f, -90.0f);
+	_sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
 	_sunColor = glm::vec3(1, 1, 1);
-	_sunSpeed = 0.05f;
+	_sunSpeed = 0.01f;
 	_sunAmbient = 0.2f;
-	_seed = seed;
+
+	_rebuiltChunksThisFrame = 0;
+	_loadedChunksThisFrame = 0;
 
 	// If no seed, generate seed
-	if (_seed == 0)
+	if (seed == 0)
 	{
 		// Generate a random seed
 		srand((unsigned)time(0));
-		_seed = rand();
+		_worldGen = new StandardWorldGen(rand(), 0.75f, 5, 0.5f, 2.0f, glm::vec3(0,0,0));
 	}
-
-	// Noise generation
-	_noise.SetNoiseType(FastNoise::Perlin);
-	_noise.SetSeed(_seed);
+	else
+	{
+		_worldGen = new StandardWorldGen(seed, 0.75f, 5, 0.5f, 2.0f, glm::vec3(0, 0, 0));
+	}
 
 	// Setup skybox
 	std::vector<std::string> faces
@@ -105,9 +78,6 @@ World::World(int seed, std::string worldName)
 	};
 
 	this->_worldSkybox.setup(faces);
-
-	// Temp until better system is implemented
-	genChunks();
 }
 
 World::World(std::string worldName) : World(0, worldName) { }
@@ -121,6 +91,8 @@ World::~World()
 	}
 
 	_chunks.clear();
+
+	delete _worldGen;
 }
 
 void World::update(Camera& c, glm::mat4 proj, float delta)
@@ -137,7 +109,7 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
 	_sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
-	float renderDistance = 8 * Chunk::CHUNK_WIDTH;
+	float renderDistance = 4 * Chunk::CHUNK_WIDTH;
 
 	// Calculation about the camera position and render distance
 	int cWorldX = ((int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
@@ -178,7 +150,7 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 		for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += Chunk::CHUNK_WIDTH)
 		{
 			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
-				genChunk(glm::vec3(x, 0, z));
+				_chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
 			}
 		}
 }

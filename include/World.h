@@ -6,9 +6,11 @@
 #include "Camera.h"
 #include <thread>
 #include <glm/glm.hpp>
-#include "FastNoise.h"
+
 #include "Skybox.h"
 #include <algorithm>
+#include <worldgen/BaseWorldGen.h>
+#include <worldgen/StandardWorldGen.h>
 
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)
 class Chunk;
@@ -26,20 +28,16 @@ private:
 	float _sunSpeed;
 	float _sunAmbient;
 
-	FastNoise _noise;
-	int _seed;
-
 	// Chunk rebuilding
 	int _rebuiltChunksThisFrame;
 	void rebuildChunks();
 
-	// Chunk generation
-
-	void genChunk(glm::vec3 position);
-	void genChunks();
-
+	// Chunk loading
 	int _loadedChunksThisFrame;
 	void loadChunks();
+
+	// World gen
+	BaseWorldGen* _worldGen;
 
 public:
 	World(int seed, std::string worldName);
@@ -53,12 +51,11 @@ public:
 	Shader* getWorldShader();
 
 	// Constants
-	static const int LOADED_CHUNKS_PER_FRAME = 2;
-	static const int REBUILD_CHUNKS_PER_FRAME = 2;
+	static const int LOADED_CHUNKS_PER_FRAME = 3;
+	static const int REBUILD_CHUNKS_PER_FRAME = 6;
 
 	Chunk* findChunk(glm::vec3 position);
 
-	FastNoise getNoise() { return _noise; }
-
-	int getSeed() { return _seed; }
+	// Get the world generator for this world
+	BaseWorldGen* getWorldGen() { return _worldGen; }
 };
