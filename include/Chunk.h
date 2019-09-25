@@ -68,6 +68,8 @@ public:
 
 	glm::vec3 getPosition() { return _position; }
 
+	glm::vec3 getCenter() { return glm::vec3(_position.x + (CHUNK_WIDTH / 2), 0, _position.z + (CHUNK_WIDTH / 2)); }
+
 	bool isLoaded() {
 		return _loaded;
 	}

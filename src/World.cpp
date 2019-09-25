@@ -54,15 +54,15 @@ void World::loadChunks()
 				chunk->load();
 
 				// Other chunks around this chunk must be rebuilt
-				Chunk* cXPos = findChunk(chunk->getPosition() + glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
-				Chunk* cXNeg = findChunk(chunk->getPosition() - glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
-				Chunk* cZPos = findChunk(chunk->getPosition() + glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
-				Chunk* cZNeg = findChunk(chunk->getPosition() - glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
+				//Chunk* cXPos = findChunk(chunk->getPosition() + glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
+				//Chunk* cXNeg = findChunk(chunk->getPosition() - glm::vec3(1 * Chunk::CHUNK_WIDTH, 0, 0));
+				//Chunk* cZPos = findChunk(chunk->getPosition() + glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
+				//Chunk* cZNeg = findChunk(chunk->getPosition() - glm::vec3(0, 0, 1 * Chunk::CHUNK_WIDTH));
 
-				if (cXPos != NULL && cXPos->isLoaded()) cXPos->setChanged();
-				if (cXNeg != NULL && cXNeg->isLoaded()) cXNeg->setChanged();
-				if (cZPos != NULL && cZPos->isLoaded()) cZPos->setChanged();
-				if (cZNeg != NULL && cZNeg->isLoaded()) cZNeg->setChanged();
+				//if (cXPos != NULL && cXPos->isLoaded()) cXPos->setChanged();
+				//if (cXNeg != NULL && cXNeg->isLoaded()) cXNeg->setChanged();
+				//if (cZPos != NULL && cZPos->isLoaded()) cZPos->setChanged();
+				//if (cZNeg != NULL && cZNeg->isLoaded()) cZNeg->setChanged();
 
 				_loadedChunksThisFrame++;
 			}
@@ -75,10 +75,10 @@ World::World(int seed, std::string worldName)
 	, _worldSkybox(Shader("shaders/skybox_shader.vert", "shaders/skybox_shader.frag"))
 {
 	// World properties
-	_sunDirection = glm::vec3(0.1f, -0.8f, 0.4f);
+	_sunDirection = glm::vec3(0.0f, -1.0f, -90.0f);
 	_sunColor = glm::vec3(1, 1, 1);
-	_sunSpeed = 0.005f;
-	_sunAmbient = 0.4f;
+	_sunSpeed = 0.05f;
+	_sunAmbient = 0.2f;
 	_seed = seed;
 
 	// If no seed, generate seed
@@ -137,16 +137,11 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 	rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
 	_sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
-	float renderDistance = 6 * Chunk::CHUNK_WIDTH;
+	float renderDistance = 8 * Chunk::CHUNK_WIDTH;
 
 	// Calculation about the camera position and render distance
 	int cWorldX = ((int)floor(c.getPosition().x / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
 	int cWorldZ = ((int)floor(c.getPosition().z / Chunk::CHUNK_WIDTH) * Chunk::CHUNK_WIDTH) - Chunk::CHUNK_WIDTH;
-
-	int minX = cWorldX - (renderDistance + (Chunk::CHUNK_WIDTH * 2));
-	int maxX = cWorldX + (renderDistance + (Chunk::CHUNK_WIDTH * 2));
-	int minZ = cWorldZ - (renderDistance + (Chunk::CHUNK_WIDTH * 2));
-	int maxZ = cWorldZ + (renderDistance + (Chunk::CHUNK_WIDTH * 2));
 
 	// Loop through all the chunks
 	for (Chunk* chunk : _chunks)
@@ -155,43 +150,32 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 		if (!chunk->isLoaded())
 			continue;
 
-		// Check to see if chunk should be removed
-		if (minX > chunk->getPosition().x ||
-			minZ > chunk->getPosition().z ||
-			maxZ < chunk->getPosition().z ||
-			maxX < chunk->getPosition().x)
-		{
-			_chunks.erase(std::remove(_chunks.begin(), _chunks.end(), chunk), _chunks.end());
-			delete chunk;
+		// The chunk is not in the players view distance
+		if (abs(chunk->getCenter().x - c.getPosition().x) >= renderDistance || abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
 			continue;
-		}
-		else
-		{
-			// Use world shader
-			_worldShader.use();
 
-			// Set light color and direction
-			_worldShader.setVec3("light.color", _sunColor);
-			_worldShader.setVec3("light.direction", _sunDirection);
-			_worldShader.setFloat("light.ambient", _sunAmbient);
+		// Use world shader
+		_worldShader.use();
 
-			// Set the camera view and view position matrix
-			_worldShader.setMat4("view", c.getViewMatrix());
-			_worldShader.setVec3("viewPos", c.getPosition());
+		// Set light color and direction
+		_worldShader.setVec3("light.color", _sunColor);
+		_worldShader.setVec3("light.direction", _sunDirection);
+		_worldShader.setFloat("light.ambient", _sunAmbient);
 
-			// TODO, move out
-			_worldShader.setMat4("projection", proj);
+		// Set the camera view and view position matrix
+		_worldShader.setMat4("view", c.getViewMatrix());
+		_worldShader.setVec3("viewPos", c.getPosition());
+		_worldShader.setMat4("projection", proj);
 
-			chunk->render();
-		}
+		chunk->render();
 	}
 
 	// Render the skybox
 	this->_worldSkybox.render(c.getViewMatrix(), proj);
 
 	// Generate new chunks
-	for (int x = cWorldX - renderDistance; x < cWorldX + renderDistance; x += Chunk::CHUNK_WIDTH)
-		for (int z = cWorldZ - renderDistance; z < cWorldZ + renderDistance; z += Chunk::CHUNK_WIDTH)
+	for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += Chunk::CHUNK_WIDTH)
+		for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += Chunk::CHUNK_WIDTH)
 		{
 			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
 				genChunk(glm::vec3(x, 0, z));

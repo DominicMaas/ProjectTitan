@@ -53,8 +53,8 @@ public:
 	Shader* getWorldShader();
 
 	// Constants
-	static const int LOADED_CHUNKS_PER_FRAME = 6;
-	static const int REBUILD_CHUNKS_PER_FRAME = 6;
+	static const int LOADED_CHUNKS_PER_FRAME = 2;
+	static const int REBUILD_CHUNKS_PER_FRAME = 2;
 
 	Chunk* findChunk(glm::vec3 position);
 

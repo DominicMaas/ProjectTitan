@@ -16,7 +16,7 @@ in vec3 BlockColor;
 
 void main()
 {
-	float specularStrength = 0.8;
+	float specularStrength = 0.2;
     vec3 ambient = light.ambient * light.color;
 
 	vec3 norm = normalize(Normal);
