@@ -47,7 +47,7 @@ void Chunk::load()
 		for (int y = 0; y < CHUNK_HEIGHT; y++)	
 			for (int z = 0; z < CHUNK_WIDTH; z++)
 			{
-				_blocks[x][y][z].setId(_world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y, _position.z + z));
+				_blocks[x][y][z].setMaterial(_world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y, _position.z + z));
 			}
 
 	_loaded = true;
@@ -101,7 +101,7 @@ unsigned int Chunk::getBlockType(int x, int y, int z)
 		return c->getBlockType(cLocal.x, cLocal.y, cLocal.z);
 	}
 
-	return _blocks[x][y][z].getId();
+	return _blocks[x][y][z].getMaterial();
 }
 
 void Chunk::rebuild()
@@ -115,11 +115,23 @@ void Chunk::rebuild()
 				Block b = _blocks[x][y][z];
 
 				// Don't render Air
-				if (b.getId() == BlockManager::BLOCK_AIR)
+				if (b.getMaterial() == BlockManager::BLOCK_AIR)
 					continue;
 
+				// Check all edges of the block
+				int index = 0;
+
+				if (isTransparent(x,     y,     z)) index |= 1;
+				if (isTransparent(x + 1, y,     z)) index |= 2;
+				if (isTransparent(x + 1, y + 1, z)) index |= 4;
+				if (isTransparent(x,     y + 1, z)) index |= 8;
+				if (isTransparent(x,     y    , z + 1)) index |= 16;
+				if (isTransparent(x + 1, y,     z + 1)) index |= 32;		
+				if (isTransparent(x + 1, y + 1, z + 1)) index |= 64;
+				if (isTransparent(x,     y + 1, z + 1)) index |= 128;
+
 				// Get block data
-				glm::vec3 color = BlockManager::getColorFromId(b.getId());
+				glm::vec3 color = BlockManager::getColorFromId(b.getMaterial());
 
 				// Front
 				if (isTransparent(x, y, z - 1))

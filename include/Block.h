@@ -5,11 +5,13 @@
 class Block
 {
 private:
-	unsigned int _id = 0;
+	unsigned int _material = 0;
+	float _isoValue;
 
 public:
-	Block();
+	float getIsoValue() { return _isoValue; }
+	void setIsoValue(float isoValue) { _isoValue = isoValue; }
 
-	unsigned int getId();
-	void setId(unsigned int id);
+	unsigned int getMaterial() { return _material; };
+	void setMaterial(unsigned int material) { _material = material; }
 };
