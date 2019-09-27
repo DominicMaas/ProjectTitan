@@ -48,7 +48,7 @@ World::World(int seed, std::string worldName)
 	// World properties
 	_sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
 	_sunColor = glm::vec3(1, 1, 1);
-	_sunSpeed = 0.01f;
+	_sunSpeed = 0.0f;
 	_sunAmbient = 0.2f;
 
 	_rebuiltChunksThisFrame = 0;

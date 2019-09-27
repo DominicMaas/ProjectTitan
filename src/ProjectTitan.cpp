@@ -5,6 +5,9 @@
 #include <glfw/glfw3.h>
 #include <iostream>
 #include "Shader.h"
+#include "effects/RenderEffect.h"
+#include "effects/SSAO.h"
+#include "effects/ShadowMapping.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,6 +17,8 @@
 
 Camera camera(glm::vec3(8, 40, 8));
 World* currentWorld;
+
+std::vector<RenderEffect> renderEffects;
 
 // timing
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -111,6 +116,9 @@ int main(void)
 
 	currentWorld = new World("Test World");
 
+	renderEffects.push_back(SSAO());
+	//renderEffects.push_back(ShadowMapping(width, height));
+
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
 	{
@@ -128,6 +136,12 @@ int main(void)
 
 		// Render
 		currentWorld->update(camera, proj, deltaTime);
+
+		// Render world effects
+		for (RenderEffect r : renderEffects)
+		{
+			r.render(&camera);
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
