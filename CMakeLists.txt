@@ -5,14 +5,11 @@ cmake_minimum_required (VERSION 3.8)
 project (ProjectTitan)
 
 # Read in all source files
-file(GLOB SOURCE_FILES
-    "src/*.cpp",
-	"src/*.c"
-)
+file(GLOB SOURCE_FILES "src/*.cpp" "src/*.c")
 
 # Ger libraries
 link_directories("${CMAKE_SOURCE_DIR}/lib")
-SET(PLATFORM_LIBRARIES opengl32 glfw3.lib glfw3dll.lib)
+SET(PLATFORM_LIBRARIES opengl32 glfw3.lib glfw3dll.lib freetype.lib)
 
 # Include includes
 include_directories("${CMAKE_SOURCE_DIR}/dependencies")

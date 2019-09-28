@@ -14,9 +14,11 @@
 #include "Camera.h"
 #include "Chunk.h"
 #include "World.h"
+#include "core/TextRenderer.h"
 
 Camera camera(glm::vec3(8, 40, 8));
 World* currentWorld;
+TextRenderer* textRenderer;
 
 std::vector<RenderEffect> renderEffects;
 
@@ -94,6 +96,8 @@ int main(void)
 		return -1;
 	}
 
+	
+
 	// Set the view port
 	glViewport(0, 0, width, height);
 
@@ -101,6 +105,10 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_CULL_FACE);
+
+	// Other effects
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Capture the mouse input
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -111,6 +119,7 @@ int main(void)
 
 	// Projection Matrix
 	glm::mat4 proj = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 1000.0f);
+	textRenderer = new TextRenderer(glm::ortho(0.0f, (float)width, 0.0f, (float)height));
 
 	glfwSwapInterval(1);
 
@@ -119,6 +128,11 @@ int main(void)
 	renderEffects.push_back(SSAO());
 	//renderEffects.push_back(ShadowMapping(width, height));
 
+	double lastTime = glfwGetTime();
+	int nbFrames = 0;
+	float fps = 0;
+	float frameTime = 0;
+
 	// Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
 	{
@@ -126,6 +140,15 @@ int main(void)
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		double currentTime = glfwGetTime();
+		nbFrames++;
+		if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
+			frameTime = 1000.0 / double(nbFrames);
+			fps = nbFrames;
+			nbFrames = 0;
+			lastTime += 1.0;
+		}
 
 		// Input
 		processKeyboardInput(window);
@@ -143,9 +166,16 @@ int main(void)
 			r.render(&camera);
 		}
 
+		textRenderer->renderText("Position: " + std::to_string(camera.getPosition().x) + " / " + std::to_string(camera.getPosition().y) + " / " + std::to_string(camera.getPosition().z), glm::vec2(25.0f, height - 50.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
+		textRenderer->renderText("Frame Time: " + std::to_string((int)frameTime) + "ms", glm::vec2(25.0f, height - 80.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
+		textRenderer->renderText("FPS: " + std::to_string((int)fps), glm::vec2(25.0f, height - 110.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	delete textRenderer;
+	delete currentWorld;
 
 	// Exit the program
 	glfwTerminate();

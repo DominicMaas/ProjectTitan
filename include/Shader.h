@@ -23,6 +23,12 @@ public:
 	void use();
 
 	// utility uniform functions
+	void setColor(const std::string& name, glm::vec3 color)
+	{
+		glUniform3f(glGetUniformLocation(_id, name.c_str()), color.x, color.y, color.z);
+	}
+
+	// ------------------------------------------------------------------------
 	void setBool(const std::string& name, bool value) const
 	{
 		glUniform1i(glGetUniformLocation(_id, name.c_str()), (int)value);
