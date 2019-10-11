@@ -52,7 +52,7 @@ public:
 
 	// Constants
 	static const int LOADED_CHUNKS_PER_FRAME = 3;
-	static const int REBUILD_CHUNKS_PER_FRAME = 6;
+	static const int REBUILD_CHUNKS_PER_FRAME = 3;
 
 	Chunk* findChunk(glm::vec3 position);
 
