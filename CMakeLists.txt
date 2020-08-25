@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.17)
+cmake_minimum_required (VERSION 3.8)
 project (ProjectTitan)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,11 +15,12 @@ find_package(OpenGL REQUIRED)
 
 # Need external libraries
 add_subdirectory(extern/glfw)
-add_subdirectory(extern/freetype2)
 add_subdirectory(extern/glm)
+add_subdirectory(extern/freetype2)
+add_subdirectory(extern/reactphysics3d)
 
 # Add libraries
-SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype)
+SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d)
 
 # Includes
 include_directories("${CMAKE_SOURCE_DIR}/include")
