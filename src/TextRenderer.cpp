@@ -1,4 +1,4 @@
-#include "core/TextRenderer.h"
+#include "TextRenderer.h"
 
 TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.vert", "shaders/text_shader.frag")
 {
@@ -7,14 +7,14 @@ TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.ve
 
 	if (FT_Init_FreeType(&_font))
 	{
-		Logger::LogMessage("Warning! Could not init FreeType Library");
+		//Logger::LogMessage("Warning! Could not init FreeType Library");
 		return;
 	}
 
 	// Load font as face
 	if (FT_New_Face(_font, "fonts/arial.ttf", 0, &_face))
 	{
-		Logger::LogMessage("Warning! Failed to load font");
+		//Logger::LogMessage("Warning! Failed to load font");
 		return;
 	}
 

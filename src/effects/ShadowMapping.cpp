@@ -1,4 +1,4 @@
-#include "effects/ShadowMapping.h"
+#include "ShadowMapping.h"
 
 ShadowMapping::ShadowMapping(int width, int height)
 {

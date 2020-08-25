@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/constants.h"
+#include "constants.h"
 #include <string>
 #include <vector>
 #include "Chunk.h"
@@ -9,8 +9,8 @@
 #include <glm/glm.hpp>
 #include "Skybox.h"
 #include <algorithm>
-#include <worldgen/BaseWorldGen.h>
-#include <worldgen/StandardWorldGen.h>
+#include "worldgen/BaseWorldGen.h"
+#include "worldgen/StandardWorldGen.h"
 #include <reactphysics3d/reactphysics3d.h>
 
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)

@@ -3,9 +3,9 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "BaseWorldGen.h"
-#include "core/constants.h"
+#include "constants.h"
 #include "FastNoise.h"
-#include "BlockManager.h"
+#include "../BlockManager.h"
 
 class StandardWorldGen : public BaseWorldGen {
 public:

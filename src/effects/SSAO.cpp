@@ -1,4 +1,4 @@
-#include "effects/SSAO.h"
+#include "SSAO.h"
 
 void SSAO::render(Camera* camera)
 {

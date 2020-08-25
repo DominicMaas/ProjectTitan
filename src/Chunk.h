@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/constants.h"
+#include "constants.h"
 #include <glm/glm.hpp>
 #include "Shader.h"
 #include "Camera.h"
@@ -11,7 +11,6 @@
 #include "World.h"
 #include "Block.h"
 #include "core/ExecutionTimer.h"
-#include "core/Logger.h"
 #include "core/BlockMap.h"
 #include <reactphysics3d/reactphysics3d.h>
 
@@ -54,6 +53,7 @@ private:
 	bool _loaded = false;
 
     reactphysics3d::Collider* _collider;
+    reactphysics3d::CollisionBody* _collisionBody;
 public:
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();

@@ -7,8 +7,20 @@ project (ProjectTitan)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Read in all source files
-file(GLOB SOURCE_FILES "src/*.cpp" "src/*.c")
+# Add source files
+file(GLOB_RECURSE SOURCE_FILES
+		${CMAKE_SOURCE_DIR}/src/*.c
+		${CMAKE_SOURCE_DIR}/src/*.cpp)
+
+# Add header files
+file(GLOB_RECURSE HEADER_FILES
+		${CMAKE_SOURCE_DIR}/src/*.h
+		${CMAKE_SOURCE_DIR}/src/*.hpp)
+
+# Add dep files
+file(GLOB_RECURSE DEP_FILES
+		${CMAKE_SOURCE_DIR}/deps/*.c
+		${CMAKE_SOURCE_DIR}/deps/*.cpp)
 
 # Need OpenGL (macOS)
 find_package(OpenGL REQUIRED)
@@ -23,13 +35,13 @@ add_subdirectory(extern/reactphysics3d)
 SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d)
 
 # Includes
-include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories("${CMAKE_SOURCE_DIR}/includes")
 
 # Executable for source
-add_executable (ProjectTitan ${SOURCE_FILES})
+add_executable (${PROJECT_NAME} ${HEADER_FILES} ${DEP_FILES} ${SOURCE_FILES})
 
 # Link libraries
-target_link_libraries (ProjectTitan ${PLATFORM_LIBRARIES})
+target_link_libraries (${PROJECT_NAME} ${PLATFORM_LIBRARIES})
 
 # Copy resources
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

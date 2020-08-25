@@ -4,7 +4,6 @@
 #include <chrono>
 #include <ctime>
 #include <string>
-#include "core/Logger.h"
 
 class ExecutionTimer {
 public:
@@ -19,13 +18,13 @@ public:
 	ExecutionTimer(std::string message)
 	{
 		_message = message;
-		Logger::LogMessage(_message + "...");
+		//Logger::LogMessage(_message + "...");
 	}
 
 	inline void stop() {
 		const auto end = Clock::now();
 
 		long time = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start).count();
-		Logger::LogMessage(_message + " took: " + std::to_string(time) + "ms");
+		//Logger::LogMessage(_message + " took: " + std::to_string(time) + "ms");
 	}
 };

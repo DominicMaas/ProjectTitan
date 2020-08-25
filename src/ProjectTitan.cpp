@@ -14,12 +14,14 @@
 #include "Camera.h"
 #include "Chunk.h"
 #include "World.h"
-#include "core/TextRenderer.h"
+#include "TextRenderer.h"
+#include "Mesh.h"
 #include <reactphysics3d/reactphysics3d.h>
 
 Camera camera(glm::vec3(8, 40, 8));
 World* currentWorld;
 TextRenderer* textRenderer;
+bool debugRender = true;
 
 std::vector<RenderEffect> renderEffects;
 
@@ -55,6 +57,11 @@ void processKeyboardInput(GLFWwindow* window)
 
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+
+    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+        debugRender = !debugRender;
+        currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(debugRender);
+    }
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
 	{
@@ -129,7 +136,17 @@ int main(void)
     // The world
     currentWorld = new World("Test World", &physicsCommon);
 
-	renderEffects.push_back(SSAO());
+    // Physics debugging
+    reactphysics3d::DebugRenderer& debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_AABB, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
+
+    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
+
+    renderEffects.push_back(SSAO());
 	//renderEffects.push_back(ShadowMapping(width, height));
 
 	double lastTime = glfwGetTime();
@@ -137,7 +154,25 @@ int main(void)
 	float fps = 0;
 	float frameTime = 0;
 
-	// Loop until the user closes the window
+	Shader debugShader("shaders/basic.vert", "shaders/basic.frag");
+
+    // Create a rigid body in the world
+    reactphysics3d::Vector3 position(0, 20, 0);
+    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+    reactphysics3d::Transform transform(position, orientation);
+
+    // Instantiate a sphere collision shape
+    float radius = 3.0f;
+
+    // DEBUGGING!!!!
+    reactphysics3d::SphereShape* sphereShape = physicsCommon.createSphereShape(radius);
+    reactphysics3d::RigidBody* body = currentWorld->getPhysicsWorld()->createRigidBody(transform);
+
+    // Add the collider to the rigid body
+    reactphysics3d::Collider* collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
+    body->setType(reactphysics3d::BodyType::STATIC);
+
+    // Loop until the user closes the window
 	while (!glfwWindowShouldClose(window))
 	{
 		// Per-frame time logic
@@ -170,9 +205,41 @@ int main(void)
 			r.render(&camera);
 		}
 
+		// Debug
+		if (debugRender) {
+		    std::vector<glm::vec3> debugVertices;
+
+		    auto tC = debugRenderer.getNbTriangles();
+            auto triangles = debugRenderer.getTriangles();
+            for (auto const& i : triangles) {
+                debugVertices.push_back(glm::vec3(i.point1.x, i.point1.y, i.point1.z));
+                debugVertices.push_back(glm::vec3(i.point2.x, i.point2.y, i.point2.z));
+                debugVertices.push_back(glm::vec3(i.point3.x, i.point3.y, i.point3.z));
+            }
+
+            Mesh m(debugVertices);
+
+            debugShader.use();
+
+            debugShader.setMat4("view", camera.getViewMatrix());
+            debugShader.setVec3("viewPos", camera.getPosition());
+            debugShader.setMat4("projection", proj);
+            debugShader.setMat4("model", glm::mat4(1));
+
+            m.render();
+		}
+
 		textRenderer->renderText("Position: " + std::to_string(camera.getPosition().x) + " / " + std::to_string(camera.getPosition().y) + " / " + std::to_string(camera.getPosition().z), glm::vec2(25.0f, height - 50.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
 		textRenderer->renderText("Frame Time: " + std::to_string((int)frameTime) + "ms", glm::vec2(25.0f, height - 80.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
 		textRenderer->renderText("FPS: " + std::to_string((int)fps), glm::vec2(25.0f, height - 110.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
+
+        // Get the updated position of the body
+        const reactphysics3d::Transform& transform = body->getTransform();
+        const reactphysics3d::Vector3& position = transform.getPosition();
+
+        // Display the position of the body
+        std::cout << "Body Position: (" << position.x << ", " <<
+                  position.y << ", " << position.z << ")" << std::endl;
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

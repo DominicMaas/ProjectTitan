@@ -10,3 +10,6 @@
 [submodule "extern/reactphysics3d"]
 	path = extern/reactphysics3d
 	url = https://github.com/DanielChappuis/reactphysics3d.git
+[submodule "extern/spdlog"]
+	path = extern/spdlog
+	url = https://github.com/gabime/spdlog.git

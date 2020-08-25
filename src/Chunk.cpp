@@ -2,8 +2,16 @@
 
 Chunk::Chunk(glm::vec3 position, World* world)
 {
+    // Set chunk details
 	_position = position;
 	_world = world;
+
+    // Convert the chunk position into physics coords
+    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+    reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
+
+    // Create a collision body for this world
+    _collisionBody = _world->getPhysicsWorld()->createCollisionBody(transform);
 }
 
 Chunk::~Chunk()
@@ -107,6 +115,8 @@ unsigned int Chunk::getBlockType(int x, int y, int z)
 void Chunk::rebuild()
 {
 	std::vector<ChunkVertex> vertices;
+	std::vector<int> indices;
+	int triangleCount = 0;
 
 	for (int x = 0; x < CHUNK_WIDTH; x++) {
 		for (int y = 0; y < CHUNK_HEIGHT; y++) {
@@ -139,10 +149,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 0, -1, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, 0, -1, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, 0, -1, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, 0, -1, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 0, -1, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 0, -1, color));
+                    triangleCount++;
 				}
 
 				// Back
@@ -151,10 +163,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, 0, 1, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, 0, 1, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 0, 1, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 0, 1, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 0, 1, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, 0, 1, color));
+                    triangleCount++;
 				}
 
 				// Right
@@ -163,10 +177,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, -1, 0, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, -1, 0, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, -1, 0, 0, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, -1, 0, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, -1, 0, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, -1, 0, 0, color));
+                    triangleCount++;
 				}
 
 				// Left
@@ -175,10 +191,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 1, 0, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 1, 0, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 1, 0, 0, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 1, 0, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 1, 0, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 1, 0, 0, color));
+                    triangleCount++;
 				}
 
 				// Down
@@ -187,10 +205,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, -1, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, -1, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, -1, 0, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, -1, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, -1, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, -1, 0, color));
+                    triangleCount++;
 				}
 
 				if (isTransparent(x, y + 1, z))
@@ -198,10 +218,12 @@ void Chunk::rebuild()
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 1, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 1, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 1, 0, color));
+                    triangleCount++;
 
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 1, 0, color));
 					vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 1, 0, color));
 					vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 1, 0, color));
+                    triangleCount++;
 				}
 			}
 		}
@@ -232,17 +254,40 @@ void Chunk::rebuild()
 	// Setup world position
 	_modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
-    // Build the collider
-    //reactphysics3d::TriangleVertexArray* triangleArray =
-    //        new reactphysics3d::TriangleVertexArray(vertices.size(), vertices, 3 * sizeof(float), vertices.size() / 3,
-    //                                                indices, 3 * sizeof(int),
-    //                                                reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-    //                                                reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+    /*if (_collider != nullptr) {
 
-    //reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
+        float pVertices[3 * _vertices];
+        int pIndices[3 * triangleCount];
 
-    //reactphysics3d::ConcaveMeshShape* mesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
+        int pVerticesCount = 0;
+        for (auto const& vertex : vertices) {
+            pVertices[pVerticesCount] = vertex.Position.x;
+            pVerticesCount++;
+            pVertices[pVerticesCount] = vertex.Position.y;
+            pVerticesCount++;
+            pVertices[pVerticesCount] = vertex.Position.z;
+            pVerticesCount++;
+        }
 
+        int pIndicesCount = 0;
+        for (int i = 0; i <= _vertices; i++) {
+            pIndices[pIndicesCount] = i;
+            pIndicesCount++;
+        }
+
+        // Create the polygon vertex array
+        auto* triangleArray = new reactphysics3d::TriangleVertexArray(
+                pVerticesCount, pVertices, 3 * sizeof(float), triangleCount,
+                pIndices, 3 * sizeof(int),
+                reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+                reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+
+        reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
+        triangleMesh->addSubpart(triangleArray);
+
+        reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
+        _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
+    }*/
 
     // The chunk has been rebuilt
 	_changed = false;
