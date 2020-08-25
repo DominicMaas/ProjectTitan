@@ -1,15 +1,21 @@
 ﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.17)
 project (ProjectTitan)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Read in all source files
 file(GLOB SOURCE_FILES "src/*.cpp" "src/*.c")
 
+# Need OpenGL
+find_package(OpenGL REQUIRED)
+
 # Ger libraries
 link_directories("${CMAKE_SOURCE_DIR}/lib")
-SET(PLATFORM_LIBRARIES opengl32 glfw3.lib glfw3dll.lib freetype.lib)
+SET(PLATFORM_LIBRARIES glfw3.lib OpenGL::GL freetype.lib)
 
 # Include includes
 include_directories("${CMAKE_SOURCE_DIR}/dependencies")
