@@ -3,7 +3,7 @@
 #include "Shader.h"
 #include <string>
 #include <vector>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <stb_image.h>
 
 class Skybox {

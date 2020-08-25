@@ -10,18 +10,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Read in all source files
 file(GLOB SOURCE_FILES "src/*.cpp" "src/*.c")
 
-# Need OpenGL
+# Need OpenGL (macOS)
 find_package(OpenGL REQUIRED)
 
-# Ger libraries
-link_directories("${CMAKE_SOURCE_DIR}/lib")
-SET(PLATFORM_LIBRARIES glfw3.lib OpenGL::GL freetype.lib)
+# Need external libraries
+add_subdirectory(extern/glfw)
+add_subdirectory(extern/freetype2)
+add_subdirectory(extern/glm)
 
-# Include includes
-include_directories("${CMAKE_SOURCE_DIR}/dependencies")
+# Add libraries
+SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype)
+
+# Includes
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
-# EXE for source
+# Executable for source
 add_executable (ProjectTitan ${SOURCE_FILES})
 
 # Link libraries
