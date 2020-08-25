@@ -1,4 +1,5 @@
 #include "TextRenderer.h"
+#include "spdlog/spdlog.h"
 
 TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.vert", "shaders/text_shader.frag")
 {
@@ -7,14 +8,14 @@ TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.ve
 
 	if (FT_Init_FreeType(&_font))
 	{
-		//Logger::LogMessage("Warning! Could not init FreeType Library");
+        spdlog::warn("[Text Renderer] Warning! Could not init FreeType Library");
 		return;
 	}
 
 	// Load font as face
 	if (FT_New_Face(_font, "fonts/arial.ttf", 0, &_face))
 	{
-		//Logger::LogMessage("Warning! Failed to load font");
+        spdlog::warn("[Text Renderer] Warning! Failed to load font");
 		return;
 	}
 
@@ -30,7 +31,7 @@ TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.ve
 		// Load character glyph 
 		if (FT_Load_Char(_face, c, FT_LOAD_RENDER))
 		{
-			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+            spdlog::error("[Text Renderer] Failed to load Glyph");
 			continue;
 		}
 		

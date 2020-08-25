@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <string>
+#include "spdlog/spdlog.h"
 
 class ExecutionTimer {
 public:
@@ -15,16 +16,15 @@ private:
 	std::string _message;
 
 public:
-	ExecutionTimer(std::string message)
-	{
+    ExecutionTimer(std::string message) {
 		_message = message;
-		//Logger::LogMessage(_message + "...");
+        spdlog::info(message + "...");
 	}
 
 	inline void stop() {
 		const auto end = Clock::now();
 
 		long time = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start).count();
-		//Logger::LogMessage(_message + " took: " + std::to_string(time) + "ms");
+        spdlog::info(_message + " took: " + std::to_string(time) + "ms");
 	}
 };
