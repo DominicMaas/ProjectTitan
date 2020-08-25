@@ -5,11 +5,13 @@
 
 class ShadowMapping : public RenderEffect {
 public:
-	ShadowMapping(int width, int height);
-	~ShadowMapping();
-	void render(Camera* camera);
+    ShadowMapping(int width, int height);
+
+    ~ShadowMapping();
+
+    void render(Camera *camera);
 
 private:
-	unsigned int _depthMapFBO;
-	unsigned int _depthMap;
+    unsigned int _depthMapFBO;
+    unsigned int _depthMap;
 };

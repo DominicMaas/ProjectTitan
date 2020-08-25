@@ -17,63 +17,64 @@
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
 
-struct ChunkVertex
-{
-	ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec3 color)
-	{
-		Position = glm::vec3(px, py, pz);
-		Normal = glm::vec3(nx, ny, nz);
-		Color = color;
-	}
+struct ChunkVertex {
+    ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec3 color) {
+        Position = glm::vec3(px, py, pz);
+        Normal = glm::vec3(nx, ny, nz);
+        Color = color;
+    }
 
-	glm::vec3 Position;
-	glm::vec3 Normal;
-	glm::vec3 Color;
+    glm::vec3 Position;
+    glm::vec3 Normal;
+    glm::vec3 Color;
 };
 
-class Chunk
-{
+class Chunk {
 private:
-	// Data
-	glm::vec3 _position;
-	Block*** _blocks;
+    // Data
+    glm::vec3 _position;
+    Block ***_blocks;
 
-	// Rendering
-	unsigned int _vbo = 0;
-	unsigned int _vao = 0;
-	glm::mat4 _modelMatrix;
-	int _vertices;
+    // Rendering
+    unsigned int _vbo = 0;
+    unsigned int _vao = 0;
+    glm::mat4 _modelMatrix;
+    int _vertices;
 
-	bool isTransparent(int x, int y, int z);
-	unsigned int getBlockType(int x, int y, int z);
+    bool isTransparent(int x, int y, int z);
 
-	World* _world;
+    unsigned int getBlockType(int x, int y, int z);
 
-	bool _changed = true;
-	bool _loaded = false;
+    World *_world;
 
-    reactphysics3d::Collider* _collider;
-    reactphysics3d::CollisionBody* _collisionBody;
+    bool _changed = true;
+    bool _loaded = false;
+
+    reactphysics3d::Collider *_collider;
+    reactphysics3d::CollisionBody *_collisionBody;
 public:
-	Chunk(glm::vec3 position, World* world);
-	~Chunk();
+    Chunk(glm::vec3 position, World *world);
 
-	void load();
-	void render();
-	void rebuild();
+    ~Chunk();
 
-	bool shouldRebuildChunk() { return _changed; }
+    void load();
 
-	void setChanged() { _changed = true; }
+    void render();
 
-	glm::vec3 getPosition() { return _position; }
+    void rebuild();
 
-	glm::vec3 getCenter() { return glm::vec3(_position.x + (CHUNK_WIDTH / 2), 0, _position.z + (CHUNK_WIDTH / 2)); }
+    bool shouldRebuildChunk() { return _changed; }
 
-	bool isLoaded() {
-		return _loaded;
-	}
+    void setChanged() { _changed = true; }
 
-	// Get the collider for the current chunk
-    reactphysics3d::Collider* getChunkCollider() { return _collider; }
+    glm::vec3 getPosition() { return _position; }
+
+    glm::vec3 getCenter() { return glm::vec3(_position.x + (CHUNK_WIDTH / 2), 0, _position.z + (CHUNK_WIDTH / 2)); }
+
+    bool isLoaded() {
+        return _loaded;
+    }
+
+    // Get the collider for the current chunk
+    reactphysics3d::Collider *getChunkCollider() { return _collider; }
 };

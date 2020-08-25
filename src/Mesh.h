@@ -14,6 +14,7 @@ private:
 
 public:
     Mesh(std::vector<glm::vec3> vertices);
+
     ~Mesh();
 
     void render();

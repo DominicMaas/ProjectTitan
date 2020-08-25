@@ -16,7 +16,7 @@ Mesh::Mesh(std::vector<glm::vec3> vertices) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _vertices.size(), _vertices.data(), GL_STATIC_DRAW);
 
     // Enable shader attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *) 0);
     glEnableVertexAttribArray(0);
 
     // Unbind as built

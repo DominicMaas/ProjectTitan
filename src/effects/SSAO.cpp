@@ -1,5 +1,4 @@
 #include "SSAO.h"
 
-void SSAO::render(Camera* camera)
-{
+void SSAO::render(Camera *camera) {
 }

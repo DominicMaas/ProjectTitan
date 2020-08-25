@@ -3,8 +3,7 @@
 #include "Entity.h"
 #include "Camera.h"
 
-class Player : Entity
-{
+class Player : Entity {
 private:
-	Camera _camera;
+    Camera _camera;
 };
