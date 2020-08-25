@@ -13,7 +13,7 @@ public:
 
     // Get the theoretical block type for the given x, y, z position, returns
     // and unsigned int that relates to a certain block type.
-    unsigned int getTheoreticalBlockType(int x, int y, int z);
+    unsigned int getTheoreticalBlockType(int x, int y, int z) override;
 
 private:
     // List of octave offsets

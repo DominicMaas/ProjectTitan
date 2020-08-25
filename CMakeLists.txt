@@ -39,7 +39,7 @@ SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d spdlog)
 include_directories("${CMAKE_SOURCE_DIR}/includes")
 
 # Executable for source
-add_executable (${PROJECT_NAME} ${HEADER_FILES} ${DEP_FILES} ${SOURCE_FILES})
+add_executable (${PROJECT_NAME} ${DEP_FILES} ${HEADER_FILES} ${SOURCE_FILES})
 
 # Link libraries
 target_link_libraries (${PROJECT_NAME} ${PLATFORM_LIBRARIES})

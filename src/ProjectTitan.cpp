@@ -15,13 +15,22 @@
 #include "TextRenderer.h"
 #include "Mesh.h"
 #include <reactphysics3d/reactphysics3d.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
-TextRenderer *textRenderer;
-bool debugRender = true;
+
+bool renderPhysics = true;
+bool renderLines = false;
+
+bool mouseCaptured = true;
+bool guiHasMouse = false;
 
 std::vector<RenderEffect> renderEffects;
+
+glm::mat4 projectionMatrix;
 
 // timing
 float deltaTime = 0.0f;    // time between current frame and last frame
@@ -29,38 +38,43 @@ float lastFrame = 0.0f;
 
 void onFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
+    projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
 }
 
 void processMouseInput(GLFWwindow *window, double xPos, double yPos) {
     // Process camera inputs
-    camera.processMouseInput(xPos, yPos);
+    if (mouseCaptured) {
+        camera.processMouseInput(xPos, yPos);
+    }
+}
+
+
+void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
+    if (guiHasMouse) {
+        return; // Don't run this if the GUI has the mouse
+    }
+
+    mouseCaptured = _mouseCapture;
+
+    if (mouseCaptured) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        setMouseCapture(window, true);
 }
 
 void processKeyboardInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+        setMouseCapture(window, false);
 
     // Process camera inputs
     camera.processKeyboardInput(window, deltaTime);
-
-    // Debugging
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-
-    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
-        debugRender = !debugRender;
-        currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(debugRender);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-        currentWorld->reset(true);
-    }
 }
 
 int main(void) {
@@ -87,14 +101,26 @@ int main(void) {
         return -1;
     }
 
-    // Make the window's context current
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(window); // Make the window's context current
+    glfwSwapInterval(1); // Enable vsync
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
 
     // Set the view port
     glViewport(0, 0, width, height);
@@ -109,23 +135,22 @@ int main(void) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Capture the mouse input
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    setMouseCapture(window, false);
 
-    // Change view port on window resize
+    // Set the GLFW callbacks
     glfwSetFramebufferSizeCallback(window, onFramebufferSizeCallback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, processMouseInput);
 
     // Projection Matrix
-    glm::mat4 proj = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
-    textRenderer = new TextRenderer(glm::ortho(0.0f, (float) width, 0.0f, (float) height));
-
-    glfwSwapInterval(1);
+    projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
 
     // The world
     currentWorld = new World("Test World", &physicsCommon);
+    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(renderPhysics);
 
     // Physics debugging
     reactphysics3d::DebugRenderer &debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
@@ -179,26 +204,38 @@ int main(void) {
             lastTime += 1.0;
         }
 
-        // Input
-        processKeyboardInput(window);
+        // Update the mouse bool
+        guiHasMouse = io.WantCaptureMouse;
 
-        // Clear screen
+        // Process keyboard inputs for the application
+        if (!io.WantCaptureKeyboard) {
+            processKeyboardInput(window);
+        }
+
+        // Clear screen for a new frame
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Render
-        currentWorld->update(camera, proj, deltaTime);
+        // Set the render mode based on the render lines boolean
+        glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL);
 
-        // Render world effects
+        // Start a new GUI frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // Render The current world
+        currentWorld->update(camera, projectionMatrix, deltaTime);
+
+        // Render the world effects
         for (RenderEffect r : renderEffects) {
             r.render(&camera);
         }
 
-        // Debug
-        if (debugRender) {
+        // Physics debug rendering
+        if (renderPhysics) {
             std::vector<glm::vec3> debugVertices;
 
-            auto tC = debugRenderer.getNbTriangles();
             auto triangles = debugRenderer.getTriangles();
             for (auto const &i : triangles) {
                 debugVertices.push_back(glm::vec3(i.point1.x, i.point1.y, i.point1.z));
@@ -212,35 +249,44 @@ int main(void) {
 
             debugShader.setMat4("view", camera.getViewMatrix());
             debugShader.setVec3("viewPos", camera.getPosition());
-            debugShader.setMat4("projection", proj);
+            debugShader.setMat4("projection", projectionMatrix);
             debugShader.setMat4("model", glm::mat4(1));
 
             m.render();
         }
 
-        textRenderer->renderText(
-                "Position: " + std::to_string(camera.getPosition().x) + " / " + std::to_string(camera.getPosition().y) +
-                " / " + std::to_string(camera.getPosition().z), glm::vec2(25.0f, height - 50.0f), 0.5f,
-                glm::vec3(0.5, 0.8f, 0.2f));
-        textRenderer->renderText("Frame Time: " + std::to_string((int) frameTime) + "ms",
-                                 glm::vec2(25.0f, height - 80.0f), 0.5f, glm::vec3(0.5, 0.8f, 0.2f));
-        textRenderer->renderText("FPS: " + std::to_string((int) fps), glm::vec2(25.0f, height - 110.0f), 0.5f,
-                                 glm::vec3(0.5, 0.8f, 0.2f));
+        // Debugging window
+        {
+            ImGui::Begin("Debug");
 
-        // Get the updated position of the body
-        const reactphysics3d::Transform &transform = body->getTransform();
-        const reactphysics3d::Vector3 &position = transform.getPosition();
+            ImGui::Text("Position: X: %f Y: %f Z: %f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+            ImGui::Text("Frame Time: %f ms", frameTime);
+            ImGui::Text("FPS: %i", (int) fps);
 
-        // Display the position of the body
-        std::cout << "Body Position: (" << position.x << ", " <<
-                  position.y << ", " << position.z << ")" << std::endl;
+            ImGui::Checkbox("Draw Physics Colliders", &renderPhysics);
+            ImGui::Checkbox("Debug Renderer", &renderLines);
+
+            if (ImGui::Button("Reset World")) {
+                currentWorld->reset(true);
+            }
+
+            ImGui::End();
+        }
+
+        // Render the debug GUI
+        ImGui::Render();
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    delete textRenderer;
     delete currentWorld;
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     // Exit the program
     glfwTerminate();
