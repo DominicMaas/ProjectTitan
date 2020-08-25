@@ -41,10 +41,14 @@ void World::loadChunks()
 	}
 }
 
-World::World(int seed, std::string worldName)
+World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon* physics)
 	: _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag"))
 	, _worldSkybox(Shader("shaders/skybox_shader.vert", "shaders/skybox_shader.frag"))
 {
+    // Create the physics world
+    _physicsCommon = physics;
+    _physicsWorld = _physicsCommon->createPhysicsWorld();
+
 	// World properties
 	_sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
 	_sunColor = glm::vec3(1, 1, 1);
@@ -80,7 +84,7 @@ World::World(int seed, std::string worldName)
 	this->_worldSkybox.setup(faces);
 }
 
-World::World(std::string worldName) : World(0, worldName) { }
+World::World(std::string worldName, reactphysics3d::PhysicsCommon* physics) : World(0, worldName, physics) { }
 
 World::~World()
 {
@@ -147,12 +151,15 @@ void World::update(Camera& c, glm::mat4 proj, float delta)
 
 	// Generate new chunks
 	for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
-		for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH)
-		{
-			if (findChunk(glm::vec3(x, 0, z)) == NULL) {
-				_chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
-			}
-		}
+    for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH)
+    {
+        if (findChunk(glm::vec3(x, 0, z)) == NULL) {
+            _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
+        }
+    }
+
+	// Run the physics
+	_physicsWorld->update(delta);
 }
 
 void World::reset(bool resetSeed)

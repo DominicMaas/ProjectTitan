@@ -13,6 +13,7 @@
 #include "core/ExecutionTimer.h"
 #include "core/Logger.h"
 #include "core/BlockMap.h"
+#include <reactphysics3d/reactphysics3d.h>
 
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
@@ -51,6 +52,8 @@ private:
 
 	bool _changed = true;
 	bool _loaded = false;
+
+    reactphysics3d::Collider* _collider;
 public:
 	Chunk(glm::vec3 position, World* world);
 	~Chunk();
@@ -70,4 +73,7 @@ public:
 	bool isLoaded() {
 		return _loaded;
 	}
+
+	// Get the collider for the current chunk
+    reactphysics3d::Collider* getChunkCollider() { return _collider; }
 };

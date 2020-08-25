@@ -232,6 +232,18 @@ void Chunk::rebuild()
 	// Setup world position
 	_modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
-	// The chunk has been rebuilt
+    // Build the collider
+    //reactphysics3d::TriangleVertexArray* triangleArray =
+    //        new reactphysics3d::TriangleVertexArray(vertices.size(), vertices, 3 * sizeof(float), vertices.size() / 3,
+    //                                                indices, 3 * sizeof(int),
+    //                                                reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+    //                                                reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+
+    //reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
+
+    //reactphysics3d::ConcaveMeshShape* mesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
+
+
+    // The chunk has been rebuilt
 	_changed = false;
 }

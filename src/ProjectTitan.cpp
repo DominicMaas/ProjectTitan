@@ -15,6 +15,7 @@
 #include "Chunk.h"
 #include "World.h"
 #include "core/TextRenderer.h"
+#include <reactphysics3d/reactphysics3d.h>
 
 Camera camera(glm::vec3(8, 40, 8));
 World* currentWorld;
@@ -97,8 +98,6 @@ int main(void)
 		return -1;
 	}
 
-	
-
 	// Set the view port
 	glViewport(0, 0, width, height);
 
@@ -124,7 +123,11 @@ int main(void)
 
 	glfwSwapInterval(1);
 
-	currentWorld = new World("Test World");
+    // Physics engine for the game
+    reactphysics3d::PhysicsCommon physicsCommon;
+
+    // The world
+    currentWorld = new World("Test World", &physicsCommon);
 
 	renderEffects.push_back(SSAO());
 	//renderEffects.push_back(ShadowMapping(width, height));
