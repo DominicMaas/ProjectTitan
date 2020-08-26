@@ -69,4 +69,7 @@ public:
     reactphysics3d::PhysicsWorld *getPhysicsWorld() { return _physicsWorld; };
 
     reactphysics3d::PhysicsCommon *getPhysicsCommon() { return _physicsCommon; };
+
+    int ChunksRendered;
+    int ChunksFrustumCulled;
 };

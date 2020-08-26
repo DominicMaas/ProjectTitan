@@ -324,6 +324,8 @@ int main(void) {
             ImGui::Text("Position: X: %f Y: %f Z: %f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
             ImGui::Text("Frame Time: %Lf ms", frameTime);
             ImGui::Text("FPS: %i", fps);
+            ImGui::Text("  ");
+            ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
 
             ImGui::Checkbox("Draw Physics Colliders", &renderPhysics);
             ImGui::Checkbox("Debug Renderer", &renderLines);

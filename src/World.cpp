@@ -1,5 +1,6 @@
 #include "World.h"
 #include "core/ResourceManager.h"
+#include "core/Frustum.h"
 
 void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
@@ -121,6 +122,10 @@ void World::updatePhysics(long double deltaAccum) {
 }
 
 void World::render(Camera &c, glm::mat4 proj) {
+    // Calculate the frustum
+    Frustum frustum = Frustum::GetFrustum(proj * c.getViewMatrix());
+
+    // The render distance
     float renderDistance = 4 * CHUNK_WIDTH;
 
     // Get the chunk shader and use it
@@ -140,6 +145,8 @@ void World::render(Camera &c, glm::mat4 proj) {
     chunkShader->setVec3("viewPos", c.getPosition());
     chunkShader->setMat4("projection", proj);
 
+    ChunksRendered = 0;
+
     // Loop through all the chunks
     for (Chunk *chunk : _chunks) {
         // This chunk is not loaded
@@ -150,6 +157,13 @@ void World::render(Camera &c, glm::mat4 proj) {
         if (abs(chunk->getCenter().x - c.getPosition().x) >= renderDistance ||
             abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
+
+        // Ensure the chunk is in the frustum
+        bool isVisible = frustum.isBoxVisible(chunk->getPosition(), chunk->getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
+        if (!isVisible)
+            continue;
+
+        ChunksRendered++;
 
         // Render the chunk
         chunk->render();
