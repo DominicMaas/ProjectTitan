@@ -123,6 +123,23 @@ void World::updatePhysics(long double deltaAccum) {
 void World::render(Camera &c, glm::mat4 proj) {
     float renderDistance = 4 * CHUNK_WIDTH;
 
+    // Get the chunk shader and use it
+    Shader* chunkShader = ResourceManager::getShader("chunk");
+    chunkShader->use();
+
+    // Bind the texture
+    ResourceManager::getTexture("test")->bind();
+
+    // Set light color and direction
+    chunkShader->setVec3("light.color", _sunColor);
+    chunkShader->setVec3("light.direction", _sunDirection);
+    chunkShader->setFloat("light.ambient", _sunAmbient);
+
+    // Set the camera view and view position matrix
+    chunkShader->setMat4("view", c.getViewMatrix());
+    chunkShader->setVec3("viewPos", c.getPosition());
+    chunkShader->setMat4("projection", proj);
+
     // Loop through all the chunks
     for (Chunk *chunk : _chunks) {
         // This chunk is not loaded
@@ -134,24 +151,7 @@ void World::render(Camera &c, glm::mat4 proj) {
             abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
 
-        Shader* shader = ResourceManager::getShader("chunk");
-
-        // Use world shader
-        shader->use();
-
-        // Bind the texture
-        ResourceManager::getTexture("test")->bind();
-
-        // Set light color and direction
-        shader->setVec3("light.color", _sunColor);
-        shader->setVec3("light.direction", _sunDirection);
-        shader->setFloat("light.ambient", _sunAmbient);
-
-        // Set the camera view and view position matrix
-        shader->setMat4("view", c.getViewMatrix());
-        shader->setVec3("viewPos", c.getPosition());
-        shader->setMat4("projection", proj);
-
+        // Render the chunk
         chunk->render();
     }
 

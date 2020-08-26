@@ -103,7 +103,7 @@ int main(void) {
     }
 
     glfwMakeContextCurrent(window); // Make the window's context current
-    glfwSwapInterval(1); // Enable vsync
+    glfwSwapInterval(0); // Disable vsync
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -209,6 +209,11 @@ int main(void) {
     long double frameTime = 0;
     int fps;
 
+    // Get the temp shaders that we need
+    Shader* backpackShader = ResourceManager::getShader("backpack_shader");
+    Model* backpackModel = ResourceManager::getModel("backpack");
+    Shader* physicsShader = ResourceManager::getShader("debug");
+
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         // ---------- Per-frame time logic ---------- //
@@ -243,7 +248,7 @@ int main(void) {
 
         // While there is enough accumulated time to take
         // one or several physics steps
-        if (deltaTimeAccum >= timeStep) {
+        while (deltaTimeAccum >= timeStep) {
             // Update the Dynamics world with a constant time step
             currentWorld->updatePhysics(timeStep);
 
@@ -277,8 +282,6 @@ int main(void) {
                 r.render(&camera);
             }
 
-            Shader* backpackShader = ResourceManager::getShader("backpack_shader");
-
             backpackShader->use();
             backpackShader->setMat4("view", camera.getViewMatrix());
             backpackShader->setMat4("projection", projectionMatrix);
@@ -287,7 +290,7 @@ int main(void) {
             pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
             backpackShader->setMat4("model", pos);
 
-            ResourceManager::getModel("backpack")->render(*backpackShader);
+            backpackModel->render(*backpackShader);
         }
 
         // Physics debug rendering
@@ -303,10 +306,7 @@ int main(void) {
 
             physicsDebugMesh.rebuild(debugVertices, std::vector<unsigned int>(), std::vector<Texture>());
 
-            Shader* physicsShader = ResourceManager::getShader("debug");
-
             physicsShader->use();
-
             physicsShader->setMat4("view", camera.getViewMatrix());
             physicsShader->setVec3("viewPos", camera.getPosition());
             physicsShader->setMat4("projection", projectionMatrix);

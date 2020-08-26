@@ -26,6 +26,7 @@ private:
     Block ***_blocks;
 
     Mesh* _mesh;
+    Shader* _shader;
 
     glm::mat4 _modelMatrix;
 

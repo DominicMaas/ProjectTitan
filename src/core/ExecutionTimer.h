@@ -7,23 +7,20 @@
 #include "spdlog/spdlog.h"
 
 class ExecutionTimer {
-public:
-    using Clock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
-            std::chrono::high_resolution_clock,
-            std::chrono::steady_clock>;
 private:
-    const Clock::time_point _start = Clock::now();
     std::string _message;
+    double _start;
 
 public:
     ExecutionTimer(std::string message) {
         _message = message;
+        _start = glfwGetTime();
     }
 
     inline void stop() {
-        const auto end = Clock::now();
+        double end = glfwGetTime();
+        double delta = (end - _start) * 60;
 
-        long time = std::chrono::duration_cast<std::chrono::milliseconds>(end - _start).count();
-        spdlog::info(_message + " took: " + std::to_string(time) + "ms");
+        spdlog::info(_message + " took: " + std::to_string(delta) + "ms");
     }
 };

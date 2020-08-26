@@ -6,6 +6,9 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     _position = position;
     _world = world;
 
+    // Update the model matrix to the correct position
+    _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
+
     // Convert the chunk position into physics coords
     reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
     reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
@@ -14,7 +17,11 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     _collisionBody = _world->getPhysicsWorld()->createRigidBody(transform);
     _collisionBody->setType(reactphysics3d::BodyType::STATIC);
 
+    // Create a new empty mesh
     _mesh = new Mesh();
+
+    // Get the shader
+    _shader = ResourceManager::getShader("chunk");
 }
 
 Chunk::~Chunk() {
@@ -29,9 +36,11 @@ Chunk::~Chunk() {
     delete[] _blocks;
 
     // Delete the mesh
-    if (_mesh != nullptr) {
-        delete _mesh;
-    }
+    delete _mesh;
+
+    // Delete the colliders
+    //delete _collider;
+    //delete _collisionBody;
 }
 
 void Chunk::load() {
@@ -59,15 +68,11 @@ void Chunk::load() {
 
 void Chunk::render() {
     // Quick check to make sure this chunk is loaded
-    if (!_loaded)
-        return;
+    if (!_loaded) return;
 
-    // Set the position of this chunk in the shader
-    Shader* shader = ResourceManager::getShader("chunk");
-    shader->setMat4("model", _modelMatrix);
-
-    // Render
-    _mesh->render(*shader);
+    // Set the position of this chunk in the shader & render
+    _shader->setMat4("model", _modelMatrix);
+    _mesh->render(*_shader);
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {
@@ -259,9 +264,6 @@ void Chunk::rebuild() {
 
     // Rebuild the mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
-
-    // Setup world position
-    _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
     //if (_collider != nullptr) {
         // Create the polygon vertex array
