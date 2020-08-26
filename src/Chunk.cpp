@@ -295,74 +295,79 @@ void Chunk::rebuild() {
     // Setup world position
     _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
-    /*if (_collider != nullptr) {
-        float* pVertices = new float[3 * _vertices];
-        int* pIndices = new int[_indexCount];
+    _physicsVertices = new float[3 * _vertices];
+    _physicsIndices= new int[_indexCount];
 
-        int pVerticesCount = 0;
-        for (auto const& vertex : vertices) {
-            pVertices[pVerticesCount] = vertex.Position.x;
-            pVerticesCount++;
-            pVertices[pVerticesCount] = vertex.Position.y;
-            pVerticesCount++;
-            pVertices[pVerticesCount] = vertex.Position.z;
-            pVerticesCount++;
-        }
-
-        int pIndicesCount = 0;
-        for (auto const& index : indices) {
-            pIndices[pIndicesCount] = index;
-            pIndicesCount++;
-        }
-
-        // Create the polygon vertex array
-        auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-                pVerticesCount, pVertices, 3 * sizeof(float), triangleCount,
-                pIndices, 3 * sizeof(int),
-                reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-                reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
-
-        reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
-        triangleMesh->addSubpart(triangleArray);
-
-        reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
-        _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
+    int pVerticesCount = 0;
+    for (auto const& vertex : vertices) {
+        _physicsVertices[pVerticesCount] = vertex.Position.x;
+        pVerticesCount++;
+        _physicsVertices[pVerticesCount] = vertex.Position.y;
+        pVerticesCount++;
+        _physicsVertices[pVerticesCount] = vertex.Position.z;
+        pVerticesCount++;
     }
 
-    if (_collider != nullptr) {
+    int pIndicesCount = 0;
+    for (auto const& index : indices) {
+        _physicsIndices[pIndicesCount] = index;
+        pIndicesCount++;
+    }
 
-        float pVertices[3 * _vertices];
-        int pIndices[3 * triangleCount];
-
-        int pVerticesCount = 0;
-        for (auto const& vertex : vertices) {
-            pVertices[pVerticesCount] = vertex.Position.x;
-            pVerticesCount++;
-            pVertices[pVerticesCount] = vertex.Position.y;
-            pVerticesCount++;
-            pVertices[pVerticesCount] = vertex.Position.z;
-            pVerticesCount++;
-        }
-
-        int pIndicesCount = 0;
-        for (int i = 0; i <= _vertices; i++) {
-            pIndices[pIndicesCount] = i;
-            pIndicesCount++;
-        }
-
+    //if (_collider != nullptr) {
         // Create the polygon vertex array
         auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-                pVerticesCount, pVertices, 3 * sizeof(float), triangleCount,
-                pIndices, 3 * sizeof(int),
+                pVerticesCount, _physicsVertices, 3 * sizeof(float), triangleCount,
+                _physicsIndices, 3 * sizeof(int),
                 reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
                 reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
 
         reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
+
         triangleMesh->addSubpart(triangleArray);
 
         reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
         _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
-    }*/
+
+        spdlog::info("[{},{},{}] Created Collision Mesh", _position.x, _position.y, _position.z);
+    //}
+
+    spdlog::info("[{},{},{}] Created Visual Mesh", _position.x, _position.y, _position.z);
+
+    /* if (_collider != nullptr) {
+
+         float pVertices[3 * _vertices];
+         int pIndices[3 * triangleCount];
+
+         int pVerticesCount = 0;
+         for (auto const& vertex : vertices) {
+             pVertices[pVerticesCount] = vertex.Position.x;
+             pVerticesCount++;
+             pVertices[pVerticesCount] = vertex.Position.y;
+             pVerticesCount++;
+             pVertices[pVerticesCount] = vertex.Position.z;
+             pVerticesCount++;
+         }
+
+         int pIndicesCount = 0;
+         for (int i = 0; i <= _vertices; i++) {
+             pIndices[pIndicesCount] = i;
+             pIndicesCount++;
+         }
+
+         // Create the polygon vertex array
+         auto* triangleArray = new reactphysics3d::TriangleVertexArray(
+                 pVerticesCount, pVertices, 3 * sizeof(float), triangleCount,
+                 pIndices, 3 * sizeof(int),
+                 reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+                 reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+
+         reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
+         triangleMesh->addSubpart(triangleArray);
+
+         reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
+         _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
+     }*/
 
     // The chunk has been rebuilt
     _changed = false;

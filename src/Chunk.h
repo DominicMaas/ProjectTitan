@@ -55,6 +55,9 @@ private:
 
     reactphysics3d::Collider *_collider;
     reactphysics3d::CollisionBody *_collisionBody;
+
+    int* _physicsIndices;
+    float* _physicsVertices;
 public:
     Chunk(glm::vec3 position, World *world);
 

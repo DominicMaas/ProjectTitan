@@ -93,6 +93,25 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
     // Rebuild any chunks
     rebuildChunks();
 
+    float renderDistance = 4 * CHUNK_WIDTH;
+
+    // Calculation about the camera position and render distance
+    int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
+    int cWorldZ = ((int) floor(c.getPosition().z / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
+
+    // Generate new chunks
+    for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
+        for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH) {
+            if (findChunk(glm::vec3(x, 0, z)) == NULL) {
+                _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
+            }
+        }
+
+    // Run the physics
+    _physicsWorld->update(delta);
+}
+
+void World::render(Camera &c, glm::mat4 proj, float delta) {
     // Run sun updates
     float sunVelocity = _sunSpeed * delta;
     glm::mat4 rotationMat(1);
@@ -100,10 +119,6 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
     _sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
     float renderDistance = 4 * CHUNK_WIDTH;
-
-    // Calculation about the camera position and render distance
-    int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
-    int cWorldZ = ((int) floor(c.getPosition().z / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
 
     // Loop through all the chunks
     for (Chunk *chunk : _chunks) {
@@ -123,9 +138,6 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
         // Bind the texture
         ResourceManager::getTexture("test")->bind();
 
-
-
-
         // Set light color and direction
         _worldShader.setVec3("light.color", _sunColor);
         _worldShader.setVec3("light.direction", _sunDirection);
@@ -142,17 +154,6 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
 
     // Render the skybox
     this->_worldSkybox.render(c.getViewMatrix(), proj);
-
-    // Generate new chunks
-    for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
-        for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH) {
-            if (findChunk(glm::vec3(x, 0, z)) == NULL) {
-                _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
-            }
-        }
-
-    // Run the physics
-    _physicsWorld->update(delta);
 }
 
 void World::reset(bool resetSeed) {

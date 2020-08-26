@@ -23,7 +23,7 @@
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
 
-bool renderPhysics = true;
+bool renderPhysics = false;
 bool renderLines = false;
 
 bool mouseCaptured = true;
@@ -234,12 +234,16 @@ int main(void) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Render The current world
         currentWorld->update(camera, projectionMatrix, deltaTime);
 
-        // Render the world effects
-        for (RenderEffect r : renderEffects) {
-            r.render(&camera);
+        // Render The current world
+        if (!renderPhysics) {
+            currentWorld->render(camera, projectionMatrix, deltaTime);
+
+            // Render the world effects
+            for (RenderEffect r : renderEffects) {
+                r.render(&camera);
+            }
         }
 
         // Physics debug rendering
@@ -262,7 +266,9 @@ int main(void) {
             debugShader.setMat4("projection", projectionMatrix);
             debugShader.setMat4("model", glm::mat4(1));
 
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             m.render();
+            glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL);
         }
 
         // Debugging window

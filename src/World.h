@@ -53,6 +53,7 @@ public:
     ~World();
 
     void update(Camera &c, glm::mat4 proj, float delta);
+    void render(Camera &c, glm::mat4 proj, float delta);
 
     void reset(bool resetSeed);
 
