@@ -1,8 +1,8 @@
 #include "ResourceManager.h"
 
 // Instantiate static variables
-//std::map<std::string, Shader> ResourceManager::_shaders;
-std::map<std::string, Texture2D> ResourceManager::_textures;
+std::map<std::string, Shader*> ResourceManager::_shaders;
+std::map<std::string, Texture2D*> ResourceManager::_textures;
 
 void ResourceManager::loadShader(std::string name, std::string path) {
     //spdlog::info("[Resource Manager] Loading shader '" + name + "'...");
@@ -12,31 +12,33 @@ void ResourceManager::loadShader(std::string name, std::string path) {
 void ResourceManager::loadTexture(std::string name, std::string path) {
     spdlog::info("[Resource Manager] Loading texture '" + name + "'...");
 
-    // Load in the image
+    // The texture the image will be stored in
+    auto* texture = new Texture2D();
+
+    // load image
     int width, height, nrChannels;
-    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
 
+    // If successful
     if (data) {
-        // Load the texture and add it to the array
-        Texture2D texture;
-        texture.load(data, width, height);
-
+        // Load in the texture
+        texture->load(data, width, height);
         _textures[name] = texture;
     } else {
         spdlog::error("[Resource Manager] Could not load texture!");
+        delete texture;
     }
 
-    // Free resources
+    // Free image resources
     stbi_image_free(data);
 }
 
 Shader* ResourceManager::getShader(std::string name) {
-    //return &_shaders[name];
-    return nullptr;
+    return _shaders[name];
 }
 
 Texture2D* ResourceManager::getTexture(std::string name) {
-    return &_textures[name];
+    return _textures[name];
 }
 
 void ResourceManager::clean() {

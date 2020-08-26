@@ -1,4 +1,5 @@
 #include "World.h"
+#include "core/ResourceManager.h"
 
 void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
@@ -115,8 +116,15 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
             abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
 
+
         // Use world shader
         _worldShader.use();
+
+        // Bind the texture
+        ResourceManager::getTexture("test")->bind();
+
+
+
 
         // Set light color and direction
         _worldShader.setVec3("light.color", _sunColor);
@@ -127,6 +135,7 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
         _worldShader.setMat4("view", c.getViewMatrix());
         _worldShader.setVec3("viewPos", c.getPosition());
         _worldShader.setMat4("projection", proj);
+
 
         chunk->render();
     }

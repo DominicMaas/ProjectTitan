@@ -32,9 +32,9 @@ Chunk::~Chunk() {
 
 void Chunk::load() {
     // Setup opengl buffers
-    glGenBuffers(1, &_vbo);
-    glGenBuffers(1, &_ebo);
-    glGenVertexArrays(1, &_vao);
+    GLCall(glGenBuffers(1, &_vbo));
+    GLCall(glGenBuffers(1, &_ebo));
+    GLCall(glGenVertexArrays(1, &_vao));
 
     // Create the blocks
     _blocks = new Block **[CHUNK_WIDTH];
@@ -63,16 +63,13 @@ void Chunk::render() {
     if (!_loaded)
         return;
 
-    // Bind the texture
-    ResourceManager::getTexture("block_map")->bind();
-
     // Set the position of this chunk in the shader
     _world->getWorldShader()->setMat4("model", _modelMatrix);
 
     // Render
-    glBindVertexArray(_vao);
-    glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    GLCall(glBindVertexArray(_vao));
+    GLCall(glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0));
+    GLCall(glBindVertexArray(0));
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {
@@ -144,13 +141,12 @@ void Chunk::rebuild() {
                 glm::vec2 bottomRight(1.0f, 0.0f);
                 glm::vec2 bottomLeft(0.0f, 0.0f);
                 glm::vec2 topLeft(0.0f, 1.0f);
-                glm::vec2 none(0.0f,0.0f);
 
                 // Offset these positions by the wanted texture offset (grass)
-                topRight += glm::vec2(-0.875f, 0.0f);
-                bottomRight += glm::vec2(-0.875f, 0.0f);
-                bottomLeft += glm::vec2(0.1875f, 0.0f);
-                topLeft += glm::vec2(0.1875f, 0.0f);
+                //topRight += glm::vec2(-0.875f, 1.0f);
+                //bottomRight += glm::vec2(-0.875f, -1.0f);
+                //bottomLeft += glm::vec2(0.1875f, -1.0f);
+                //topLeft += glm::vec2(0.1875f, 1.0f);
 
                 // Front
                 if (isTransparent(x, y, z - 1)) {
@@ -274,27 +270,27 @@ void Chunk::rebuild() {
     _indexCount = indices.size();
 
     // Bind Vertex Array Object
-    glBindVertexArray(_vao);
+    GLCall(glBindVertexArray(_vao));
 
     // Copy our vertices array in a vertex buffer for OpenGL to use
-    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkVertex) * _vertices, vertices.data(), GL_STATIC_DRAW);
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, _vbo));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkVertex) * _vertices, vertices.data(), GL_STATIC_DRAW));
 
     // Copy our indices array in a index buffer for OpenGL to use
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * _indexCount, indices.data(), GL_STATIC_DRAW);
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo));
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * _indexCount, indices.data(), GL_STATIC_DRAW));
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Position));
-    glEnableVertexAttribArray(0);
+    GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Position)));
+    GLCall(glEnableVertexAttribArray(0));
 
     // normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Normal));
-    glEnableVertexAttribArray(1);
+    GLCall(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Normal)));
+    GLCall(glEnableVertexAttribArray(1));
 
     // texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Texture));
-    glEnableVertexAttribArray(2);
+    GLCall(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Texture)));
+    GLCall(glEnableVertexAttribArray(2));
 
     // Setup world position
     _modelMatrix = glm::translate(glm::mat4(1.0f), _position);

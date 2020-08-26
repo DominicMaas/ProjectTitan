@@ -11,8 +11,10 @@ uniform Light light;
 uniform vec3 viewPos;
 
 in vec3 Normal; 
-in vec3 FragPos; 
-in vec2 TexCoords;
+in vec3 FragPos;
+in vec2 TexCoord;
+
+uniform sampler2D blockMapTexture;
 
 void main()
 {
@@ -31,6 +33,6 @@ void main()
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
 	vec3 specular = specularStrength * spec * light.color;  
 
-	vec3 result = (ambient + diffuse + specular) * vec3(0.0, 1.0, 1.0);
-	FragColor = vec4(result, 1.0);
+	vec3 result = (ambient + diffuse + specular);
+	FragColor = texture(blockMapTexture, TexCoord) * vec4(result, 1.0);
 } 

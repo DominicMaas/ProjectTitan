@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <glm/glm.hpp>
+#include <constants.h>
 
 class Shader {
 private:
@@ -23,63 +24,63 @@ public:
 
     // utility uniform functions
     void setColor(const std::string &name, glm::vec3 color) {
-        glUniform3f(glGetUniformLocation(_id, name.c_str()), color.x, color.y, color.z);
+        GLCall(glUniform3f(glGetUniformLocation(_id, name.c_str()), color.x, color.y, color.z));
     }
 
     // ------------------------------------------------------------------------
     void setBool(const std::string &name, bool value) const {
-        glUniform1i(glGetUniformLocation(_id, name.c_str()), (int) value);
+        GLCall(glUniform1i(glGetUniformLocation(_id, name.c_str()), (int) value));
     }
 
     // ------------------------------------------------------------------------
     void setInt(const std::string &name, int value) const {
-        glUniform1i(glGetUniformLocation(_id, name.c_str()), value);
+        GLCall(glUniform1i(glGetUniformLocation(_id, name.c_str()), value));
     }
 
     // ------------------------------------------------------------------------
     void setFloat(const std::string &name, float value) const {
-        glUniform1f(glGetUniformLocation(_id, name.c_str()), value);
+        GLCall(glUniform1f(glGetUniformLocation(_id, name.c_str()), value));
     }
 
     // ------------------------------------------------------------------------
     void setVec2(const std::string &name, const glm::vec2 &value) const {
-        glUniform2fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]);
+        GLCall(glUniform2fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]));
     }
 
     void setVec2(const std::string &name, float x, float y) const {
-        glUniform2f(glGetUniformLocation(_id, name.c_str()), x, y);
+        GLCall(glUniform2f(glGetUniformLocation(_id, name.c_str()), x, y));
     }
 
     // ------------------------------------------------------------------------
     void setVec3(const std::string &name, const glm::vec3 &value) const {
-        glUniform3fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]);
+        GLCall(glUniform3fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]));
     }
 
     void setVec3(const std::string &name, float x, float y, float z) const {
-        glUniform3f(glGetUniformLocation(_id, name.c_str()), x, y, z);
+        GLCall(glUniform3f(glGetUniformLocation(_id, name.c_str()), x, y, z));
     }
 
     // ------------------------------------------------------------------------
     void setVec4(const std::string &name, const glm::vec4 &value) const {
-        glUniform4fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]);
+        GLCall(glUniform4fv(glGetUniformLocation(_id, name.c_str()), 1, &value[0]));
     }
 
     void setVec4(const std::string &name, float x, float y, float z, float w) const {
-        glUniform4f(glGetUniformLocation(_id, name.c_str()), x, y, z, w);
+        GLCall(glUniform4f(glGetUniformLocation(_id, name.c_str()), x, y, z, w));
     }
 
     // ------------------------------------------------------------------------
     void setMat2(const std::string &name, const glm::mat2 &mat) const {
-        glUniformMatrix2fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+        GLCall(glUniformMatrix2fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]));
     }
 
     // ------------------------------------------------------------------------
     void setMat3(const std::string &name, const glm::mat3 &mat) const {
-        glUniformMatrix3fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+        GLCall(glUniformMatrix3fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]));
     }
 
     // ------------------------------------------------------------------------
     void setMat4(const std::string &name, const glm::mat4 &mat) const {
-        glUniformMatrix4fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+        GLCall(glUniformMatrix4fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, &mat[0][0]));
     }
 };

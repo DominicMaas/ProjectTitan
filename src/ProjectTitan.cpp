@@ -135,6 +135,11 @@ int main(void) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Load in resources
+    ResourceManager::loadTexture("block_map", "textures/block_map.png");
+    ResourceManager::loadTexture("square", "textures/square.jpg");
+    ResourceManager::loadTexture("test", "textures/test.png");
+
     // Capture the mouse input
     setMouseCapture(window, false);
 
@@ -143,14 +148,13 @@ int main(void) {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, processMouseInput);
 
-    // Load in resources
-    ResourceManager::loadTexture("block_map", "textures/block_map.png");
-
     // Projection Matrix
     projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
+
+
 
     // The world
     currentWorld = new World("Test World", &physicsCommon);
@@ -175,6 +179,8 @@ int main(void) {
     float frameTime = 0;
 
     Shader debugShader("shaders/basic.vert", "shaders/basic.frag");
+
+
 
     // Create a rigid body in the world
     reactphysics3d::Vector3 position(0, 20, 0);

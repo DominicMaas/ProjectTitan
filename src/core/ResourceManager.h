@@ -16,8 +16,9 @@ private:
 private:
     ResourceManager() = default; // Private constructor
 
-    //static std::map<std::string, Shader> _shaders;
-    static std::map<std::string, Texture2D> _textures;
+    static std::map<std::string, Shader*> _shaders;
+    static std::map<std::string, Texture2D*> _textures;
+
 public:
     // Loads a shader into the resource manager, do not include
     // the path extension to the shader, the resource manager will

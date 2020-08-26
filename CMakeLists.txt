@@ -45,7 +45,10 @@ add_executable (${PROJECT_NAME} ${DEP_FILES} ${HEADER_FILES} ${SOURCE_FILES})
 target_link_libraries (${PROJECT_NAME} ${PLATFORM_LIBRARIES})
 
 # Copy resources
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${PROJECT_SOURCE_DIR}/res"
-		$<TARGET_FILE_DIR:${PROJECT_NAME}>)
+add_custom_command(
+	TARGET ${PROJECT_NAME} PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	"${PROJECT_SOURCE_DIR}/res"
+	"$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+	COMMENT "Copying Resources..."
+)

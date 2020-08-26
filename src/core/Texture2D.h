@@ -4,7 +4,9 @@
 
 class Texture2D {
 private:
-    unsigned int _resourceId;
+    unsigned int _textureId;
+    int _width;
+    int _height;
 
 public:
     Texture2D();
@@ -12,4 +14,7 @@ public:
 
     void load(unsigned char *data, int width, int height);
     void bind() const;
+
+    int getWidth() const { return _width; }
+    int getHeight() const { return _height; }
 };
