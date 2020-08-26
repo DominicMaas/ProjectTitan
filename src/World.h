@@ -23,7 +23,6 @@ private:
     reactphysics3d::PhysicsCommon *_physicsCommon;
 
     std::vector<Chunk *> _chunks;
-    Shader _worldShader;
     Skybox _worldSkybox;
 
     // Lighting
@@ -56,8 +55,6 @@ public:
     void render(Camera &c, glm::mat4 proj, float delta);
 
     void reset(bool resetSeed);
-
-    Shader *getWorldShader();
 
     // Constants
     static const int LOADED_CHUNKS_PER_FRAME = 3;

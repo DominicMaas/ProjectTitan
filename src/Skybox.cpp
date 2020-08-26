@@ -1,7 +1,9 @@
 #include <constants.h>
 #include "Skybox.h"
 
-Skybox::Skybox(Shader shader) : _shader(shader) {}
+Skybox::Skybox(std::string shaderName) {
+    this->_shaderName = shaderName;
+}
 
 void Skybox::setup(std::vector<std::string> faces) {
     // Build the skybox cube
@@ -45,20 +47,22 @@ void Skybox::setup(std::vector<std::string> faces) {
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
 
-    _shader.use();
-    _shader.setInt("skybox", 0);
+    ResourceManager::getShader(_shaderName)->use();
+    ResourceManager::getShader(_shaderName)->setInt("skybox", 0);
 }
 
 void Skybox::render(glm::mat4 viewMatrix, glm::mat4 projMatrix) {
     GLCall(glDepthFunc(GL_LEQUAL));
-    _shader.use();
+
+    Shader* shader = ResourceManager::getShader(_shaderName);
+    shader->use();
 
     // Keep skybox in player view
     glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
 
     // Set the camera view and view position matrix
-    _shader.setMat4("view", view);
-    _shader.setMat4("projection", projMatrix);
+    shader->setMat4("view", view);
+    shader->setMat4("projection", projMatrix);
 
     GLCall(glBindVertexArray(_vao));
     GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));

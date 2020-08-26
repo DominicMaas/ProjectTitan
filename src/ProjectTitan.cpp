@@ -141,6 +141,13 @@ int main(void) {
     ResourceManager::loadTexture("square", "textures/square.jpg");
     ResourceManager::loadTexture("test", "textures/test.png");
 
+    ResourceManager::loadShader("debug", "shaders/basic");
+    ResourceManager::loadShader("backpack_shader", "shaders/model");
+    ResourceManager::loadShader("skybox", "shaders/skybox_shader");
+    ResourceManager::loadShader("chunk", "shaders/chunk_shader");
+
+    ResourceManager::loadModel("backpack", "models/backpack.obj");
+
     // Capture the mouse input
     setMouseCapture(window, false);
 
@@ -180,10 +187,6 @@ int main(void) {
     float fps = 0;
     float frameTime = 0;
 
-    Shader debugShader("shaders/basic.vert", "shaders/basic.frag");
-
-
-
     // Create a rigid body in the world
     reactphysics3d::Vector3 position(0, 20, 0);
     reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
@@ -199,11 +202,6 @@ int main(void) {
     // Add the collider to the rigid body
     reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
     body->setType(reactphysics3d::BodyType::STATIC);
-
-    Shader modelShader("shaders/model.vert", "shaders/model.frag");
-
-    Model testModel("models/backpack.obj");
-    testModel.build();
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
@@ -252,16 +250,17 @@ int main(void) {
                 r.render(&camera);
             }
 
-            modelShader.use();
-            modelShader.setMat4("view", camera.getViewMatrix());
-            debugShader.setVec3("viewPos", camera.getPosition());
-            modelShader.setMat4("projection", projectionMatrix);
+            Shader* backpackShader = ResourceManager::getShader("backpack_shader");
 
+            backpackShader->use();
+            backpackShader->setMat4("view", camera.getViewMatrix());
+            backpackShader->setMat4("projection", projectionMatrix);
 
             glm::mat4 pos(1.0f);
             pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
-            modelShader.setMat4("model", pos);
-            testModel.render(modelShader);
+            backpackShader->setMat4("model", pos);
+
+            ResourceManager::getModel("backpack")->render(*backpackShader);
         }
 
         // Physics debug rendering
@@ -278,15 +277,17 @@ int main(void) {
             Mesh m(debugVertices, std::vector<unsigned int>(), std::vector<Texture>());
             m.build();
 
-            debugShader.use();
+            Shader* physicsShader = ResourceManager::getShader("debug");
 
-            debugShader.setMat4("view", camera.getViewMatrix());
-            debugShader.setVec3("viewPos", camera.getPosition());
-            debugShader.setMat4("projection", projectionMatrix);
-            debugShader.setMat4("model", glm::mat4(1));
+            physicsShader->use();
+
+            physicsShader->setMat4("view", camera.getViewMatrix());
+            physicsShader->setVec3("viewPos", camera.getPosition());
+            physicsShader->setMat4("projection", projectionMatrix);
+            physicsShader->setMat4("model", glm::mat4(1));
 
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
-            m.render(debugShader);
+            m.render(*physicsShader);
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
         }
 

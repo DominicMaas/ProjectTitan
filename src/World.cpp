@@ -35,8 +35,7 @@ void World::loadChunks() {
 }
 
 World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics)
-        : _worldShader(Shader("shaders/chunk_shader.vert", "shaders/chunk_shader.frag")),
-          _worldSkybox(Shader("shaders/skybox_shader.vert", "shaders/skybox_shader.frag")) {
+        : _worldSkybox("skybox") {
     // Create the physics world
     _physicsCommon = physics;
     _physicsWorld = _physicsCommon->createPhysicsWorld();
@@ -131,23 +130,23 @@ void World::render(Camera &c, glm::mat4 proj, float delta) {
             abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
 
+        Shader* shader = ResourceManager::getShader("chunk");
 
         // Use world shader
-        _worldShader.use();
+        shader->use();
 
         // Bind the texture
         ResourceManager::getTexture("test")->bind();
 
         // Set light color and direction
-        _worldShader.setVec3("light.color", _sunColor);
-        _worldShader.setVec3("light.direction", _sunDirection);
-        _worldShader.setFloat("light.ambient", _sunAmbient);
+        shader->setVec3("light.color", _sunColor);
+        shader->setVec3("light.direction", _sunDirection);
+        shader->setFloat("light.ambient", _sunAmbient);
 
         // Set the camera view and view position matrix
-        _worldShader.setMat4("view", c.getViewMatrix());
-        _worldShader.setVec3("viewPos", c.getPosition());
-        _worldShader.setMat4("projection", proj);
-
+        shader->setMat4("view", c.getViewMatrix());
+        shader->setVec3("viewPos", c.getPosition());
+        shader->setMat4("projection", proj);
 
         chunk->render();
     }
@@ -161,10 +160,6 @@ void World::reset(bool resetSeed) {
     for (Chunk *b : _chunks) {
         b->setChanged();
     }
-}
-
-Shader *World::getWorldShader() {
-    return &_worldShader;
 }
 
 Chunk *World::findChunk(glm::vec3 position) {

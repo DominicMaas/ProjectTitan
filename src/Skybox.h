@@ -5,13 +5,14 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
+#include "core/ResourceManager.h"
 
 class Skybox {
 private:
     unsigned int _texture;
     unsigned int _vao;
     unsigned int _vbo;
-    Shader _shader;
+    std::string _shaderName;
 
     const float _skyboxVertices[108] = {
             // positions
@@ -59,7 +60,7 @@ private:
     };
 
 public:
-    Skybox(Shader shader);
+    Skybox(std::string shaderName);
 
     void setup(std::vector<std::string> faces);
 

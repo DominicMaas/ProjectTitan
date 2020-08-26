@@ -64,7 +64,7 @@ void Chunk::render() {
         return;
 
     // Set the position of this chunk in the shader
-    _world->getWorldShader()->setMat4("model", _modelMatrix);
+    ResourceManager::getShader("chunk")->setMat4("model", _modelMatrix);
 
     // Render
     GLCall(glBindVertexArray(_vao));
