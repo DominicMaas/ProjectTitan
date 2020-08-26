@@ -10,59 +10,58 @@
 class Skybox {
 private:
     unsigned int _texture;
-    unsigned int _vao;
-    unsigned int _vbo;
-    std::string _shaderName;
 
-    const float _skyboxVertices[108] = {
-            // positions
-            -1.0f, 1.0f, -1.0f,
-            -1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, 1.0f, -1.0f,
-            -1.0f, 1.0f, -1.0f,
+    Mesh _mesh;
+    Shader* _shader;
 
-            -1.0f, -1.0f, 1.0f,
-            -1.0f, -1.0f, -1.0f,
-            -1.0f, 1.0f, -1.0f,
-            -1.0f, 1.0f, -1.0f,
-            -1.0f, 1.0f, 1.0f,
-            -1.0f, -1.0f, 1.0f,
+    const Vertex _skyboxVertices[36] = {
+        // positions
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
 
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
 
-            -1.0f, -1.0f, 1.0f,
-            -1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, -1.0f, 1.0f,
-            -1.0f, -1.0f, 1.0f,
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
 
-            -1.0f, 1.0f, -1.0f,
-            1.0f, 1.0f, -1.0f,
-            1.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f,
-            -1.0f, 1.0f, 1.0f,
-            -1.0f, 1.0f, -1.0f,
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
 
-            -1.0f, -1.0f, -1.0f,
-            -1.0f, -1.0f, 1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            -1.0f, -1.0f, 1.0f,
-            1.0f, -1.0f, 1.0f
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, 1.0f) },
+        Vertex { glm::vec3(-1.0f, 1.0f, -1.0f) },
+
+        Vertex { glm::vec3(-1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, -1.0f) },
+        Vertex { glm::vec3(-1.0f, -1.0f, 1.0f) },
+        Vertex { glm::vec3(1.0f, -1.0f, 1.0f) },
     };
 
 public:
-    Skybox(std::string shaderName);
+    ~Skybox();
 
     void setup(std::vector<std::string> faces);
-
     void render(glm::mat4 viewMatrix, glm::mat4 projMatrix);
 };

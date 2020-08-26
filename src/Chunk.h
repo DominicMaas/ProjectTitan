@@ -10,24 +10,14 @@
 #include "BlockManager.h"
 #include "World.h"
 #include "Block.h"
+#include "Mesh.h"
 #include "core/ExecutionTimer.h"
 #include "core/BlockMap.h"
 #include <reactphysics3d/reactphysics3d.h>
 
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
-
-struct ChunkVertex {
-    ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec2 texture) {
-        Position = glm::vec3(px, py, pz);
-        Normal = glm::vec3(nx, ny, nz);
-        Texture = texture;
-    }
-
-    glm::vec3 Position;
-    glm::vec3 Normal;
-    glm::vec2 Texture;
-};
+class Mesh;
 
 class Chunk {
 private:
@@ -35,14 +25,9 @@ private:
     glm::vec3 _position;
     Block ***_blocks;
 
-    // Rendering
-    unsigned int _vbo = 0;
-    unsigned int _ebo = 0;
-    unsigned int _vao = 0;
+    Mesh* _mesh;
 
     glm::mat4 _modelMatrix;
-    int _vertices;
-    int _indexCount;
 
     bool isTransparent(int x, int y, int z);
 
@@ -55,9 +40,6 @@ private:
 
     reactphysics3d::Collider *_collider;
     reactphysics3d::RigidBody *_collisionBody;
-
-    int* _physicsIndices;
-    float* _physicsVertices;
 public:
     Chunk(glm::vec3 position, World *world);
 

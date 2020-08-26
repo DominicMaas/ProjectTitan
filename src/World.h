@@ -46,7 +46,6 @@ private:
 
 public:
     World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics);
-
     World(std::string worldName, reactphysics3d::PhysicsCommon *physics);
 
     ~World();

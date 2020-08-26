@@ -34,9 +34,7 @@ void World::loadChunks() {
     }
 }
 
-World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics)
-        : _worldSkybox("skybox") {
-
+World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics) {
     reactphysics3d::PhysicsWorld::WorldSettings settings;
     settings.gravity = reactphysics3d::Vector3(0, -9.81, 0);
 
@@ -64,14 +62,14 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
 
     // Setup skybox
     std::vector<std::string> faces
-            {
-                    "textures/skybox/right.jpg",
-                    "textures/skybox/left.jpg",
-                    "textures/skybox/top.jpg",
-                    "textures/skybox/bottom.jpg",
-                    "textures/skybox/front.jpg",
-                    "textures/skybox/back.jpg"
-            };
+    {
+        "textures/skybox/right.jpg",
+        "textures/skybox/left.jpg",
+        "textures/skybox/top.jpg",
+        "textures/skybox/bottom.jpg",
+        "textures/skybox/front.jpg",
+        "textures/skybox/back.jpg"
+    };
 
     this->_worldSkybox.setup(faces);
 }

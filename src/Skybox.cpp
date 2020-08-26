@@ -1,25 +1,13 @@
 #include <constants.h>
 #include "Skybox.h"
 
-Skybox::Skybox(std::string shaderName) {
-    this->_shaderName = shaderName;
-}
-
 void Skybox::setup(std::vector<std::string> faces) {
-    // Build the skybox cube
-    GLCall(glGenVertexArrays(1, &_vao));
-    GLCall(glGenBuffers(1, &_vbo));
+    // Get the shader
+    _shader = ResourceManager::getShader("skybox");
 
-    // Work with this vao
-    GLCall(glBindVertexArray(_vao));
-
-    // Bind vertices
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, _vbo));
-    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(_skyboxVertices), _skyboxVertices, GL_STATIC_DRAW));
-
-    // position attribute
-    GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0));
-    GLCall(glEnableVertexAttribArray(0));
+    // Build the mesh
+    std::vector<Vertex> vertices(std::begin(_skyboxVertices), std::end(_skyboxVertices));
+    _mesh.rebuild(vertices, std::vector<unsigned int>(), std::vector<Texture>());
 
     // Generate textures
     GLCall(glGenTextures(1, &_texture));
@@ -47,25 +35,26 @@ void Skybox::setup(std::vector<std::string> faces) {
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
 
-    ResourceManager::getShader(_shaderName)->use();
-    ResourceManager::getShader(_shaderName)->setInt("skybox", 0);
+    _shader->use();
+    _shader->setInt("skybox", 0);
 }
 
 void Skybox::render(glm::mat4 viewMatrix, glm::mat4 projMatrix) {
     GLCall(glDepthFunc(GL_LEQUAL));
 
-    Shader* shader = ResourceManager::getShader(_shaderName);
-    shader->use();
+    _shader->use();
 
     // Keep skybox in player view
     glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
 
     // Set the camera view and view position matrix
-    shader->setMat4("view", view);
-    shader->setMat4("projection", projMatrix);
+    _shader->setMat4("view", view);
+    _shader->setMat4("projection", projMatrix);
 
-    GLCall(glBindVertexArray(_vao));
     GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));
-    GLCall(glDrawArrays(GL_TRIANGLES, 0, 36));
-    GLCall(glDepthFunc(GL_LESS));
+    _mesh.render(*_shader);
+}
+
+Skybox::~Skybox() {
+    glDeleteTextures(1, &_texture);
 }

@@ -192,6 +192,8 @@ int main(void) {
     reactphysics3d::RigidBody *body = currentWorld->getPhysicsWorld()->createRigidBody(transform);
     body->setType(reactphysics3d::BodyType::DYNAMIC);
 
+    Mesh physicsDebugMesh;
+
     // Add the collider to the rigid body
     reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
 
@@ -299,8 +301,7 @@ int main(void) {
                 debugVertices.push_back(Vertex{glm::vec3(i.point3.x, i.point3.y, i.point3.z)});
             }
 
-            Mesh m(debugVertices, std::vector<unsigned int>(), std::vector<Texture>());
-            m.build();
+            physicsDebugMesh.rebuild(debugVertices, std::vector<unsigned int>(), std::vector<Texture>());
 
             Shader* physicsShader = ResourceManager::getShader("debug");
 
@@ -312,7 +313,7 @@ int main(void) {
             physicsShader->setMat4("model", glm::mat4(1));
 
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
-            m.render(*physicsShader);
+            physicsDebugMesh.render(*physicsShader);
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
         }
 

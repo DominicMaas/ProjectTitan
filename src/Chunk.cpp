@@ -13,6 +13,8 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     // Create a collision body for this world
     _collisionBody = _world->getPhysicsWorld()->createRigidBody(transform);
     _collisionBody->setType(reactphysics3d::BodyType::STATIC);
+
+    _mesh = new Mesh();
 }
 
 Chunk::~Chunk() {
@@ -26,17 +28,13 @@ Chunk::~Chunk() {
     }
     delete[] _blocks;
 
-    glDeleteVertexArrays(1, &_vao);
-    glDeleteBuffers(1, &_ebo);
-    glDeleteBuffers(1, &_vbo);
+    // Delete the mesh
+    if (_mesh != nullptr) {
+        delete _mesh;
+    }
 }
 
 void Chunk::load() {
-    // Setup opengl buffers
-    GLCall(glGenBuffers(1, &_vbo));
-    GLCall(glGenBuffers(1, &_ebo));
-    GLCall(glGenVertexArrays(1, &_vao));
-
     // Create the blocks
     _blocks = new Block **[CHUNK_WIDTH];
     for (int i = 0; i < CHUNK_WIDTH; i++) {
@@ -65,12 +63,11 @@ void Chunk::render() {
         return;
 
     // Set the position of this chunk in the shader
-    ResourceManager::getShader("chunk")->setMat4("model", _modelMatrix);
+    Shader* shader = ResourceManager::getShader("chunk");
+    shader->setMat4("model", _modelMatrix);
 
     // Render
-    GLCall(glBindVertexArray(_vao));
-    GLCall(glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0));
-    GLCall(glBindVertexArray(0));
+    _mesh->render(*shader);
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {
@@ -107,9 +104,9 @@ unsigned int Chunk::getBlockType(int x, int y, int z) {
 }
 
 void Chunk::rebuild() {
-    std::vector<ChunkVertex> vertices;
-    std::vector<int> indices;
-    int triangleCount = 0;
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+
     int currIndex = 0;
 
     for (int x = 0; x < CHUNK_WIDTH; x++) {
@@ -151,10 +148,10 @@ void Chunk::rebuild() {
 
                 // Front
                 if (isTransparent(x, y, z - 1)) {
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 0, -1, topRight));
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, 0, -1, bottomRight));
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, 0, -1, bottomLeft));
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 0, -1, topLeft));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 0, -1, topRight));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, 0, -1, bottomRight));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, 0, -1, bottomLeft));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 0, -1, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -165,15 +162,14 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
 
                 // Back
                 if (isTransparent(x, y, z + 1)) {
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, 0, 1, topRight));
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, 0, 1, bottomRight));
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 0, 1, bottomLeft));
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 0, 1, topLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, 0, 1, topRight));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, 0, 1, bottomRight));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 0, 1, bottomLeft));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 0, 1, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -184,15 +180,14 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
 
                 // Right
                 if (isTransparent(x - 1, y, z)) {
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, -1, 0, 0, topRight));
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, -1, 0, 0, bottomRight));
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, -1, 0, 0, bottomLeft));
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, -1, 0, 0, topLeft));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, -1, 0, 0, topRight));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, -1, 0, 0, bottomRight));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, -1, 0, 0, bottomLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, -1, 0, 0, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -203,15 +198,14 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
 
                 // Left
                 if (isTransparent(x + 1, y, z)) {
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 1, 0, 0, topRight));
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 1, 0, 0, bottomRight));
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 1, 0, 0, bottomLeft));
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 1, 0, 0, topLeft));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 1, 0, 0, topRight));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 1, 0, 0, bottomRight));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 1, 0, 0, bottomLeft));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 1, 0, 0, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -222,15 +216,14 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
 
                 // Down
                 if (isTransparent(x, y - 1, z)) {
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 0 + z, 0, -1, 0, topRight));
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 0 + z, 0, -1, 0, bottomRight));
-                    vertices.push_back(ChunkVertex(1 + x, 0 + y, 1 + z, 0, -1, 0, bottomLeft));
-                    vertices.push_back(ChunkVertex(0 + x, 0 + y, 1 + z, 0, -1, 0, topLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, -1, 0, topRight));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, -1, 0, bottomRight));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, -1, 0, bottomLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, -1, 0, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -241,15 +234,14 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
 
                 // Up
                 if (isTransparent(x, y + 1, z)) {
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 1 + z, 0, 1, 0, topRight));
-                    vertices.push_back(ChunkVertex(1 + x, 1 + y, 0 + z, 0, 1, 0, bottomRight));
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 0 + z, 0, 1, 0, bottomLeft));
-                    vertices.push_back(ChunkVertex(0 + x, 1 + y, 1 + z, 0, 1, 0, topLeft));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 1, 0, topRight));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 1, 0, bottomRight));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 1, 0, bottomLeft));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 1, 0, topLeft));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -260,66 +252,22 @@ void Chunk::rebuild() {
                     indices.push_back(currIndex + 3);
 
                     currIndex += 4;
-                    triangleCount += 2;
                 }
             }
         }
     }
 
-    // Set the number of vertices
-    _vertices = vertices.size();
-    _indexCount = indices.size();
-
-    // Bind Vertex Array Object
-    GLCall(glBindVertexArray(_vao));
-
-    // Copy our vertices array in a vertex buffer for OpenGL to use
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, _vbo));
-    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkVertex) * _vertices, vertices.data(), GL_STATIC_DRAW));
-
-    // Copy our indices array in a index buffer for OpenGL to use
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo));
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * _indexCount, indices.data(), GL_STATIC_DRAW));
-
-    // position attribute
-    GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Position)));
-    GLCall(glEnableVertexAttribArray(0));
-
-    // normal attribute
-    GLCall(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Normal)));
-    GLCall(glEnableVertexAttribArray(1));
-
-    // texture attribute
-    GLCall(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ChunkVertex), (void *) offsetof(ChunkVertex, Texture)));
-    GLCall(glEnableVertexAttribArray(2));
+    // Rebuild the mesh
+    _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
     // Setup world position
     _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
-    _physicsVertices = new float[3 * _vertices];
-    _physicsIndices= new int[_indexCount];
-
-    int pVerticesCount = 0;
-    for (auto const& vertex : vertices) {
-        _physicsVertices[pVerticesCount] = vertex.Position.x;
-        pVerticesCount++;
-        _physicsVertices[pVerticesCount] = vertex.Position.y;
-        pVerticesCount++;
-        _physicsVertices[pVerticesCount] = vertex.Position.z;
-        pVerticesCount++;
-    }
-
-    int pIndicesCount = 0;
-    for (auto const& index : indices) {
-        _physicsIndices[pIndicesCount] = index;
-        pIndicesCount++;
-    }
-
     //if (_collider != nullptr) {
         // Create the polygon vertex array
         auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-                pVerticesCount, _physicsVertices, 3 * sizeof(float), triangleCount,
-                _physicsIndices, 3 * sizeof(int),
+                _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
+                _mesh->Indices.data(), 3 * sizeof(int),
                 reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
                 reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
 
