@@ -24,7 +24,7 @@
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
 
-bool renderPhysics = false;
+bool renderPhysics = true;
 bool renderLines = false;
 
 bool mouseCaptured = true;
@@ -35,8 +35,7 @@ std::vector<RenderEffect> renderEffects;
 glm::mat4 projectionMatrix;
 
 // timing
-float deltaTime = 0.0f;    // time between current frame and last frame
-float lastFrame = 0.0f;
+
 
 void onFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
     GLCall(glViewport(0, 0, width, height));
@@ -71,12 +70,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         setMouseCapture(window, true);
 }
 
-void processKeyboardInput(GLFWwindow *window) {
+void processKeyboardInput(GLFWwindow *window, long double delta) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         setMouseCapture(window, false);
 
     // Process camera inputs
-    camera.processKeyboardInput(window, deltaTime);
+    camera.processKeyboardInput(window, delta);
 }
 
 int main(void) {
@@ -182,13 +181,10 @@ int main(void) {
     renderEffects.push_back(SSAO());
     //renderEffects.push_back(ShadowMapping(width, height));
 
-    double lastTime = glfwGetTime();
-    int nbFrames = 0;
-    float fps = 0;
-    float frameTime = 0;
+
 
     // Create a rigid body in the world
-    reactphysics3d::Vector3 position(0, 20, 0);
+    reactphysics3d::Vector3 position(0, 100, 0);
     reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
     reactphysics3d::Transform transform(position, orientation);
 
@@ -198,34 +194,71 @@ int main(void) {
     // DEBUGGING!!!!
     reactphysics3d::SphereShape *sphereShape = physicsCommon.createSphereShape(radius);
     reactphysics3d::RigidBody *body = currentWorld->getPhysicsWorld()->createRigidBody(transform);
+    body->setType(reactphysics3d::BodyType::DYNAMIC);
 
     // Add the collider to the rigid body
     reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
-    body->setType(reactphysics3d::BodyType::STATIC);
+
+    //double lastTime = glfwGetTime();
+    //int nbFrames = 0;
+    //float fps = 0;
+    //float frameTime = 0;
+
+    // Setup for per-frame time logic
+    long double previousFrameTime = glfwGetTime();
+    long double deltaTime = 0;
+    long double deltaTimeAccum = 0;
+
+    long double timeStep = 1.0/60.0; // Constant physics time step
+
+    int frames = 0; // The framerate to display
+    long double lastFramesTime = glfwGetTime();
+    long double frameTime = 0;
+    int fps;
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
-        // Per-frame time logic
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        // ---------- Per-frame time logic ---------- //
+        long double currentFrameTime = glfwGetTime(); // Current system time
+        deltaTime = currentFrameTime - previousFrameTime; // Time difference between frames
+        previousFrameTime = currentFrameTime; // Update the previous time
 
-        double currentTime = glfwGetTime();
-        nbFrames++;
-        if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
-            frameTime = 1000.0 / double(nbFrames);
-            fps = nbFrames;
-            nbFrames = 0;
-            lastTime += 1.0;
+        // Add the time difference in the accumulator
+        deltaTimeAccum += deltaTime;
+
+        // Calculate frames
+        frames++;
+        if ((currentFrameTime - lastFramesTime ) >= 1.0) {
+            frameTime = 1000.0 / double(frames);
+            fps = frames;
+            frames = 0;
+            lastFramesTime += 1.0f; // Reset timer
         }
 
-        // Update the mouse bool
+        // ---------- Run update events ---------- //
+
         guiHasMouse = io.WantCaptureMouse;
 
         // Process keyboard inputs for the application
         if (!io.WantCaptureKeyboard) {
-            processKeyboardInput(window);
+            processKeyboardInput(window, deltaTime);
         }
+
+        currentWorld->update(camera, projectionMatrix, deltaTime);
+
+        // ---------- Process Physics ---------- //
+
+        // While there is enough accumulated time to take
+        // one or several physics steps
+        if (deltaTimeAccum >= timeStep) {
+            // Update the Dynamics world with a constant time step
+            currentWorld->updatePhysics(timeStep);
+
+            // Decrease the accumulated time
+            deltaTimeAccum -= timeStep;
+        }
+
+        // ---------- Clear Buffers ---------- //
 
         // Clear screen for a new frame
         GLCall(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
@@ -234,16 +267,17 @@ int main(void) {
         // Set the render mode based on the render lines boolean
         GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
 
-        // Start a new GUI frame
+        // ---------- Prepare GUI for new frame ---------- //
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        currentWorld->update(camera, projectionMatrix, deltaTime);
+        // ---------- Render ---------- //
 
         // Render The current world
         if (!renderPhysics) {
-            currentWorld->render(camera, projectionMatrix, deltaTime);
+            currentWorld->render(camera, projectionMatrix);
 
             // Render the world effects
             for (RenderEffect r : renderEffects) {
@@ -296,8 +330,8 @@ int main(void) {
             ImGui::Begin("Debug");
 
             ImGui::Text("Position: X: %f Y: %f Z: %f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-            ImGui::Text("Frame Time: %f ms", frameTime);
-            ImGui::Text("FPS: %i", (int) fps);
+            ImGui::Text("Frame Time: %Lf ms", frameTime);
+            ImGui::Text("FPS: %i", fps);
 
             ImGui::Checkbox("Draw Physics Colliders", &renderPhysics);
             ImGui::Checkbox("Debug Renderer", &renderLines);
@@ -313,6 +347,8 @@ int main(void) {
         ImGui::Render();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // ---------- End Frame ---------- //
 
         glfwSwapBuffers(window);
         glfwPollEvents();

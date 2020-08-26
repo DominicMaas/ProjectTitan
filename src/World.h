@@ -51,8 +51,9 @@ public:
 
     ~World();
 
-    void update(Camera &c, glm::mat4 proj, float delta);
-    void render(Camera &c, glm::mat4 proj, float delta);
+    void update(Camera &c, glm::mat4 proj, long double delta);
+    void render(Camera &c, glm::mat4 proj);
+    void updatePhysics(long double deltaAccum);
 
     void reset(bool resetSeed);
 

@@ -54,7 +54,7 @@ private:
     bool _loaded = false;
 
     reactphysics3d::Collider *_collider;
-    reactphysics3d::CollisionBody *_collisionBody;
+    reactphysics3d::RigidBody *_collisionBody;
 
     int* _physicsIndices;
     float* _physicsVertices;

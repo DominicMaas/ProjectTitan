@@ -36,9 +36,13 @@ void World::loadChunks() {
 
 World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics)
         : _worldSkybox("skybox") {
+
+    reactphysics3d::PhysicsWorld::WorldSettings settings;
+    settings.gravity = reactphysics3d::Vector3(0, -9.81, 0);
+
     // Create the physics world
     _physicsCommon = physics;
-    _physicsWorld = _physicsCommon->createPhysicsWorld();
+    _physicsWorld = _physicsCommon->createPhysicsWorld(settings);
 
     // World properties
     _sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
@@ -85,7 +89,13 @@ World::~World() {
     delete _worldGen;
 }
 
-void World::update(Camera &c, glm::mat4 proj, float delta) {
+void World::update(Camera &c, glm::mat4 proj, long double delta) {
+    // Update the sun position
+    float sunVelocity = _sunSpeed * delta;
+    glm::mat4 rotationMat(1);
+    rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
+    _sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
+
     // Load any chunks
     loadChunks();
 
@@ -100,23 +110,19 @@ void World::update(Camera &c, glm::mat4 proj, float delta) {
 
     // Generate new chunks
     for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
-        for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH) {
-            if (findChunk(glm::vec3(x, 0, z)) == NULL) {
-                _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
-            }
+    for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH) {
+        if (findChunk(glm::vec3(x, 0, z)) == NULL) {
+            _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
         }
-
-    // Run the physics
-    _physicsWorld->update(delta);
+    }
 }
 
-void World::render(Camera &c, glm::mat4 proj, float delta) {
-    // Run sun updates
-    float sunVelocity = _sunSpeed * delta;
-    glm::mat4 rotationMat(1);
-    rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
-    _sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
 
+void World::updatePhysics(long double deltaAccum) {
+    _physicsWorld->update(deltaAccum);
+}
+
+void World::render(Camera &c, glm::mat4 proj) {
     float renderDistance = 4 * CHUNK_WIDTH;
 
     // Loop through all the chunks

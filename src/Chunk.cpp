@@ -11,7 +11,8 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
 
     // Create a collision body for this world
-    _collisionBody = _world->getPhysicsWorld()->createCollisionBody(transform);
+    _collisionBody = _world->getPhysicsWorld()->createRigidBody(transform);
+    _collisionBody->setType(reactphysics3d::BodyType::STATIC);
 }
 
 Chunk::~Chunk() {
