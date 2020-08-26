@@ -18,6 +18,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "core/ResourceManager.h"
 
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
@@ -141,6 +142,9 @@ int main(void) {
     glfwSetFramebufferSizeCallback(window, onFramebufferSizeCallback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, processMouseInput);
+
+    // Load in resources
+    ResourceManager::loadTexture("block_map", "textures/block_map.png");
 
     // Projection Matrix
     projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
