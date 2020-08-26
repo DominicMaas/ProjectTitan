@@ -18,15 +18,15 @@
 class World;
 
 struct ChunkVertex {
-    ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec3 color) {
+    ChunkVertex(int px, int py, int pz, int nx, int ny, int nz, glm::vec2 texture) {
         Position = glm::vec3(px, py, pz);
         Normal = glm::vec3(nx, ny, nz);
-        Color = color;
+        Texture = texture;
     }
 
     glm::vec3 Position;
     glm::vec3 Normal;
-    glm::vec3 Color;
+    glm::vec2 Texture;
 };
 
 class Chunk {
@@ -37,9 +37,12 @@ private:
 
     // Rendering
     unsigned int _vbo = 0;
+    unsigned int _ebo = 0;
     unsigned int _vao = 0;
+
     glm::mat4 _modelMatrix;
     int _vertices;
+    int _indexCount;
 
     bool isTransparent(int x, int y, int z);
 
