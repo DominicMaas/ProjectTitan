@@ -31,9 +31,10 @@ add_subdirectory(extern/glm)
 add_subdirectory(extern/freetype2)
 add_subdirectory(extern/reactphysics3d)
 add_subdirectory(extern/spdlog)
+add_subdirectory(extern/assimp)
 
 # Add libraries
-SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d spdlog)
+SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d spdlog assimp)
 
 # Includes
 include_directories("${CMAKE_SOURCE_DIR}/includes")

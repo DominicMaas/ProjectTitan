@@ -18,6 +18,20 @@ uniform sampler2D blockMapTexture;
 
 void main()
 {
+	// ambient
+	/*float ambientStrength = 0.1;
+	vec3 ambient = ambientStrength * light.color;
+
+	// diffuse
+	vec3 norm = normalize(Normal);
+	vec3 lightDir = normalize(light.direction - FragPos);
+	float diff = max(dot(norm, light.direction), 0.0);
+	vec3 diffuse = diff * light.color;
+
+	vec3 result = (ambient + diffuse);
+	FragColor = texture(blockMapTexture, TexCoord) * vec4(result, 1.0);*/
+
+
 	float specularStrength = 0.2;
     vec3 ambient = light.ambient * light.color;
 

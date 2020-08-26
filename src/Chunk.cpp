@@ -329,10 +329,10 @@ void Chunk::rebuild() {
         reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
         _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
 
-        spdlog::info("[{},{},{}] Created Collision Mesh", _position.x, _position.y, _position.z);
+        //spdlog::info("[{},{},{}] Created Collision Mesh", _position.x, _position.y, _position.z);
     //}
 
-    spdlog::info("[{},{},{}] Created Visual Mesh", _position.x, _position.y, _position.z);
+    //spdlog::info("[{},{},{}] Created Visual Mesh", _position.x, _position.y, _position.z);
 
     /* if (_collider != nullptr) {
 

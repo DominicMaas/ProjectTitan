@@ -19,6 +19,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "core/ResourceManager.h"
+#include "core/Model.h"
 
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
@@ -38,7 +39,7 @@ float deltaTime = 0.0f;    // time between current frame and last frame
 float lastFrame = 0.0f;
 
 void onFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
-    glViewport(0, 0, width, height);
+    GLCall(glViewport(0, 0, width, height));
     projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
 }
 
@@ -124,16 +125,16 @@ int main(void) {
     ImGui_ImplOpenGL3_Init();
 
     // Set the view port
-    glViewport(0, 0, width, height);
+    GLCall(glViewport(0, 0, width, height));
 
     // 3D
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
-    glEnable(GL_CULL_FACE);
+    GLCall(glEnable(GL_DEPTH_TEST));
+    GLCall(glEnable(GL_MULTISAMPLE));
+    GLCall(glEnable(GL_CULL_FACE));
 
     // Other effects
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GLCall(glEnable(GL_BLEND));
+    GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
     // Load in resources
     ResourceManager::loadTexture("block_map", "textures/block_map.png");
@@ -150,6 +151,7 @@ int main(void) {
 
     // Projection Matrix
     projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
+
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
@@ -198,6 +200,11 @@ int main(void) {
     reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
     body->setType(reactphysics3d::BodyType::STATIC);
 
+    Shader modelShader("shaders/model.vert", "shaders/model.frag");
+
+    Model testModel("models/backpack.obj");
+    testModel.build();
+
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         // Per-frame time logic
@@ -223,11 +230,11 @@ int main(void) {
         }
 
         // Clear screen for a new frame
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        GLCall(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
+        GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // Set the render mode based on the render lines boolean
-        glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL);
+        GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
 
         // Start a new GUI frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -244,20 +251,32 @@ int main(void) {
             for (RenderEffect r : renderEffects) {
                 r.render(&camera);
             }
+
+            modelShader.use();
+            modelShader.setMat4("view", camera.getViewMatrix());
+            debugShader.setVec3("viewPos", camera.getPosition());
+            modelShader.setMat4("projection", projectionMatrix);
+
+
+            glm::mat4 pos(1.0f);
+            pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
+            modelShader.setMat4("model", pos);
+            testModel.render(modelShader);
         }
 
         // Physics debug rendering
         if (renderPhysics) {
-            std::vector<glm::vec3> debugVertices;
+            std::vector<Vertex> debugVertices;
 
             auto triangles = debugRenderer.getTriangles();
             for (auto const &i : triangles) {
-                debugVertices.push_back(glm::vec3(i.point1.x, i.point1.y, i.point1.z));
-                debugVertices.push_back(glm::vec3(i.point2.x, i.point2.y, i.point2.z));
-                debugVertices.push_back(glm::vec3(i.point3.x, i.point3.y, i.point3.z));
+                debugVertices.push_back(Vertex{glm::vec3(i.point1.x, i.point1.y, i.point1.z)});
+                debugVertices.push_back(Vertex{glm::vec3(i.point2.x, i.point2.y, i.point2.z)});
+                debugVertices.push_back(Vertex{glm::vec3(i.point3.x, i.point3.y, i.point3.z)});
             }
 
-            Mesh m(debugVertices);
+            Mesh m(debugVertices, std::vector<unsigned int>(), std::vector<Texture>());
+            m.build();
 
             debugShader.use();
 
@@ -266,9 +285,9 @@ int main(void) {
             debugShader.setMat4("projection", projectionMatrix);
             debugShader.setMat4("model", glm::mat4(1));
 
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            m.render();
-            glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL);
+            GLCall(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
+            m.render(debugShader);
+            GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
         }
 
         // Debugging window
