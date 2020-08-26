@@ -24,7 +24,7 @@
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
 
-bool renderPhysics = true;
+bool renderPhysics = false;
 bool renderLines = false;
 
 bool mouseCaptured = true;
@@ -97,7 +97,7 @@ int main(void) {
     // Create a windowed mode window and its OpenGL context
     GLFWwindow *window = glfwCreateWindow(width, height, "Project Titan", NULL, NULL);
     if (!window) {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        spdlog::error("[Main] Failed to create GLFW window");
         glfwTerminate();
         return -1;
     }
@@ -107,7 +107,8 @@ int main(void) {
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        spdlog::error("[Main] Failed to initialize GLAD");
+        glfwTerminate();
         return -1;
     }
 
@@ -155,14 +156,11 @@ int main(void) {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, processMouseInput);
 
-    // Projection Matrix
+    // Projection Matrix: TODO: Move this elsewhere
     projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
-
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
-
-
 
     // The world
     currentWorld = new World("Test World", &physicsCommon);
@@ -178,10 +176,8 @@ int main(void) {
 
     currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
 
-    renderEffects.push_back(SSAO());
+    //renderEffects.push_back(SSAO());
     //renderEffects.push_back(ShadowMapping(width, height));
-
-
 
     // Create a rigid body in the world
     reactphysics3d::Vector3 position(0, 100, 0);
@@ -198,11 +194,6 @@ int main(void) {
 
     // Add the collider to the rigid body
     reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
-
-    //double lastTime = glfwGetTime();
-    //int nbFrames = 0;
-    //float fps = 0;
-    //float frameTime = 0;
 
     // Setup for per-frame time logic
     long double previousFrameTime = glfwGetTime();

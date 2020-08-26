@@ -18,7 +18,6 @@ private:
 public:
     ExecutionTimer(std::string message) {
         _message = message;
-        spdlog::info(message + "...");
     }
 
     inline void stop() {
