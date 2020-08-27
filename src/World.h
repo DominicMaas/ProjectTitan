@@ -3,6 +3,7 @@
 #include "constants.h"
 #include <string>
 #include <vector>
+#include <future>
 #include "Chunk.h"
 #include "Camera.h"
 #include <thread>
@@ -26,6 +27,9 @@ private:
 
     std::vector<Chunk *> _chunks;
     Skybox _worldSkybox;
+
+    // Keep track of any futures
+    std::vector<std::future<void>> _futures;
 
     // Lighting
     glm::vec3 _sunDirection;
@@ -60,7 +64,7 @@ public:
 
     // Constants
     static const int LOADED_CHUNKS_PER_FRAME = 3;
-    static const int REBUILD_CHUNKS_PER_FRAME = 3;
+    static const int REBUILD_CHUNKS_PER_FRAME = 2;
 
     Chunk *findChunk(glm::vec3 position);
 

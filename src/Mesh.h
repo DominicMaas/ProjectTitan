@@ -66,6 +66,9 @@ public:
     // must be built first
     void render(Shader &shader);
 
+    // If this mesh has been built
+    bool isBuilt() const { return _built; }
+
     std::vector<Vertex> Vertices;
     std::vector<unsigned int> Indices;
     std::vector<Texture> Textures;

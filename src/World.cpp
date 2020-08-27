@@ -9,7 +9,7 @@ void World::rebuildChunks() {
     for (Chunk *chunk : _chunks) {
         if (chunk->isLoaded() && chunk->shouldRebuildChunk()) {
             // Only reload a certain number of chunks per frame
-            if (_rebuiltChunksThisFrame != REBUILD_CHUNKS_PER_FRAME) {
+            if (_rebuiltChunksThisFrame < REBUILD_CHUNKS_PER_FRAME) {
                 chunk->rebuild();
                 _rebuiltChunksThisFrame++;
             }
@@ -17,20 +17,16 @@ void World::rebuildChunks() {
     }
 }
 
-void World::loadChunks() {
-    _loadedChunksThisFrame = 0;
+static void loadChunk(Chunk* chunk) {
+    chunk->load();
+}
 
+void World::loadChunks() {
     // Loop through all the chunks
     for (Chunk *chunk : _chunks) {
-        // Only run if the chunk is not loaded
-        if (!chunk->isLoaded()) {
-            // Only load a certain number of chunks per frame
-            if (_loadedChunksThisFrame != LOADED_CHUNKS_PER_FRAME) {
-                // Load the chunk
-                chunk->load();
-
-                _loadedChunksThisFrame++;
-            }
+        // If the chunk needs to be loaded, and it's not currently loading
+        if (!chunk->isLoaded() && !chunk->isLoaded()) {
+            _futures.push_back(std::async(std::launch::async, loadChunk, chunk));
         }
     }
 }
@@ -49,7 +45,7 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     _worldBody->enableGravity(false);
 
     // World properties
-    _sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
+    _sunDirection = glm::vec3(0.0f, -1.0f, 0.8f);
     _sunColor = glm::vec3(1, 1, 1);
     _sunSpeed = 0.0f;
     _sunAmbient = 0.2f;
@@ -106,7 +102,7 @@ void World::update(Camera &c, long double delta) {
     // Rebuild any chunks
     rebuildChunks();
 
-    float renderDistance = 4 * CHUNK_WIDTH;
+    float renderDistance = 6 * CHUNK_WIDTH;
 
     // Calculation about the camera position and render distance
     int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
@@ -121,7 +117,6 @@ void World::update(Camera &c, long double delta) {
     }
 }
 
-
 void World::updatePhysics(long double deltaAccum) {
     _physicsWorld->update(deltaAccum);
 }
@@ -131,7 +126,7 @@ void World::render(Camera &c) {
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
-    float renderDistance = 4 * CHUNK_WIDTH;
+    float renderDistance = 6 * CHUNK_WIDTH;
 
     // Get the chunk shader and use it
     Shader* chunkShader = ResourceManager::getShader("chunk");
@@ -171,7 +166,7 @@ void World::render(Camera &c) {
         ChunksRendered++;
 
         // Render the chunk
-        chunk->render();
+        chunk->render(*chunkShader);
     }
 
     // Render the skybox
@@ -180,8 +175,8 @@ void World::render(Camera &c) {
 
 void World::reset(bool resetSeed) {
     // Rebuild all chunks
-    for (Chunk *b : _chunks) {
-        b->setChanged();
+    for (Chunk *chunk : _chunks) {
+        chunk->setChanged();
     }
 }
 

@@ -26,7 +26,6 @@ private:
     Block ***_blocks;
 
     Mesh* _mesh;
-    Shader* _shader;
 
     glm::mat4 _modelMatrix;
 
@@ -38,6 +37,7 @@ private:
 
     bool _changed = true;
     bool _loaded = false;
+    bool _loading = false;
 
     reactphysics3d::TriangleMesh* _physicsMesh;
     reactphysics3d::ConcaveMeshShape* _physicsMeshShape;
@@ -49,7 +49,7 @@ public:
 
     void load();
 
-    void render();
+    void render(Shader &shader);
 
     void rebuild();
 
@@ -64,6 +64,8 @@ public:
     bool isLoaded() {
         return _loaded;
     }
+
+    bool isLoading() { return _loading; }
 
     // Get the collider for the current chunk
     //reactphysics3d::Collider *getChunkCollider() { return _collider; }

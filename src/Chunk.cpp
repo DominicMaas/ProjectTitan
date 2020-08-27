@@ -12,8 +12,15 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     // Create a new empty mesh
     _mesh = new Mesh();
 
-    // Get the shader
-    _shader = ResourceManager::getShader("chunk");
+    // Create the blocks
+    _blocks = new Block **[CHUNK_WIDTH];
+    for (int i = 0; i < CHUNK_WIDTH; i++) {
+        _blocks[i] = new Block *[CHUNK_HEIGHT];
+
+        for (int j = 0; j < CHUNK_HEIGHT; j++) {
+            _blocks[i][j] = new Block[CHUNK_WIDTH];
+        }
+    }
 }
 
 Chunk::~Chunk() {
@@ -32,15 +39,7 @@ Chunk::~Chunk() {
 }
 
 void Chunk::load() {
-    // Create the blocks
-    _blocks = new Block **[CHUNK_WIDTH];
-    for (int i = 0; i < CHUNK_WIDTH; i++) {
-        _blocks[i] = new Block *[CHUNK_HEIGHT];
-
-        for (int j = 0; j < CHUNK_HEIGHT; j++) {
-            _blocks[i][j] = new Block[CHUNK_WIDTH];
-        }
-    }
+    _loading = true;
 
     // Build height map
     for (int x = 0; x < CHUNK_WIDTH; x++)
@@ -52,15 +51,19 @@ void Chunk::load() {
             }
 
     _loaded = true;
+    _loading = false;
 }
 
-void Chunk::render() {
+void Chunk::render(Shader &shader) {
     // Quick check to make sure this chunk is loaded
     if (!_loaded) return;
 
+    // Only render if the mesh is ready to render
+    if (!_mesh->isBuilt()) return;
+
     // Set the position of this chunk in the shader & render
-    _shader->setMat4("model", _modelMatrix);
-    _mesh->render(*_shader);
+    shader.setMat4("model", _modelMatrix);
+    _mesh->render(shader);
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {
@@ -85,7 +88,7 @@ unsigned int Chunk::getBlockType(int x, int y, int z) {
         Chunk *c = _world->findChunk(worldPos);
 
         // This is "air", render the side of the face
-        if (c == NULL || !c->isLoaded())
+        if (c == nullptr || !c->isLoaded())
             return _world->getWorldGen()->getTheoreticalBlockType(worldPos.x, worldPos.y, worldPos.z);
 
         // Calculate local space coordinates
@@ -97,6 +100,9 @@ unsigned int Chunk::getBlockType(int x, int y, int z) {
 }
 
 void Chunk::rebuild() {
+    // Do not rebuild if the chunk has not yet been loaded
+    if (!_loaded) return;
+
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
@@ -250,7 +256,7 @@ void Chunk::rebuild() {
         }
     }
 
-    // Rebuild the mesh
+    // Rebuild the visual mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
     // Create the polygon vertex array
@@ -264,7 +270,6 @@ void Chunk::rebuild() {
     reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
     reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
 
-
     // Perform the mesh collider rebuild
 
     _physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
@@ -276,60 +281,6 @@ void Chunk::rebuild() {
     // Create the collider for this chunk and add it to the world body
     _collider = _world->getWorldBody()->addCollider(_physicsMeshShape, transform);
     //_collider->setCollisionCategoryBits(COLLIDER_WORLD_GROUND);
-
-
-        //reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
-
-        //t//riangleMesh->addSubpart(triangleArray);
-
-
-
-        //reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
-        //_collider = _world->getWorldBody()->addCollider(concaveMesh, transform);
-        //_collider->setCollisionCategoryBits(COLLIDER_WORLD_GROUND);
-
-
-
-
-    //spdlog::info("[{},{},{}] Created Collision Mesh", _position.x, _position.y, _position.z);
-    //}
-
-    //spdlog::info("[{},{},{}] Created Visual Mesh", _position.x, _position.y, _position.z);
-
-    /* if (_collider != nullptr) {
-
-         float pVertices[3 * _vertices];
-         int pIndices[3 * triangleCount];
-
-         int pVerticesCount = 0;
-         for (auto const& vertex : vertices) {
-             pVertices[pVerticesCount] = vertex.Position.x;
-             pVerticesCount++;
-             pVertices[pVerticesCount] = vertex.Position.y;
-             pVerticesCount++;
-             pVertices[pVerticesCount] = vertex.Position.z;
-             pVerticesCount++;
-         }
-
-         int pIndicesCount = 0;
-         for (int i = 0; i <= _vertices; i++) {
-             pIndices[pIndicesCount] = i;
-             pIndicesCount++;
-         }
-
-         // Create the polygon vertex array
-         auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-                 pVerticesCount, pVertices, 3 * sizeof(float), triangleCount,
-                 pIndices, 3 * sizeof(int),
-                 reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-                 reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
-
-         reactphysics3d::TriangleMesh* triangleMesh = _world->getPhysicsCommon()->createTriangleMesh();
-         triangleMesh->addSubpart(triangleArray);
-
-         reactphysics3d::ConcaveMeshShape* concaveMesh = _world->getPhysicsCommon()->createConcaveMeshShape(triangleMesh);
-         _collider = _collisionBody->addCollider(concaveMesh, reactphysics3d::Transform::identity());
-     }*/
 
     // The chunk has been rebuilt
     _changed = false;
