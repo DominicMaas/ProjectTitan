@@ -21,3 +21,8 @@ static bool GLLogCall(const char* function, const char* file, int line) {
 
     return true;
 }
+
+enum ColliderCategory {
+    COLLIDER_GENERAL = 0x0001,
+    COLLIDER_WORLD_GROUND = 0x0002
+};

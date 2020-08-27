@@ -43,4 +43,6 @@ public:
     void processKeyboardInput(GLFWwindow *window, float deltaTime);
 
     void processMouseInput(float xPos, float yPos, GLboolean constrainPitch = true);
+
+    void setProjectionMatrix(glm::mat4 projMatrix) { _projectionMatrix = projMatrix; }
 };

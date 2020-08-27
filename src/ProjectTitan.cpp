@@ -32,14 +32,9 @@ bool guiHasMouse = false;
 
 std::vector<RenderEffect> renderEffects;
 
-glm::mat4 projectionMatrix;
-
-// timing
-
-
-void onFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
+void setWindowSize(GLFWwindow *window, int width, int height) {
     GLCall(glViewport(0, 0, width, height));
-    projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
+    camera.setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f));
 }
 
 void processMouseInput(GLFWwindow *window, double xPos, double yPos) {
@@ -48,7 +43,6 @@ void processMouseInput(GLFWwindow *window, double xPos, double yPos) {
         camera.processMouseInput(xPos, yPos);
     }
 }
-
 
 void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
     if (guiHasMouse) {
@@ -64,8 +58,7 @@ void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
     }
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         setMouseCapture(window, true);
 }
@@ -83,8 +76,10 @@ int main(void) {
     int height = 1080;
 
     // Initialize the library
-    if (!glfwInit())
+    if (!glfwInit()) {
+        spdlog::error("[Main] Failed to init GLFW");
         return -1;
+    }
 
     // Setup OpenGL Version
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -103,7 +98,7 @@ int main(void) {
     }
 
     glfwMakeContextCurrent(window); // Make the window's context current
-    glfwSwapInterval(0); // Disable vsync
+    glfwSwapInterval(1); // Enable vsync
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -123,9 +118,6 @@ int main(void) {
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
-
-    // Set the view port
-    GLCall(glViewport(0, 0, width, height));
 
     // 3D
     GLCall(glEnable(GL_DEPTH_TEST));
@@ -152,21 +144,22 @@ int main(void) {
     setMouseCapture(window, false);
 
     // Set the GLFW callbacks
-    glfwSetFramebufferSizeCallback(window, onFramebufferSizeCallback);
+    glfwSetFramebufferSizeCallback(window, setWindowSize);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, processMouseInput);
 
-    // Projection Matrix: TODO: Move this elsewhere
-    projectionMatrix = glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f);
+    // Set the initial window size
+    setWindowSize(window, width, height);
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
 
     // The world
     currentWorld = new World("Test World", &physicsCommon);
-    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(renderPhysics);
 
     // Physics debugging
+    Mesh physicsDebugMesh;
+
     reactphysics3d::DebugRenderer &debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_AABB, true);
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
@@ -174,28 +167,27 @@ int main(void) {
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
 
-    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
 
     //renderEffects.push_back(SSAO());
     //renderEffects.push_back(ShadowMapping(width, height));
 
     // Create a rigid body in the world
-    reactphysics3d::Vector3 position(0, 100, 0);
-    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
-    reactphysics3d::Transform transform(position, orientation);
+    //reactphysics3d::Vector3 position(0, 100, 0);
+    //reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+    //reactphysics3d::Transform transform(position, orientation);
 
     // Instantiate a sphere collision shape
-    float radius = 3.0f;
+    //float radius = 3.0f;
 
     // DEBUGGING!!!!
-    reactphysics3d::SphereShape *sphereShape = physicsCommon.createSphereShape(radius);
-    reactphysics3d::RigidBody *body = currentWorld->getPhysicsWorld()->createRigidBody(transform);
-    body->setType(reactphysics3d::BodyType::DYNAMIC);
+    //reactphysics3d::SphereShape *sphereShape = physicsCommon.createSphereShape(radius);
+    //reactphysics3d::RigidBody *body = currentWorld->getPhysicsWorld()->createRigidBody(transform);
+    //body->setType(reactphysics3d::BodyType::DYNAMIC);
 
-    Mesh physicsDebugMesh;
+
 
     // Add the collider to the rigid body
-    reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
+    //reactphysics3d::Collider *collider = body->addCollider(sphereShape, reactphysics3d::Transform::identity());
 
     // Setup for per-frame time logic
     long double previousFrameTime = glfwGetTime();
@@ -242,7 +234,7 @@ int main(void) {
             processKeyboardInput(window, deltaTime);
         }
 
-        currentWorld->update(camera, projectionMatrix, deltaTime);
+        currentWorld->update(camera, deltaTime);
 
         // ---------- Process Physics ---------- //
 
@@ -275,7 +267,7 @@ int main(void) {
 
         // Render The current world
         if (!renderPhysics) {
-            currentWorld->render(camera, projectionMatrix);
+            currentWorld->render(camera);
 
             // Render the world effects
             for (RenderEffect r : renderEffects) {
@@ -284,7 +276,7 @@ int main(void) {
 
             backpackShader->use();
             backpackShader->setMat4("view", camera.getViewMatrix());
-            backpackShader->setMat4("projection", projectionMatrix);
+            backpackShader->setMat4("projection", camera.getProjectionMatrix());
 
             glm::mat4 pos(1.0f);
             pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
@@ -309,7 +301,7 @@ int main(void) {
             physicsShader->use();
             physicsShader->setMat4("view", camera.getViewMatrix());
             physicsShader->setVec3("viewPos", camera.getPosition());
-            physicsShader->setMat4("projection", projectionMatrix);
+            physicsShader->setMat4("projection", camera.getProjectionMatrix());
             physicsShader->setMat4("model", glm::mat4(1));
 
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
@@ -327,11 +319,27 @@ int main(void) {
             ImGui::Text("  ");
             ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
 
-            ImGui::Checkbox("Draw Physics Colliders", &renderPhysics);
             ImGui::Checkbox("Debug Renderer", &renderLines);
 
             if (ImGui::Button("Reset World")) {
                 currentWorld->reset(true);
+            }
+
+            ImGui::End();
+        }
+
+        // Physics
+        {
+            ImGui::Begin("Physics");
+
+            ImGui::Text("Rigid Bodies: %i", currentWorld->getPhysicsWorld()->getNbRigidBodies());
+            ImGui::Text("Collision Bodies: %i", currentWorld->getPhysicsWorld()->getNbCollisionBodies());
+            ImGui::Text("World Body Colliders: %i", currentWorld->getWorldBody()->getNbColliders());
+
+            if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
+                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
+            } else {
+                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
             }
 
             ImGui::End();

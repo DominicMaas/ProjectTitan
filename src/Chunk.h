@@ -39,8 +39,9 @@ private:
     bool _changed = true;
     bool _loaded = false;
 
-    reactphysics3d::Collider *_collider;
-    reactphysics3d::RigidBody *_collisionBody;
+    reactphysics3d::TriangleMesh* _physicsMesh;
+    reactphysics3d::ConcaveMeshShape* _physicsMeshShape;
+    reactphysics3d::Collider* _collider;
 public:
     Chunk(glm::vec3 position, World *world);
 
@@ -65,5 +66,5 @@ public:
     }
 
     // Get the collider for the current chunk
-    reactphysics3d::Collider *getChunkCollider() { return _collider; }
+    //reactphysics3d::Collider *getChunkCollider() { return _collider; }
 };

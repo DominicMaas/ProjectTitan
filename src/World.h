@@ -22,6 +22,8 @@ private:
     reactphysics3d::PhysicsWorld *_physicsWorld;
     reactphysics3d::PhysicsCommon *_physicsCommon;
 
+    reactphysics3d::RigidBody *_worldBody;
+
     std::vector<Chunk *> _chunks;
     Skybox _worldSkybox;
 
@@ -50,8 +52,8 @@ public:
 
     ~World();
 
-    void update(Camera &c, glm::mat4 proj, long double delta);
-    void render(Camera &c, glm::mat4 proj);
+    void update(Camera &c, long double delta);
+    void render(Camera &c);
     void updatePhysics(long double deltaAccum);
 
     void reset(bool resetSeed);
@@ -67,8 +69,8 @@ public:
 
     // Physics
     reactphysics3d::PhysicsWorld *getPhysicsWorld() { return _physicsWorld; };
-
     reactphysics3d::PhysicsCommon *getPhysicsCommon() { return _physicsCommon; };
+    reactphysics3d::RigidBody *getWorldBody() { return _worldBody; };
 
     int ChunksRendered;
     int ChunksFrustumCulled;

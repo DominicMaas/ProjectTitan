@@ -43,6 +43,11 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     _physicsCommon = physics;
     _physicsWorld = _physicsCommon->createPhysicsWorld(settings);
 
+    // Create a collision body for this world
+    _worldBody = _physicsWorld->createRigidBody(reactphysics3d::Transform());
+    _worldBody->setType(reactphysics3d::BodyType::STATIC);
+    _worldBody->enableGravity(false);
+
     // World properties
     _sunDirection = glm::vec3(0.0f, -1.0f, 0.6f);
     _sunColor = glm::vec3(1, 1, 1);
@@ -88,7 +93,7 @@ World::~World() {
     delete _worldGen;
 }
 
-void World::update(Camera &c, glm::mat4 proj, long double delta) {
+void World::update(Camera &c, long double delta) {
     // Update the sun position
     float sunVelocity = _sunSpeed * delta;
     glm::mat4 rotationMat(1);
@@ -121,9 +126,9 @@ void World::updatePhysics(long double deltaAccum) {
     _physicsWorld->update(deltaAccum);
 }
 
-void World::render(Camera &c, glm::mat4 proj) {
+void World::render(Camera &c) {
     // Calculate the frustum
-    Frustum frustum = Frustum::GetFrustum(proj * c.getViewMatrix());
+    Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
     float renderDistance = 4 * CHUNK_WIDTH;
@@ -143,7 +148,7 @@ void World::render(Camera &c, glm::mat4 proj) {
     // Set the camera view and view position matrix
     chunkShader->setMat4("view", c.getViewMatrix());
     chunkShader->setVec3("viewPos", c.getPosition());
-    chunkShader->setMat4("projection", proj);
+    chunkShader->setMat4("projection", c.getProjectionMatrix());
 
     ChunksRendered = 0;
 
@@ -170,7 +175,7 @@ void World::render(Camera &c, glm::mat4 proj) {
     }
 
     // Render the skybox
-    this->_worldSkybox.render(c.getViewMatrix(), proj);
+    this->_worldSkybox.render(c.getViewMatrix(), c.getProjectionMatrix());
 }
 
 void World::reset(bool resetSeed) {
@@ -191,5 +196,5 @@ Chunk *World::findChunk(glm::vec3 position) {
         }
     }
 
-    return NULL;
+    return nullptr;
 }
