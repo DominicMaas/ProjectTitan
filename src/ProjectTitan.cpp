@@ -128,10 +128,13 @@ int main(void) {
     GLCall(glEnable(GL_BLEND));
     GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
+    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    stbi_set_flip_vertically_on_load(true);
+
     // Load in resources
-    ResourceManager::loadTexture("block_map", "textures/block_map.png");
+    ResourceManager::loadTexture("block_map", "textures/block_map.png", GL_CLAMP_TO_EDGE, GL_NEAREST);
     ResourceManager::loadTexture("square", "textures/square.jpg");
-    ResourceManager::loadTexture("test", "textures/test.png");
+    ResourceManager::loadTexture("test", "textures/test.jpg");
 
     ResourceManager::loadShader("debug", "shaders/basic");
     ResourceManager::loadShader("backpack_shader", "shaders/model");

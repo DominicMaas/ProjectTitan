@@ -32,7 +32,7 @@ void main()
 	FragColor = texture(blockMapTexture, TexCoord) * vec4(result, 1.0);*/
 
 
-	float specularStrength = 0.2;
+	float specularStrength = 0.8;
     vec3 ambient = light.ambient * light.color;
 
 	vec3 norm = normalize(Normal);

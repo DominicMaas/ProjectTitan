@@ -128,11 +128,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
 }
 
 // TODO: Merge this into the texture2d class
-unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma)
-{
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
-
+unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma) {
     std::string filename = std::string(path);
     filename = directory + '/' + filename;
 
@@ -167,8 +163,6 @@ unsigned int textureFromFile(const char *path, const std::string &directory, boo
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
-
-    stbi_set_flip_vertically_on_load(false);
 
     return textureID;
 }

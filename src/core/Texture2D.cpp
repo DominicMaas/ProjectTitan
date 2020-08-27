@@ -15,7 +15,7 @@ void Texture2D::bind() const {
     GLCall(glBindTexture(GL_TEXTURE_2D, this->_textureId));
 }
 
-void Texture2D::load(unsigned char *data, int width, int height) {
+void Texture2D::load(unsigned char *data, int width, int height, int wrap, int filter) {
     this->_width = width;
     this->_height = height;
 
@@ -23,10 +23,10 @@ void Texture2D::load(unsigned char *data, int width, int height) {
     GLCall(glBindTexture(GL_TEXTURE_2D, this->_textureId));
 
     // set the texture wrapping / filtering options
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap));
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap));
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter));
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter));
 
     // Load the texture
     GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data));

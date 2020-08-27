@@ -10,7 +10,7 @@ void ResourceManager::loadShader(std::string name, std::string path) {
     _shaders[name] = new Shader(std::string(path + ".vert").c_str(), std::string(path + ".frag").c_str());
 }
 
-void ResourceManager::loadTexture(std::string name, std::string path) {
+void ResourceManager::loadTexture(std::string name, std::string path, int wrap, int filter) {
     spdlog::info("[Resource Manager] Loading texture '" + name + "'...");
 
     // The texture the image will be stored in
@@ -23,7 +23,7 @@ void ResourceManager::loadTexture(std::string name, std::string path) {
     // If successful
     if (data) {
         // Load in the texture
-        texture->load(data, width, height);
+        texture->load(data, width, height, wrap, filter);
         _textures[name] = texture;
     } else {
         spdlog::error("[Resource Manager] Could not load texture!");

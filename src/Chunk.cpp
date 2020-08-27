@@ -131,26 +131,15 @@ void Chunk::rebuild() {
                 if (isTransparent(x, y + 1, z + 1)) index |= 128;
 
                 // Get block data
-                glm::vec3 color = BlockManager::getColorFromId(b.getMaterial());
-
-                // The base texture positions
-                glm::vec2 topRight(1.0f, 1.0f);
-                glm::vec2 bottomRight(1.0f, 0.0f);
-                glm::vec2 bottomLeft(0.0f, 0.0f);
-                glm::vec2 topLeft(0.0f, 1.0f);
-
-                // Offset these positions by the wanted texture offset (grass)
-                //topRight += glm::vec2(-0.875f, 1.0f);
-                //bottomRight += glm::vec2(-0.875f, -1.0f);
-                //bottomLeft += glm::vec2(0.1875f, -1.0f);
-                //topLeft += glm::vec2(0.1875f, 1.0f);
+                glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
+                BlockManager::getTextureFromId(b.getMaterial(), texCoords);
 
                 // Front
                 if (isTransparent(x, y, z - 1)) {
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 0, -1, topRight));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, 0, -1, bottomRight));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, 0, -1, bottomLeft));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 0, -1, topLeft));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomRight]));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomLeft]));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopLeft]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -165,10 +154,10 @@ void Chunk::rebuild() {
 
                 // Back
                 if (isTransparent(x, y, z + 1)) {
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, 0, 1, topRight));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, 0, 1, bottomRight));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 0, 1, bottomLeft));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 0, 1, topLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::BottomLeft]));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::BottomRight]));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::TopLeft]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -183,10 +172,10 @@ void Chunk::rebuild() {
 
                 // Right
                 if (isTransparent(x - 1, y, z)) {
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, -1, 0, 0, topRight));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, -1, 0, 0, bottomRight));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, -1, 0, 0, bottomLeft));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, -1, 0, 0, topLeft));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::TopLeft]));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::BottomLeft]));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::BottomRight]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -201,10 +190,10 @@ void Chunk::rebuild() {
 
                 // Left
                 if (isTransparent(x + 1, y, z)) {
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 1, 0, 0, topRight));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 1, 0, 0, bottomRight));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 1, 0, 0, bottomLeft));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 1, 0, 0, topLeft));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::BottomLeft]));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::TopLeft]));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::BottomRight]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -219,10 +208,10 @@ void Chunk::rebuild() {
 
                 // Down
                 if (isTransparent(x, y - 1, z)) {
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, -1, 0, topRight));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, -1, 0, bottomRight));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, -1, 0, bottomLeft));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, -1, 0, topLeft));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::TopLeft]));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::BottomRight]));
+                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::BottomLeft]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);
@@ -237,10 +226,10 @@ void Chunk::rebuild() {
 
                 // Up
                 if (isTransparent(x, y + 1, z)) {
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 1, 0, topRight));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 1, 0, bottomRight));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 1, 0, bottomLeft));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 1, 0, topLeft));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::BottomRight]));
+                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::TopRight]));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::TopLeft]));
+                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::BottomLeft]));
 
                     indices.push_back(currIndex + 0);
                     indices.push_back(currIndex + 1);

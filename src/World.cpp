@@ -102,7 +102,7 @@ void World::update(Camera &c, long double delta) {
     // Rebuild any chunks
     rebuildChunks();
 
-    float renderDistance = 6 * CHUNK_WIDTH;
+    float renderDistance = 4 * CHUNK_WIDTH;
 
     // Calculation about the camera position and render distance
     int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
@@ -126,14 +126,14 @@ void World::render(Camera &c) {
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
-    float renderDistance = 6 * CHUNK_WIDTH;
+    float renderDistance = 4 * CHUNK_WIDTH;
 
     // Get the chunk shader and use it
     Shader* chunkShader = ResourceManager::getShader("chunk");
     chunkShader->use();
 
     // Bind the texture
-    ResourceManager::getTexture("test")->bind();
+    ResourceManager::getTexture("block_map")->bind();
 
     // Set light color and direction
     chunkShader->setVec3("light.color", _sunColor);

@@ -28,7 +28,7 @@ public:
     static void loadShader(std::string name, std::string path);
 
     // Loads a texture into the resource manager
-    static void loadTexture(std::string name, std::string path);
+    static void loadTexture(std::string name, std::string path, int wrap = GL_CLAMP_TO_EDGE, int filter = GL_LINEAR);
 
     // Loads a model into the resource manager
     static void loadModel(std::string name, std::string path);
