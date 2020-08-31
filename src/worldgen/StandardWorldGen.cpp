@@ -3,7 +3,7 @@
 StandardWorldGen::StandardWorldGen(int seed, float scale, int octaves, float persistance, float lacunarity,
                                    glm::vec3 offset) : BaseWorldGen(seed) {
     // Setup noise generation
-    this->_noise.SetNoiseType(FastNoise::Perlin);
+    this->_noise.SetNoiseType(FastNoise::Simplex);
     this->_noise.SetSeed(_seed);
 
     // Set variables
@@ -55,15 +55,53 @@ unsigned int StandardWorldGen::getTheoreticalBlockType(int x, int y, int z) {
     }
 
     float normalizedHeight = abs((noiseHeight + 1) / (2.0f * _maxPossibleHeight * 1.4f));
-    float height = glm::clamp(glm::clamp(normalizedHeight, 0.0f, std::numeric_limits<float>::max()) * CHUNK_HEIGHT,
+    float height = (int)glm::clamp(glm::clamp(normalizedHeight, 0.0f, std::numeric_limits<float>::max()) * CHUNK_HEIGHT,
                               0.0f, (float) CHUNK_HEIGHT);
 
-    // Build terrian
+    // Water base Level
+    if (y <= 2) {
+        return BlockManager::BLOCK_WATER;
+    }
+
+    // This must be done first!!!
     if (y > height) {
-        if (y <= 4) // Water Level
-        {
-            return BlockManager::BLOCK_WATER;
-        }
+        return BlockManager::BLOCK_AIR;
+    }
+
+    if (y == height || y == height - 1) {
+        return BlockManager::BLOCK_GRASS;
+    } else {
+        return BlockManager::BLOCK_DIRT;
+    }
+
+    //if (y == height) {
+    //    return BlockManager::BLOCK_GRASS;
+    //}
+
+    //if (y < height) {
+    //    return BlockManager::BLOCK_DIRT;
+    //}
+
+
+
+    //return BlockManager::BLOCK_AIR;
+
+
+    // Water Level
+    //if (y <= 4) {
+    //    return BlockManager::BLOCK_WATER;
+    //}
+
+    // Grass on height level
+    //if (y == height) {
+    //    return BlockManager::BLOCK_GRASS;
+    //}
+
+    //return BlockManager::BLOCK_DIRT;
+
+    // Build terrian
+    /*if (y > height) {
+
 
         return BlockManager::BLOCK_AIR;
     } else if (y == height) {
@@ -73,9 +111,11 @@ unsigned int StandardWorldGen::getTheoreticalBlockType(int x, int y, int z) {
         } else {
             return BlockManager::BLOCK_WATER;
         }
-    } else if (y > height - 3) {
+    } else if (y > height - 2) {
+        return BlockManager::BLOCK_DIRT;
+    } else if (y > height - 4) {
         return BlockManager::BLOCK_GRASS;
     } else {
         return BlockManager::BLOCK_STONE;
-    }
+    }*/
 }

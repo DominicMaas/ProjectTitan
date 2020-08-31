@@ -34,6 +34,11 @@ Chunk::~Chunk() {
     }
     delete[] _blocks;
 
+    // Remove the world collider
+    if (_collider != nullptr) {
+        _world->getWorldBody()->removeCollider(_collider);
+    }
+
     // Delete the mesh
     delete _mesh;
 }
@@ -248,6 +253,10 @@ void Chunk::rebuild() {
     // Rebuild the visual mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
+    if (_collider != nullptr) {
+        _world->getWorldBody()->removeCollider(_collider);
+    }
+
     // Create the polygon vertex array
     auto* triangleArray = new reactphysics3d::TriangleVertexArray(
             _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
@@ -260,16 +269,14 @@ void Chunk::rebuild() {
     reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
 
     // Perform the mesh collider rebuild
-
-    _physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
-    _physicsMesh->addSubpart(triangleArray);
+    auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
+    physicsMesh->addSubpart(triangleArray);
 
     // Create a physics shape based on this mesh
-    _physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(_physicsMesh);
+    auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
 
     // Create the collider for this chunk and add it to the world body
-    _collider = _world->getWorldBody()->addCollider(_physicsMeshShape, transform);
-    //_collider->setCollisionCategoryBits(COLLIDER_WORLD_GROUND);
+    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
 
     // The chunk has been rebuilt
     _changed = false;

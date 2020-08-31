@@ -20,12 +20,17 @@
 #include "imgui_impl_opengl3.h"
 #include "core/ResourceManager.h"
 #include "core/Model.h"
+#include "effects/ShadowMapping.h"
+
+int WIDTH = 1920;
+int HEIGHT = 1080;
 
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
 
 bool renderPhysics = false;
 bool renderLines = false;
+bool displayShadowMap = false;
 
 bool mouseCaptured = true;
 bool guiHasMouse = false;
@@ -33,6 +38,9 @@ bool guiHasMouse = false;
 std::vector<RenderEffect> renderEffects;
 
 void setWindowSize(GLFWwindow *window, int width, int height) {
+    WIDTH = width;
+    HEIGHT = height;
+
     GLCall(glViewport(0, 0, width, height));
     camera.setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f));
 }
@@ -67,14 +75,18 @@ void processKeyboardInput(GLFWwindow *window, long double delta) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         setMouseCapture(window, false);
 
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+        // Create test entity
+        const reactphysics3d::Vector3 halfExtents(1.0, 1.0, 1.0);
+        auto* boxShape = currentWorld->getPhysicsCommon()->createBoxShape(halfExtents);
+        currentWorld->addEntity(new Entity(currentWorld, ResourceManager::getModel("backpack"), boxShape, camera.getPosition(), glm::vec3()));
+    }
+
     // Process camera inputs
     camera.processKeyboardInput(window, delta);
 }
 
 int main(void) {
-    int width = 1920;
-    int height = 1080;
-
     // Initialize the library
     if (!glfwInit()) {
         spdlog::error("[Main] Failed to init GLFW");
@@ -90,7 +102,7 @@ int main(void) {
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow *window = glfwCreateWindow(width, height, "Project Titan", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Project Titan", NULL, NULL);
     if (!window) {
         spdlog::error("[Main] Failed to create GLFW window");
         glfwTerminate();
@@ -136,10 +148,12 @@ int main(void) {
     ResourceManager::loadTexture("square", "textures/square.jpg");
     ResourceManager::loadTexture("test", "textures/test.jpg");
 
+    ResourceManager::loadShader("shadow_depth", "shaders/shadow_depth");
     ResourceManager::loadShader("debug", "shaders/basic");
     ResourceManager::loadShader("backpack_shader", "shaders/model");
     ResourceManager::loadShader("skybox", "shaders/skybox_shader");
     ResourceManager::loadShader("chunk", "shaders/chunk_shader");
+    ResourceManager::loadShader("debug_depth_quad", "shaders/debug_depth_quad");
 
     ResourceManager::loadModel("backpack", "models/backpack.obj");
 
@@ -152,7 +166,7 @@ int main(void) {
     glfwSetCursorPosCallback(window, processMouseInput);
 
     // Set the initial window size
-    setWindowSize(window, width, height);
+    setWindowSize(window, WIDTH, HEIGHT);
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
@@ -172,7 +186,7 @@ int main(void) {
 
 
     //renderEffects.push_back(SSAO());
-    //renderEffects.push_back(ShadowMapping(width, height));
+    ShadowMapping shadowMapping;
 
     // Create a rigid body in the world
     //reactphysics3d::Vector3 position(0, 100, 0);
@@ -209,6 +223,10 @@ int main(void) {
     Model* backpackModel = ResourceManager::getModel("backpack");
     Shader* physicsShader = ResourceManager::getShader("debug");
 
+    Shader* depthShader = ResourceManager::getShader("shadow_depth");
+    Shader* worldShader = ResourceManager::getShader("chunk");
+
+
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         // ---------- Per-frame time logic ---------- //
@@ -244,21 +262,50 @@ int main(void) {
         // While there is enough accumulated time to take
         // one or several physics steps
         while (deltaTimeAccum >= timeStep) {
-            // Update the Dynamics world with a constant time step
-            currentWorld->updatePhysics(timeStep);
+            // Update the physics world with a constant time step
+            currentWorld->getPhysicsWorld()->update(timeStep);
 
             // Decrease the accumulated time
             deltaTimeAccum -= timeStep;
         }
 
-        // ---------- Clear Buffers ---------- //
+        // Update all objects within the world
+        currentWorld->updatePhysics(timeStep, deltaTimeAccum);
 
-        // Clear screen for a new frame
-        GLCall(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
+        // Clear for new frame
+        GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+        // Render depth of scene to a texture
+        depthShader->use();
+        shadowMapping.renderToDepthMap();
+        currentWorld->render(camera, *depthShader);
+
+        // render scene as normal using the generated depth/shadow map
+        worldShader->use();
+        shadowMapping.finishRenderingToDepthMap(WIDTH, HEIGHT);
+        currentWorld->render(camera, *worldShader);
 
         // Set the render mode based on the render lines boolean
         GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
+
+        backpackShader->use();
+        backpackShader->setMat4("view", camera.getViewMatrix());
+        backpackShader->setMat4("projection", camera.getProjectionMatrix());
+
+        // Render this model at the location of the sun for debugging purposes
+        glm::mat4 pos(1.0f);
+        pos = glm::translate(pos, currentWorld->SunPosition);
+        backpackShader->setMat4("model", pos);
+        backpackModel->render(*backpackShader);
+
+        // Render depth map to a quad for visual debugging
+        if (displayShadowMap) {
+            shadowMapping.renderDebugQuad();
+        }
+
+        worldShader->use();
+        currentWorld->postRender(camera, *worldShader);
 
         // ---------- Prepare GUI for new frame ---------- //
 
@@ -269,24 +316,24 @@ int main(void) {
         // ---------- Render ---------- //
 
         // Render The current world
-        if (!renderPhysics) {
-            currentWorld->render(camera);
+        //if (!renderPhysics) {
+            //currentWorld->render(camera);
 
             // Render the world effects
-            for (RenderEffect r : renderEffects) {
-                r.render(&camera);
-            }
+            //for (RenderEffect r : renderEffects) {
+            //    r.render(&camera);
+            //}
 
-            backpackShader->use();
-            backpackShader->setMat4("view", camera.getViewMatrix());
-            backpackShader->setMat4("projection", camera.getProjectionMatrix());
+            //backpackShader->use();
+            //backpackShader->setMat4("view", camera.getViewMatrix());
+            //backpackShader->setMat4("projection", camera.getProjectionMatrix());
 
-            glm::mat4 pos(1.0f);
-            pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
-            backpackShader->setMat4("model", pos);
+            //glm::mat4 pos(1.0f);
+            //pos = glm::translate(pos, glm::vec3(0.0f, 40.0f, 0.0f));
+            //backpackShader->setMat4("model", pos);
 
-            backpackModel->render(*backpackShader);
-        }
+            //backpackModel->render(*backpackShader);
+        //}
 
         // Physics debug rendering
         if (renderPhysics) {
@@ -321,12 +368,21 @@ int main(void) {
             ImGui::Text("FPS: %i", fps);
             ImGui::Text("  ");
             ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
+            ImGui::Text("  ");
+
+            ImGui::Text("G: Set sun look-at to current position");
+
+            ImGui::Text("  ");
 
             ImGui::Checkbox("Debug Renderer", &renderLines);
+
+            ImGui::Checkbox("Show Shadow Depth Map", &displayShadowMap);
 
             if (ImGui::Button("Reset World")) {
                 currentWorld->reset(true);
             }
+
+            ImGui::SliderFloat3("Light Position", (float*)&currentWorld->SunPosition, -1.0f, 1.0f);
 
             ImGui::End();
         }

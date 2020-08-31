@@ -5,13 +5,21 @@
 
 class ShadowMapping : public RenderEffect {
 public:
-    ShadowMapping(int width, int height);
-
+    ShadowMapping();
     ~ShadowMapping();
 
-    void render(Camera *camera);
+    void renderToDepthMap();
+    void finishRenderingToDepthMap(int width, int height);
+
+    void renderDebugQuad();
+
+    static const int SHADOW_WIDTH = 1024;
+    static const int SHADOW_HEIGHT = 1024;
+
+    constexpr static const float NEAR_PLANE = 1.0f;
+    constexpr static const float FAR_PLANE = 1000.0f;
 
 private:
-    unsigned int _depthMapFBO;
-    unsigned int _depthMap;
+    unsigned int _frameBuffer;
+    unsigned int _depthTexture;
 };

@@ -13,6 +13,10 @@ public:
         loadModel(path);
     }
 
+    Model(Mesh m) {
+        _meshes.push_back(m);
+    }
+
     // Builds all the meshes for rendering
     void build();
 

@@ -15,6 +15,8 @@ public:
     // and unsigned int that relates to a certain block type.
     unsigned int getTheoreticalBlockType(int x, int y, int z) override;
 
+    int Seed;
+
 private:
     // List of octave offsets
     std::vector<glm::vec3> _octaveOffsets;

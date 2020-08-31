@@ -39,9 +39,7 @@ private:
     bool _loaded = false;
     bool _loading = false;
 
-    reactphysics3d::TriangleMesh* _physicsMesh;
-    reactphysics3d::ConcaveMeshShape* _physicsMeshShape;
-    reactphysics3d::Collider* _collider;
+    reactphysics3d::Collider* _collider = nullptr;
 public:
     Chunk(glm::vec3 position, World *world);
 

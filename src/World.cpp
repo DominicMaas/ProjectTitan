@@ -48,7 +48,7 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     _sunDirection = glm::vec3(0.0f, -1.0f, 0.8f);
     _sunColor = glm::vec3(1, 1, 1);
     _sunSpeed = 0.0f;
-    _sunAmbient = 0.2f;
+    _sunAmbient = 0.4f;
 
     _rebuiltChunksThisFrame = 0;
     _loadedChunksThisFrame = 0;
@@ -84,7 +84,12 @@ World::~World() {
         delete b;
     }
 
+    for (Entity *e : _entities) {
+        delete e;
+    }
+
     _chunks.clear();
+    _entities.clear();
 
     delete _worldGen;
 }
@@ -115,35 +120,47 @@ void World::update(Camera &c, long double delta) {
             _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
         }
     }
+
+    // Update entities
+    for (Entity* entity : _entities) {
+        entity->update(delta);
+    }
 }
 
-void World::updatePhysics(long double deltaAccum) {
-    _physicsWorld->update(deltaAccum);
+void World::updatePhysics(long double timeStep, long double accumulator) {
+    for (Entity* entity : _entities) {
+        entity->updatePhysics(timeStep, accumulator);
+    }
 }
 
-void World::render(Camera &c) {
+void World::render(Camera &c, Shader &shader) {
     // Calculate the frustum
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
     float renderDistance = 4 * CHUNK_WIDTH;
 
-    // Get the chunk shader and use it
-    Shader* chunkShader = ResourceManager::getShader("chunk");
-    chunkShader->use();
+    // Set light color and direction
+    shader.setVec3("light.color", _sunColor);
+    shader.setVec3("light.direction", SunPosition);
+    shader.setFloat("light.ambient", _sunAmbient);
+
+    // Set the camera view and view position matrix
+    shader.setMat4("view", c.getViewMatrix());
+    shader.setVec3("viewPos", c.getPosition());
+    shader.setMat4("projection", c.getProjectionMatrix());
+
+    shader.setMat4("lightSpaceMatrix", getLightSpaceMatrix(c));
+
+    // DEBUG
+    glm::mat4 pos(1.0f);
+    pos = glm::translate(pos, glm::vec3(0,30,0));
+    shader.setMat4("model", pos);
+    ResourceManager::getModel("backpack")->render(shader);
+    // / DEBUG
 
     // Bind the texture
     ResourceManager::getTexture("block_map")->bind();
-
-    // Set light color and direction
-    chunkShader->setVec3("light.color", _sunColor);
-    chunkShader->setVec3("light.direction", _sunDirection);
-    chunkShader->setFloat("light.ambient", _sunAmbient);
-
-    // Set the camera view and view position matrix
-    chunkShader->setMat4("view", c.getViewMatrix());
-    chunkShader->setVec3("viewPos", c.getPosition());
-    chunkShader->setMat4("projection", c.getProjectionMatrix());
 
     ChunksRendered = 0;
 
@@ -158,6 +175,7 @@ void World::render(Camera &c) {
             abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
 
+        // TODO: Fix this when lighting is working
         // Ensure the chunk is in the frustum
         bool isVisible = frustum.isBoxVisible(chunk->getPosition(), chunk->getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
         if (!isVisible)
@@ -166,9 +184,15 @@ void World::render(Camera &c) {
         ChunksRendered++;
 
         // Render the chunk
-        chunk->render(*chunkShader);
+        chunk->render(shader);
     }
 
+    for (Entity* entity : _entities) {
+        entity->render(shader);
+    }
+}
+
+void World::postRender(Camera &c, Shader &shader) {
     // Render the skybox
     this->_worldSkybox.render(c.getViewMatrix(), c.getProjectionMatrix());
 }
@@ -193,3 +217,4 @@ Chunk *World::findChunk(glm::vec3 position) {
 
     return nullptr;
 }
+
