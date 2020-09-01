@@ -1,4 +1,5 @@
 #include "StandardWorldGen.h"
+#include "constants.h"
 
 StandardWorldGen::StandardWorldGen(int seed, float scale, int octaves, float persistance, float lacunarity,
                                    glm::vec3 offset) : BaseWorldGen(seed) {

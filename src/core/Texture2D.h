@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glad/glad.h>
-
 class Texture2D {
 private:
     unsigned int _textureId;

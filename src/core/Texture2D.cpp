@@ -1,5 +1,6 @@
 #include <constants.h>
 #include "Texture2D.h"
+#include <glad/glad.h>
 
 Texture2D::Texture2D() {
     // Generate the resource

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 static const int CHUNK_HEIGHT = 64;

@@ -1,10 +1,15 @@
-#version 330 core
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
 layout (location = 0) in vec3 aPos;
 
-out vec3 TexCoords;
+layout(set=0, binding = 0) uniform Input
+{
+    mat4 projection;
+    mat4 view;
+};
 
-uniform mat4 projection;
-uniform mat4 view;
+layout(location = 1) out vec3 TexCoords;
 
 void main()
 {

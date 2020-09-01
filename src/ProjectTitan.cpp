@@ -1,28 +1,31 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
-#include "Shader.h"
-#include "effects/RenderEffect.h"
-#include "effects/SSAO.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "Camera.h"
-#include "Chunk.h"
-#include "World.h"
-#include "TextRenderer.h"
-#include "Mesh.h"
-#include <reactphysics3d/reactphysics3d.h>
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+//#define GLFW_INCLUDE_VULKAN
+//#include <glad/glad.h>
+//#include <GLFW/glfw3.h>
+//#include <iostream>
+//#include "Shader.h"
+//#include "effects/RenderEffect.h"
+//#include "effects/SSAO.h"
+//#include <glm/glm.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+//#include "Camera.h"
+//#include "Chunk.h"
+//#include "World.h"
+//#include "TextRenderer.h"
+//#include "Mesh.h"
+//#include <reactphysics3d/reactphysics3d.h>
+//#include "imgui.h"
+//#include "imgui_impl_glfw.h"
+//#include "imgui_impl_opengl3.h"
+//#include "core/ResourceManager.h"
+//#include "core/Model.h"
+//#include "effects/ShadowMapping.h"
+#include "Window.h"
 #include "core/ResourceManager.h"
-#include "core/Model.h"
-#include "effects/ShadowMapping.h"
 
-int WIDTH = 1920;
+/*int WIDTH = 1920;
 int HEIGHT = 1080;
 
 Camera camera(glm::vec3(8, 40, 8));
@@ -84,10 +87,17 @@ void processKeyboardInput(GLFWwindow *window, long double delta) {
 
     // Process camera inputs
     camera.processKeyboardInput(window, delta);
-}
+}*/
 
 int main(void) {
-    // Initialize the library
+    ResourceManager::loadShader("basic", "shaders/vulkan_test");
+
+    Window w("Test Window", 800, 600);
+    w.run();
+
+    return 0;
+
+    /*// Initialize the library
     if (!glfwInit()) {
         spdlog::error("[Main] Failed to init GLFW");
         return -1;
@@ -423,5 +433,5 @@ int main(void) {
 
     // Exit the program
     glfwTerminate();
-    return 0;
+    return 0;*/
 }

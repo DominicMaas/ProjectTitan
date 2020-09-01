@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 #include "Shader.h"
 #include "Camera.h"
-#include <glm/glm.hpp>
 #include <vector>
 #include <limits>
 #include "BlockManager.h"

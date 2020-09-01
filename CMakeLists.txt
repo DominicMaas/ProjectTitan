@@ -22,8 +22,15 @@ file(GLOB_RECURSE DEP_FILES
 		${CMAKE_SOURCE_DIR}/deps/*.c
 		${CMAKE_SOURCE_DIR}/deps/*.cpp)
 
-# Need OpenGL (macOS)
+# We need these to recompile shaders when they change
+#file(GLOB_RECURSE DEP_SHADER_FILES
+#		${CMAKE_SOURCE_DIR}/res/shaders/*.*)
+SET(DEP_SHADER_FILES ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.frag ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.vert) # TODO: Remove once shaders are fixed
+
+
+# Need OpenGL & Vulkan
 find_package(OpenGL REQUIRED)
+find_package(Vulkan REQUIRED FATAL_ERROR)
 
 # Need external libraries
 add_subdirectory(extern/glfw)
@@ -40,16 +47,36 @@ SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d spdlog assimp
 include_directories("${CMAKE_SOURCE_DIR}/includes")
 
 # Executable for source
-add_executable (${PROJECT_NAME} ${DEP_FILES} ${HEADER_FILES} ${SOURCE_FILES})
+add_executable (${PROJECT_NAME} ${DEP_FILES} ${HEADER_FILES} ${SOURCE_FILES} ${DEP_SHADER_FILES})
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 # Link libraries
-target_link_libraries (${PROJECT_NAME} ${PLATFORM_LIBRARIES})
+target_link_libraries (${PROJECT_NAME} ${PLATFORM_LIBRARIES} ${Vulkan_LIBRARIES})
+
+# Function to compile shaders
+function(build_shader TARGET_OBJ SHADER_NAME)
+	set(FILE_NAME "${CMAKE_SOURCE_DIR}/res/shaders/${SHADER_NAME}")
+	set(OUT_NAME "${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
+	add_custom_command(OUTPUT ${OUT_NAME}
+			COMMAND glslc ${FILE_NAME} -o ${OUT_NAME}
+			DEPENDS ${FILE_NAME}
+			COMMENT "Compiling ${SHADER_NAME}...")
+	add_custom_target(MAKE_${SHADER_NAME} ALL DEPENDS ${OUT_NAME})
+	add_dependencies(${TARGET_OBJ} MAKE_${SHADER_NAME})
+endfunction()
+
+# Compile shaders
+foreach(file ${DEP_SHADER_FILES})
+	get_filename_component(FILE_NAME ${file} NAME)
+	build_shader(${PROJECT_NAME} ${FILE_NAME})
+endforeach()
 
 # Copy resources
 add_custom_command(
-	TARGET ${PROJECT_NAME} PRE_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-	"${PROJECT_SOURCE_DIR}/res"
-	"$<TARGET_FILE_DIR:${PROJECT_NAME}>"
-	COMMENT "Copying Resources..."
+		TARGET ${PROJECT_NAME} PRE_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${PROJECT_SOURCE_DIR}/res"
+		"$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+		COMMENT "Copying Resources..."
 )

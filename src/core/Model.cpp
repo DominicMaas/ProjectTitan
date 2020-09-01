@@ -1,5 +1,6 @@
 #include "Model.h"
 #include <stb_image.h>
+#include <constants.h>
 
 unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma = false);
 

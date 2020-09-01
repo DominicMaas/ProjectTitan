@@ -1,5 +1,6 @@
 #include <constants.h>
 #include "Mesh.h"
+#include <glad/glad.h>
 
 Mesh::Mesh() {
     this->Vertices = std::vector<Vertex>();

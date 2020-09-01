@@ -1,8 +1,8 @@
 #pragma once
 
+#include "constants.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <GLFW/glfw3.h>
 
 class Camera {
 private:

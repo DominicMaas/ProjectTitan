@@ -1,6 +1,7 @@
 #include "World.h"
 #include "core/ResourceManager.h"
 #include "core/Frustum.h"
+#include "constants.h"
 
 void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
@@ -156,11 +157,11 @@ void World::render(Camera &c, Shader &shader) {
     glm::mat4 pos(1.0f);
     pos = glm::translate(pos, glm::vec3(0,30,0));
     shader.setMat4("model", pos);
-    ResourceManager::getModel("backpack")->render(shader);
+    //ResourceManager::getModel("backpack")->render(shader);
     // / DEBUG
 
     // Bind the texture
-    ResourceManager::getTexture("block_map")->bind();
+    //ResourceManager::getTexture("block_map")->bind();
 
     ChunksRendered = 0;
 

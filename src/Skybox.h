@@ -1,11 +1,12 @@
 #pragma once
 
+#include "constants.h"
 #include "Shader.h"
 #include <string>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <stb_image.h>
 #include "core/ResourceManager.h"
+#include "Mesh.h"
 
 class Skybox {
 private:

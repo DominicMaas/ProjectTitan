@@ -3,7 +3,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "BaseWorldGen.h"
-#include "constants.h"
 #include "FastNoise.h"
 #include "../BlockManager.h"
 
