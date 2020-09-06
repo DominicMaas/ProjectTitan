@@ -114,13 +114,18 @@ bool Window::init() {
     }
 
     const std::vector<Vertex> vertices = {
-            {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
     };
 
-    mesh = new Mesh(vertices, std::vector<unsigned int>(), std::vector<Texture>());
-    mesh->build(_allocator);
+    const std::vector<unsigned int> indices = {
+            0, 1, 2, 2, 3, 0
+    };
+
+    mesh = new Mesh(vertices, indices, std::vector<Texture>());
+    mesh->build(_allocator, _device, _commandPool, _graphicsQueue);
 
     if (!createCommandBuffers()) {
         spdlog::error("[Window] Failed to create the command buffers");

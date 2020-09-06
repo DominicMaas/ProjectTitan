@@ -77,7 +77,9 @@ class Shader;
 class Mesh {
 private:
     vk::Buffer _vertexBuffer;
-    VmaAllocation _allocation;
+    vk::Buffer _indexBuffer;
+    VmaAllocation _vertexAllocation;
+    VmaAllocation _indexAllocation;
     bool _built;
 
 public:
@@ -94,7 +96,7 @@ public:
     void rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
     // Builds the mesh for rendering.
-    void build(VmaAllocator &allocator);
+    void build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool commandPool, vk::Queue graphicsQueue);
 
     // Renders the mesh to the display, the mesh
     // must be built first

@@ -33,34 +33,145 @@ void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indic
     //build(nullptr);
 }
 
-void Mesh::build(VmaAllocator &allocator) {
+void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool commandPool, vk::Queue graphicsQueue) {
     // If the mesh has already been built, we need to destory it first
     if (_built) {
         destroy(allocator);
     }
 
-    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    bufferInfo.size = sizeof(Vertex) * Vertices.size();
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    // ------------------ Create Vertex Buffer ------------------ //
+    VkBufferCreateInfo vbInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    vbInfo.size = sizeof(Vertex) * Vertices.size();
+    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VmaAllocationCreateInfo allocInfo = {};
-    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    VmaAllocationCreateInfo vbAllocCreateInfo = {};
+    vbAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+    vbAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-    VkBuffer tempBuffer;
-    if (vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &tempBuffer, &_allocation, nullptr) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate vertex buffer!");
+    VkBuffer stagingVertexBuffer = VK_NULL_HANDLE;
+    VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingVertexBufferAllocInfo = {};
+    vmaCreateBuffer(allocator, &vbInfo, &vbAllocCreateInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
+
+    memcpy(stagingVertexBufferAllocInfo.pMappedData, Vertices.data(), (size_t) vbInfo.size);
+
+    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    vbAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    vbAllocCreateInfo.flags = 0;
+
+    VkBuffer tempVertexBuffer;
+    vmaCreateBuffer(allocator, &vbInfo, &vbAllocCreateInfo, &tempVertexBuffer, &_vertexAllocation, nullptr);
+    _vertexBuffer = tempVertexBuffer;
+
+    // ------------------ Create Index Buffer ------------------ //
+    VkBufferCreateInfo iInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    iInfo.size = sizeof(unsigned int) * Indices.size();
+    iInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    iInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo iAllocCreateInfo = {};
+    iAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+    iAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
+    VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
+    VmaAllocationInfo stagingIndexBufferAllocInfo = {};
+
+    if (!Indices.empty()) {
+        vmaCreateBuffer(allocator, &iInfo, &iAllocCreateInfo, &stagingIndexBuffer, &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo);
+
+        memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) iInfo.size);
+
+        iInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        iAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        iAllocCreateInfo.flags = 0;
+
+        VkBuffer tempIndexBuffer;
+        vmaCreateBuffer(allocator, &iInfo, &iAllocCreateInfo, &tempIndexBuffer, &_indexAllocation, nullptr);
+        _indexBuffer = tempIndexBuffer;
     }
 
+    // ------------------ Copy Buffers ------------------ //
+
+    // Copy data from staging CPU buffer to actual GPU buffer. Memory transfer operations are executed using command
+    // pools, so we need to create a new temporary command pool and execute it.
+
+    // Allocate a command buffer to use
+    vk::CommandBufferAllocateInfo allocInfo = {
+            .commandPool = commandPool,
+            .level = vk::CommandBufferLevel::ePrimary,
+            .commandBufferCount = 1 };
+    vk::CommandBuffer commandBuffer = device.allocateCommandBuffers(allocInfo)[0];
+
+    // We are only running this once
+    commandBuffer.begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+
+    // Copy the vertex buffer
+    vk::BufferCopy vertexCopyRegion = {
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size = vbInfo.size };
+    commandBuffer.copyBuffer(stagingVertexBuffer, _vertexBuffer, 1, &vertexCopyRegion);
+
+    if (!Indices.empty()) {
+        // Copy the index buffer
+        vk::BufferCopy indexCopyRegion = {
+                .srcOffset = 0,
+                .dstOffset = 0,
+                .size = iInfo.size };
+        commandBuffer.copyBuffer(stagingIndexBuffer, _indexBuffer, 1, &indexCopyRegion);
+    }
+
+    // End
+    commandBuffer.end();
+
+    vk::SubmitInfo submitInfo = {
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer
+    };
+
+    // Submit and wait
+    graphicsQueue.submit(1, &submitInfo, nullptr);
+    graphicsQueue.waitIdle();
+
+    // Cleanup
+    device.freeCommandBuffers(commandPool, 1, &commandBuffer);
+
+    // ------------------ Destroy Staging Buffers ------------------ //
+
+    vmaDestroyBuffer(allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
+
+    if (!Indices.empty()) {
+        vmaDestroyBuffer(allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
+    }
+
+
+
+
+
+    //VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    //bufferInfo.size = sizeof(Vertex) * Vertices.size();
+    //bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    //bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    //VmaAllocationCreateInfo allocInfo = {};
+    //allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    //allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    //VkBuffer tempBuffer;
+    //if (vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &tempBuffer, &_allocation, nullptr) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to allocate vertex buffer!");
+    //}
+
     // Convert to the c++ object
-    _vertexBuffer = tempBuffer;
+    //_vertexBuffer = tempBuffer;
 
     // What in the actual fuck is Vulkan
-    void* data;
-    vmaMapMemory(allocator, _allocation, &data);
-    memcpy(data, Vertices.data(), (size_t) bufferInfo.size);
-    vmaUnmapMemory(allocator, _allocation);
+    //void* data;
+    //vmaMapMemory(allocator, _allocation, &data);
+    //memcpy(data, Vertices.data(), (size_t) bufferInfo.size);
+    //vmaUnmapMemory(allocator, _allocation);
 
     // Bind to build
     //GLCall(glBindVertexArray(_vao));
@@ -90,7 +201,13 @@ void Mesh::build(VmaAllocator &allocator) {
 }
 
 void Mesh::destroy(VmaAllocator &allocator) {
-    vmaDestroyBuffer(allocator, _vertexBuffer, _allocation);
+    // Always destroy the vertex buffer
+    vmaDestroyBuffer(allocator, _vertexBuffer, _vertexAllocation);
+
+    // Only destroy the index buffer if it exists
+    if (_indexBuffer) {
+        vmaDestroyBuffer(allocator, _indexBuffer, _indexAllocation);
+    }
 }
 
 void Mesh::render(vk::CommandBuffer commandBuffer) {
@@ -106,7 +223,15 @@ void Mesh::render(vk::CommandBuffer commandBuffer) {
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
     // Draw
-    commandBuffer.draw(Vertices.size(), 1, 0, 0);
+    if (Indices.empty()) {
+        commandBuffer.draw(Vertices.size(), 1, 0, 0);
+    } else {
+        commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
+        commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
+    }
+
+
+
 
     // Textures
     /*unsigned int diffuseNr = 1;
