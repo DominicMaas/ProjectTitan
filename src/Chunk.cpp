@@ -68,7 +68,7 @@ void Chunk::render(Shader &shader) {
 
     // Set the position of this chunk in the shader & render
     shader.setMat4("model", _modelMatrix);
-    _mesh->render(shader);
+    //_mesh->render(shader);
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {

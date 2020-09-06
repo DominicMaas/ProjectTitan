@@ -45,6 +45,8 @@ bool Window::init() {
 
     // Create the window
     _window = glfwCreateWindow(_width, _height, _title, nullptr, nullptr);
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetFramebufferSizeCallback(_window, framebufferResizeCallback);
 
     // Attempt to create the vulkan instance
     if (!createVulkanInstance()) {
@@ -73,6 +75,11 @@ bool Window::init() {
     // Create a logical device
     if (!createLogicalDevice()) {
         spdlog::error("[Window] Failed to create a logical device");
+        return false;
+    }
+
+    if (!createMemoryAllocator()) {
+        spdlog::error("[Window] Failed to create memory allocator");
         return false;
     }
 
@@ -106,6 +113,15 @@ bool Window::init() {
         return false;
     }
 
+    const std::vector<Vertex> vertices = {
+            {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+    };
+
+    mesh = new Mesh(vertices, std::vector<unsigned int>(), std::vector<Texture>());
+    mesh->build(_allocator);
+
     if (!createCommandBuffers()) {
         spdlog::error("[Window] Failed to create the command buffers");
         return false;
@@ -124,7 +140,14 @@ void Window::drawFrame() {
     _device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
 
     // Acquire the next image
-    uint32_t imageIndex = _device.acquireNextImageKHR(_swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame], nullptr);
+    unsigned int imageIndex;
+    try {
+        imageIndex = _device.acquireNextImageKHR(_swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame], nullptr);
+    } catch (vk::OutOfDateKHRError const &e) {
+        _framebufferResized = false;
+        recreateSwapchain();
+        return;
+    }
 
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
     if (VkFence(_imagesInFlight[imageIndex]) != VK_NULL_HANDLE) {
@@ -155,22 +178,6 @@ void Window::drawFrame() {
     // Submit to the graphics queue
     _graphicsQueue.submit(1, &submitInfo, _inFlightFences[_currentFrame]);
 
-    /*vk::SubpassDependency dependency = {
-            .srcSubpass = VK_SUBPASS_EXTERNAL,
-            .dstSubpass = 0,
-
-            .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
-
-            .srcAccessMask = {},
-            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
-    };
-
-    vk::RenderPassCreateInfo renderPassInfo = {
-            .dependencyCount = 1,
-            .pDependencies = &dependency
-    };*/
-
     vk::SwapchainKHR swapChains[] = { _swapChain };
     vk::PresentInfoKHR presentInfo = {
             .waitSemaphoreCount = 1,
@@ -181,29 +188,75 @@ void Window::drawFrame() {
             .pResults = nullptr
     };
 
-    _graphicsQueue.presentKHR(presentInfo);
+    // Present to the GPU
+    try {
+        auto result = _graphicsQueue.presentKHR(presentInfo);
+        if (result == vk::Result::eSuboptimalKHR || _framebufferResized) {
+            _framebufferResized = false;
+            recreateSwapchain();
+        }
+    } catch (vk::OutOfDateKHRError const &e) {
+        _framebufferResized = false;
+        recreateSwapchain();
+        return;
+    }
 
+    // Change the frame
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Window::cleanup() {
-    // Destroy the sync objects
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        _device.destroySemaphore(_imageAvailableSemaphores[i]);
-        _device.destroySemaphore(_renderFinishedSemaphores[i]);
-        _device.destroyFence(_inFlightFences[i]);
+bool Window::recreateSwapchain() {
+    // If the game has been minimised
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(_window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(_window, &width, &height);
+        glfwWaitEvents();
     }
 
-    // Destroy the command pool
-    _device.destroyCommandPool(_commandPool);
+    // Wait until idle
+    _device.waitIdle();
 
+    // Clean up
+    cleanupSwapchain();
+
+    // Recreate
+    if (!createSwapChain()) {
+        spdlog::error("[Window] Failed to create the swap-chain");
+        return false;
+    }
+
+    if (!createImageViews()) {
+        spdlog::error("[Window] Failed to create vk image views");
+        return false;
+    }
+
+    if (!createRenderPass()) {
+        spdlog::error("[Window] Failed to create render pass");
+        return false;
+    }
+
+    if (!createFrameBuffers()) {
+        spdlog::error("[Window] Failed to create the frame buffers");
+        return false;
+    }
+
+    if (!createCommandBuffers()) {
+        spdlog::error("[Window] Failed to create the command buffers");
+        return false;
+    }
+
+    return true;
+}
+
+void Window::cleanupSwapchain() {
     // Destroy the frame buffers
     for (auto frameBuffer : _swapChainFrameBuffers) {
         _device.destroyFramebuffer(frameBuffer);
     }
 
-    // Destroy the pipeline
-    delete _graphicsPipeline;
+    // Free the command buffers
+    _device.freeCommandBuffers(_commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 
     // Destroy the render pass
     _device.destroyRenderPass(_renderPass);
@@ -215,6 +268,31 @@ void Window::cleanup() {
 
     // Destroy the swapchain
     _device.destroySwapchainKHR(_swapChain);
+}
+
+void Window::cleanup() {
+    // Clean up the swap chain
+    cleanupSwapchain();
+
+    // Destroy the sync objects
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        _device.destroySemaphore(_imageAvailableSemaphores[i]);
+        _device.destroySemaphore(_renderFinishedSemaphores[i]);
+        _device.destroyFence(_inFlightFences[i]);
+    }
+
+    // Destroy the command pool
+    _device.destroyCommandPool(_commandPool);
+
+    // TEMP: DELETE MESH
+    mesh->destroy(_allocator);
+    delete mesh;
+
+    // Destroy the pipeline
+    delete _graphicsPipeline;
+
+    // Destroy the memory allocator
+    vmaDestroyAllocator(_allocator);
 
     // Destroy the device
     _device.destroy();
@@ -413,6 +491,19 @@ bool Window::createLogicalDevice() {
     return true;
 }
 
+bool Window::createMemoryAllocator() {
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = _physicalDevice;
+    allocatorInfo.device = _device;
+    allocatorInfo.instance = _instance;
+
+    if (vmaCreateAllocator(&allocatorInfo, &_allocator) != VK_SUCCESS) {
+        return false;
+    }
+
+    return true;
+}
+
 bool Window::createSwapChain() {
     // Get the wanted details
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_physicalDevice);
@@ -529,11 +620,24 @@ bool Window::createRenderPass() {
             .pColorAttachments = &colorAttachmentRef
     };
 
+    vk::SubpassDependency dependency = {
+           .srcSubpass = VK_SUBPASS_EXTERNAL,
+           .dstSubpass = 0,
+
+           .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+           .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+
+           .srcAccessMask = {},
+           .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+    };
+
     vk::RenderPassCreateInfo renderPassInfo = {
             .attachmentCount = 1,
             .pAttachments = &colorAttachment,
             .subpassCount = 1,
-            .pSubpasses = &subpass
+            .pSubpasses = &subpass,
+            .dependencyCount = 1,
+            .pDependencies = &dependency
     };
 
     try {
@@ -630,7 +734,19 @@ bool Window::createCommandBuffers() {
 
         _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, _graphicsPipeline->getVKPipeline());
 
-        _commandBuffers[i].draw(3, 1, 0, 0);
+        // Set the viewport
+        vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
+                                  (float)_swapChainExtent.height, 0.0f, 1.0f };
+
+        // We want to render to the entire framebuffer, so don't worry about this
+        vk::Rect2D scissor = { {0,0}, _swapChainExtent };
+
+        // Set the viewport
+        _commandBuffers[i].setViewport(0, 1, &viewport);
+        _commandBuffers[i].setScissor(0, 1, &scissor);
+
+        //_commandBuffers[i].draw(3, 1, 0, 0);
+        mesh->render(_commandBuffers[i]);
 
         _commandBuffers[i].endRenderPass();
         _commandBuffers[i].end();
@@ -769,7 +885,10 @@ vk::Extent2D Window::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabili
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     } else {
-        vk::Extent2D actualExtent = { _width, _height };
+        int width, height;
+        glfwGetFramebufferSize(_window, &width, &height);
+
+        vk::Extent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
         actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
         actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));

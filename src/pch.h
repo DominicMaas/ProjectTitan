@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 #include <vulkan/vulkan.hpp>
+#include "vk_mem_alloc.h"
 #include <glm/glm.hpp>
 
 #include <optional>
@@ -14,3 +15,4 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <vector>

@@ -32,11 +32,14 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
     vk::PipelineShaderStageCreateInfo shaderStages[] = { vertexCreateInfo, fragmentCreateInfo };
 
     // The format of the vertex data that will be passed to the vertex shader
+    auto bindingDescription = Vertex::getBindingDescription();
+    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {
-            .vertexBindingDescriptionCount = 0,
-            .pVertexBindingDescriptions = nullptr,
-            .vertexAttributeDescriptionCount = 0,
-            .pVertexAttributeDescriptions = nullptr
+            .vertexBindingDescriptionCount = 1,
+            .pVertexBindingDescriptions = &bindingDescription,
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+            .pVertexAttributeDescriptions = attributeDescriptions.data()
     };
 
     // How to draw
@@ -45,19 +48,12 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
             .primitiveRestartEnable = VK_FALSE
     };
 
-    // Set the viewport
-    vk::Viewport viewport = { 0, 0, (float)_window->getSwapChainExtent().width,
-                              (float)_window->getSwapChainExtent().height, 0.0f, 1.0f };
-
-    // We want to render to the entire framebuffer, so don't worry about this
-    vk::Rect2D scissor = { {0,0}, _window->getSwapChainExtent() };
-
     // Create the viewport state
     vk::PipelineViewportStateCreateInfo viewportState = {
             .viewportCount = 1,
-            .pViewports = &viewport,
+            .pViewports = nullptr,
             .scissorCount = 1,
-            .pScissors = &scissor
+            .pScissors = nullptr
     };
 
     vk::PipelineRasterizationStateCreateInfo rasterizer = {
@@ -113,7 +109,7 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
 
     // These states can be changed without recreating the pipeline
     vk::DynamicState dynamicStates[] = {
-            vk::DynamicState::eViewport, vk::DynamicState::eLineWidth
+            vk::DynamicState::eViewport, vk::DynamicState::eScissor
     };
 
     vk::PipelineDynamicStateCreateInfo dynamicStateInfo {
@@ -144,7 +140,7 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
             .pMultisampleState = &multisampling,
             .pDepthStencilState = nullptr, // Optional
             .pColorBlendState = &colorBlending,
-            .pDynamicState = nullptr, // Optional
+            .pDynamicState = &dynamicStateInfo,
             .layout = _pipelineLayout,
             .renderPass = _window->getRenderPass(),
             .subpass = 0,

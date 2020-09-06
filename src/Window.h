@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "Mesh.h"
 #include "GraphicsPipeline.h"
 
 struct QueueFamilyIndices {
@@ -19,6 +20,7 @@ struct SwapChainSupportDetails {
 };
 
 class GraphicsPipeline;
+class Mesh;
 
 class Window {
 public:
@@ -28,17 +30,19 @@ public:
 
     vk::Device getDevice() { return _device; }
 
-    vk::Extent2D getSwapChainExtent() { return _swapChainExtent; }
-
     vk::RenderPass getRenderPass() { return _renderPass; }
 
 private:
+    Mesh *mesh;
+
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     GLFWwindow* _window;
     unsigned int _width;
     unsigned int _height;
     const char* _title;
+
+    bool _framebufferResized = false;
 
     size_t _currentFrame = 0;
 
@@ -70,6 +74,8 @@ private:
 
     GraphicsPipeline* _graphicsPipeline;
 
+    VmaAllocator _allocator;
+
     // Vulkan validation layers
     const bool _enableValidationLayers = true;
     const std::vector<const char*> _validationLayers = {
@@ -82,6 +88,10 @@ private:
 
     bool init();
     void drawFrame();
+
+    bool recreateSwapchain();
+
+    void cleanupSwapchain();
     void cleanup();
 
     // Creates a vulkan instance for the window
@@ -98,6 +108,9 @@ private:
 
     // Create a logical device for the selected physical device
     bool createLogicalDevice();
+
+    // Create the memory allocator
+    bool createMemoryAllocator();
 
     // Create a swap-chain for the application
     bool createSwapChain();
@@ -143,6 +156,11 @@ private:
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
     // Callbacks
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+        auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        app->_framebufferResized = true;
+    }
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT messageType,

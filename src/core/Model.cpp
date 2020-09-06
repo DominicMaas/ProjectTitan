@@ -6,13 +6,13 @@ unsigned int textureFromFile(const char *path, const std::string &directory, boo
 
 void Model::render(Shader &shader) {
     for (auto& mesh : _meshes) {
-        mesh.render(shader);
+        //mesh.render(shader);
     }
 }
 
 void Model::build() {
     for (auto& mesh : _meshes) {
-        mesh.build();
+        //mesh.build();
     }
 }
 

@@ -22,6 +22,9 @@
 //#include "core/ResourceManager.h"
 //#include "core/Model.h"
 //#include "effects/ShadowMapping.h"
+#define VMA_IMPLEMENTATION
+
+#include "pch.h"
 #include "Window.h"
 #include "core/ResourceManager.h"
 

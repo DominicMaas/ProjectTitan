@@ -2,9 +2,11 @@
 
 #include "Window.h"
 #include "Shader.h"
+#include "Mesh.h"
 
 class Window;
 class Shader;
+class Mesh;
 
 class GraphicsPipeline {
 private:

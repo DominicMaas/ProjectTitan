@@ -54,7 +54,7 @@ void Skybox::render(glm::mat4 viewMatrix, glm::mat4 projMatrix) {
     _shader->setMat4("projection", projMatrix);
 
     GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));
-    _mesh.render(*_shader);
+    //_mesh.render(*_shader);
 }
 
 Skybox::~Skybox() {
