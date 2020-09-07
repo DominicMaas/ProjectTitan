@@ -51,7 +51,7 @@ void Camera::processKeyboardInput(GLFWwindow *window, float deltaTime) {
         _position += _right * velocity;
 }
 
-void Camera::processMouseInput(float xPos, float yPos, GLboolean constrainPitch) {
+void Camera::processMouseInput(float xPos, float yPos, bool constrainPitch) {
     if (_firstMouse) {
         _lastMouseX = xPos;
         _lastMouseY = yPos;

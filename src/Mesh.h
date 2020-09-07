@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "Shader.h"
+#include "core/Renderable.h"
 
 struct Vertex {
     Vertex() {}
@@ -74,12 +75,14 @@ struct Texture {
 
 class Shader;
 
-class Mesh {
+class Mesh: public Renderable {
 private:
     vk::Buffer _vertexBuffer;
     vk::Buffer _indexBuffer;
+
     VmaAllocation _vertexAllocation;
     VmaAllocation _indexAllocation;
+
     bool _built;
 
 public:
@@ -95,14 +98,9 @@ public:
     // Rebuilds the mesh with a new set of vertices, indices and textures
     void rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
-    // Builds the mesh for rendering.
-    void build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool commandPool, vk::Queue graphicsQueue);
-
-    // Renders the mesh to the display, the mesh
-    // must be built first
-    void render(vk::CommandBuffer commandBuffer);
-
-    void destroy(VmaAllocator &allocator);
+    void build(RenderableData input) override;
+    void render(vk::CommandBuffer &commandBuffer) override;
+    void destroy(RenderableData input) override;
 
     // If this mesh has been built
     bool isBuilt() const { return _built; }

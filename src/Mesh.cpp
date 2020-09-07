@@ -33,10 +33,15 @@ void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indic
     //build(nullptr);
 }
 
-void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool commandPool, vk::Queue graphicsQueue) {
-    // If the mesh has already been built, we need to destory it first
+void Mesh::build(RenderableData input) {
+    assert(input.allocator);
+    assert(input.device);
+    assert(input.commandPool);
+    assert(input.graphicsQueue);
+
+    // If the mesh has already been built, we need to destroy it first
     if (_built) {
-        destroy(allocator);
+        destroy(input);
     }
 
     // ------------------ Create Vertex Buffer ------------------ //
@@ -52,7 +57,7 @@ void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool co
     VkBuffer stagingVertexBuffer = VK_NULL_HANDLE;
     VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingVertexBufferAllocInfo = {};
-    vmaCreateBuffer(allocator, &vbInfo, &vbAllocCreateInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
+    vmaCreateBuffer(input.allocator, &vbInfo, &vbAllocCreateInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
 
     memcpy(stagingVertexBufferAllocInfo.pMappedData, Vertices.data(), (size_t) vbInfo.size);
 
@@ -61,34 +66,38 @@ void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool co
     vbAllocCreateInfo.flags = 0;
 
     VkBuffer tempVertexBuffer;
-    vmaCreateBuffer(allocator, &vbInfo, &vbAllocCreateInfo, &tempVertexBuffer, &_vertexAllocation, nullptr);
+    vmaCreateBuffer(input.allocator, &vbInfo, &vbAllocCreateInfo, &tempVertexBuffer, &_vertexAllocation, nullptr);
     _vertexBuffer = tempVertexBuffer;
 
     // ------------------ Create Index Buffer ------------------ //
-    VkBufferCreateInfo iInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    iInfo.size = sizeof(unsigned int) * Indices.size();
-    iInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    iInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo ibInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    ibInfo.size = sizeof(unsigned int) * Indices.size();
+    ibInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    ibInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VmaAllocationCreateInfo iAllocCreateInfo = {};
-    iAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-    iAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    VmaAllocationCreateInfo ibAllocCreateInfo = {};
+    ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+    ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
     VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
     VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingIndexBufferAllocInfo = {};
 
     if (!Indices.empty()) {
-        vmaCreateBuffer(allocator, &iInfo, &iAllocCreateInfo, &stagingIndexBuffer, &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo);
+        if (vmaCreateBuffer(input.allocator, &ibInfo, &ibAllocCreateInfo, &stagingIndexBuffer, &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Could not create the temporary index buffer");
+        }
 
-        memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) iInfo.size);
+        memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) ibInfo.size);
 
-        iInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        iAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        iAllocCreateInfo.flags = 0;
+        ibInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        ibAllocCreateInfo.flags = 0;
 
         VkBuffer tempIndexBuffer;
-        vmaCreateBuffer(allocator, &iInfo, &iAllocCreateInfo, &tempIndexBuffer, &_indexAllocation, nullptr);
+        if (vmaCreateBuffer(input.allocator, &ibInfo, &ibAllocCreateInfo, &tempIndexBuffer, &_indexAllocation, nullptr) != VK_SUCCESS) {
+            throw std::runtime_error("Could not create the index buffer");
+        }
         _indexBuffer = tempIndexBuffer;
     }
 
@@ -99,10 +108,10 @@ void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool co
 
     // Allocate a command buffer to use
     vk::CommandBufferAllocateInfo allocInfo = {
-            .commandPool = commandPool,
+            .commandPool = input.commandPool,
             .level = vk::CommandBufferLevel::ePrimary,
             .commandBufferCount = 1 };
-    vk::CommandBuffer commandBuffer = device.allocateCommandBuffers(allocInfo)[0];
+    vk::CommandBuffer commandBuffer = input.device.allocateCommandBuffers(allocInfo)[0];
 
     // We are only running this once
     commandBuffer.begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
@@ -119,7 +128,7 @@ void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool co
         vk::BufferCopy indexCopyRegion = {
                 .srcOffset = 0,
                 .dstOffset = 0,
-                .size = iInfo.size };
+                .size = ibInfo.size };
         commandBuffer.copyBuffer(stagingIndexBuffer, _indexBuffer, 1, &indexCopyRegion);
     }
 
@@ -132,85 +141,36 @@ void Mesh::build(VmaAllocator &allocator, vk::Device &device, vk::CommandPool co
     };
 
     // Submit and wait
-    graphicsQueue.submit(1, &submitInfo, nullptr);
-    graphicsQueue.waitIdle();
+    input.graphicsQueue.submit(1, &submitInfo, nullptr);
+    input.graphicsQueue.waitIdle();
 
     // Cleanup
-    device.freeCommandBuffers(commandPool, 1, &commandBuffer);
+    input.device.freeCommandBuffers(input.commandPool, 1, &commandBuffer);
 
     // ------------------ Destroy Staging Buffers ------------------ //
 
-    vmaDestroyBuffer(allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
+    vmaDestroyBuffer(input.allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
 
     if (!Indices.empty()) {
-        vmaDestroyBuffer(allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
+        vmaDestroyBuffer(input.allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
     }
-
-
-
-
-
-    //VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    //bufferInfo.size = sizeof(Vertex) * Vertices.size();
-    //bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    //bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    //VmaAllocationCreateInfo allocInfo = {};
-    //allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    //allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    //VkBuffer tempBuffer;
-    //if (vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &tempBuffer, &_allocation, nullptr) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to allocate vertex buffer!");
-    //}
-
-    // Convert to the c++ object
-    //_vertexBuffer = tempBuffer;
-
-    // What in the actual fuck is Vulkan
-    //void* data;
-    //vmaMapMemory(allocator, _allocation, &data);
-    //memcpy(data, Vertices.data(), (size_t) bufferInfo.size);
-    //vmaUnmapMemory(allocator, _allocation);
-
-    // Bind to build
-    //GLCall(glBindVertexArray(_vao));
-
-    // Bind vertex buffer data
-    //GLCall(glBindBuffer(GL_ARRAY_BUFFER, _vbo));
-    //GLCall(glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(Vertex), Vertices.data(), GL_STATIC_DRAW));
-
-    // Bind index buffer data
-    //GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo));
-    //GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(unsigned int), Indices.data(), GL_STATIC_DRAW));
-
-    // Enable shader attributes
-    //GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Position)));
-    //GLCall(glEnableVertexAttribArray(0));
-
-    //GLCall(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Normal)));
-    //GLCall(glEnableVertexAttribArray(1));
-
-    //GLCall(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, TexCoords)));
-    //GLCall(glEnableVertexAttribArray(2));
-
-    // Unbind as built
-    //GLCall(glBindVertexArray(0));
 
     _built = true;
 }
 
-void Mesh::destroy(VmaAllocator &allocator) {
+void Mesh::destroy(RenderableData input) {
+    assert(input.allocator);
+
     // Always destroy the vertex buffer
-    vmaDestroyBuffer(allocator, _vertexBuffer, _vertexAllocation);
+    vmaDestroyBuffer(input.allocator, _vertexBuffer, _vertexAllocation);
 
     // Only destroy the index buffer if it exists
     if (_indexBuffer) {
-        vmaDestroyBuffer(allocator, _indexBuffer, _indexAllocation);
+        vmaDestroyBuffer(input.allocator, _indexBuffer, _indexAllocation);
     }
 }
 
-void Mesh::render(vk::CommandBuffer commandBuffer) {
+void Mesh::render(vk::CommandBuffer &commandBuffer) {
     // Only render if the mesh has been built
     if (!_built) {
         spdlog::warn("[Mesh] Attempted to render mesh before it was built");
@@ -227,7 +187,7 @@ void Mesh::render(vk::CommandBuffer commandBuffer) {
         commandBuffer.draw(Vertices.size(), 1, 0, 0);
     } else {
         commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
-        commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
+        commandBuffer.drawIndexed(static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
     }
 
 

@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
+#include "core/Scene.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -26,14 +27,34 @@ class Window {
 public:
     Window(const char* title, unsigned int initialWidth, unsigned int initialHeight);
 
+    bool init();
     void run();
 
     vk::Device getDevice() { return _device; }
 
     vk::RenderPass getRenderPass() { return _renderPass; }
 
+    RenderableData getRenderableData() {
+        RenderableData data = {
+                .allocator = _allocator,
+                .device = _device,
+                .commandPool = _commandPool,
+                .graphicsQueue = _graphicsQueue };
+        return data;
+    }
+
+    void setCurrentScene(Scene* scene) {
+        // Set the new current scene
+        _currentScene = scene;
+
+        // This recreates the command buffers to
+        // use the current scene
+        _recreateCommandBuffers = true;
+    }
+
 private:
-    Mesh *mesh;
+    Scene *_currentScene = nullptr;
+    bool _recreateCommandBuffers = false;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -86,8 +107,9 @@ private:
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-    bool init();
     void drawFrame();
+
+    void recreateCommandBuffers();
 
     bool recreateSwapchain();
 

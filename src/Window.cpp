@@ -12,11 +12,6 @@ Window::Window(const char *title, unsigned int initialWidth, unsigned int initia
 }
 
 void Window::run() {
-    // Init the window and vulkan library
-    if (!init()) return;
-
-    // Init user resources
-
     // Enter game loop
     while(!glfwWindowShouldClose(_window)) {
         glfwPollEvents();
@@ -113,20 +108,6 @@ bool Window::init() {
         return false;
     }
 
-    const std::vector<Vertex> vertices = {
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
-    };
-
-    const std::vector<unsigned int> indices = {
-            0, 1, 2, 2, 3, 0
-    };
-
-    mesh = new Mesh(vertices, indices, std::vector<Texture>());
-    mesh->build(_allocator, _device, _commandPool, _graphicsQueue);
-
     if (!createCommandBuffers()) {
         spdlog::error("[Window] Failed to create the command buffers");
         return false;
@@ -206,8 +187,24 @@ void Window::drawFrame() {
         return;
     }
 
+    if (_recreateCommandBuffers) {
+        _recreateCommandBuffers = false;
+        recreateCommandBuffers();
+    }
+
     // Change the frame
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Window::recreateCommandBuffers() {
+    // Wait until idle
+    _device.waitIdle();
+
+    // Cleanup
+    _device.freeCommandBuffers(_commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+
+    // Create
+    createCommandBuffers();
 }
 
 bool Window::recreateSwapchain() {
@@ -289,9 +286,9 @@ void Window::cleanup() {
     // Destroy the command pool
     _device.destroyCommandPool(_commandPool);
 
-    // TEMP: DELETE MESH
-    mesh->destroy(_allocator);
-    delete mesh;
+    // Delete the current scene
+    _currentScene->destroy(getRenderableData());
+    delete _currentScene;
 
     // Destroy the pipeline
     delete _graphicsPipeline;
@@ -501,6 +498,7 @@ bool Window::createMemoryAllocator() {
     allocatorInfo.physicalDevice = _physicalDevice;
     allocatorInfo.device = _device;
     allocatorInfo.instance = _instance;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
 
     if (vmaCreateAllocator(&allocatorInfo, &_allocator) != VK_SUCCESS) {
         return false;
@@ -705,6 +703,7 @@ bool Window::createCommandPool() {
 }
 
 bool Window::createCommandBuffers() {
+    // Resize for data
     _commandBuffers.resize(_swapChainFrameBuffers.size());
 
     vk::CommandBufferAllocateInfo allocInfo = {
@@ -750,8 +749,10 @@ bool Window::createCommandBuffers() {
         _commandBuffers[i].setViewport(0, 1, &viewport);
         _commandBuffers[i].setScissor(0, 1, &scissor);
 
-        //_commandBuffers[i].draw(3, 1, 0, 0);
-        mesh->render(_commandBuffers[i]);
+        // Render the current scene
+        if (_currentScene != nullptr) {
+            _currentScene->render(_commandBuffers[i]);
+        }
 
         _commandBuffers[i].endRenderPass();
         _commandBuffers[i].end();

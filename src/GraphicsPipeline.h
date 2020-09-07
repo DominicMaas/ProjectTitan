@@ -26,6 +26,4 @@ public:
     ~GraphicsPipeline();
 
     vk::Pipeline getVKPipeline() { return _graphicsPipeline; }
-
-    void submitAndWait(vk::CommandBuffer &buffer);
 };

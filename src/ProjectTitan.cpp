@@ -27,6 +27,7 @@
 #include "pch.h"
 #include "Window.h"
 #include "core/ResourceManager.h"
+#include "core/Scene.h"
 
 /*int WIDTH = 1920;
 int HEIGHT = 1080;
@@ -96,7 +97,33 @@ int main(void) {
     ResourceManager::loadShader("basic", "shaders/vulkan_test");
 
     Window w("Test Window", 800, 600);
+    if (!w.init()) {
+        return -1;
+    }
+
+    const std::vector<Vertex> vertices = {
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {}},
+            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {}},
+            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {}}
+    };
+
+    const std::vector<unsigned int> indices = {
+            0, 1, 2, 2, 3, 0
+    };
+
+    Mesh* mesh = new Mesh(vertices, std::vector<unsigned int>(), std::vector<Texture>());
+
+    auto* scene = new Scene();
+    scene->addRenderable("TestMesh", mesh, w.getRenderableData());
+
+    w.setCurrentScene(scene);
+
+
     w.run();
+
+    //delete scene;
+    //delete mesh;
 
     return 0;
 

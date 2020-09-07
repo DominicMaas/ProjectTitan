@@ -1,7 +1,6 @@
 #pragma once
 
-#include "constants.h"
-#include <glm/glm.hpp>
+#include "pch.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 class Camera {
@@ -42,7 +41,7 @@ public:
 
     void processKeyboardInput(GLFWwindow *window, float deltaTime);
 
-    void processMouseInput(float xPos, float yPos, GLboolean constrainPitch = true);
+    void processMouseInput(float xPos, float yPos, bool constrainPitch = true);
 
     void setProjectionMatrix(glm::mat4 projMatrix) { _projectionMatrix = projMatrix; }
 };
