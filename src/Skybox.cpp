@@ -1,5 +1,6 @@
 #include <constants.h>
 #include "Skybox.h"
+#include "iostream"
 
 void Skybox::setup(std::vector<std::string> faces) {
     // Get the shader
@@ -7,7 +8,7 @@ void Skybox::setup(std::vector<std::string> faces) {
 
     // Build the mesh
     std::vector<Vertex> vertices(std::begin(_skyboxVertices), std::end(_skyboxVertices));
-    _mesh.rebuild(vertices, std::vector<unsigned int>(), std::vector<Texture>());
+    //_mesh.rebuild(vertices, std::vector<unsigned int>(), std::vector<Texture>());
 
     // Generate textures
     GLCall(glGenTextures(1, &_texture));
@@ -37,21 +38,21 @@ void Skybox::setup(std::vector<std::string> faces) {
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
     GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
 
-    _shader->use();
-    _shader->setInt("skybox", 0);
+    //_shader->use();
+   // _shader->setInt("skybox", 0);
 }
 
 void Skybox::render(glm::mat4 viewMatrix, glm::mat4 projMatrix) {
     GLCall(glDepthFunc(GL_LEQUAL));
 
-    _shader->use();
+    //_shader->use();
 
     // Keep skybox in player view
     glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
 
     // Set the camera view and view position matrix
-    _shader->setMat4("view", view);
-    _shader->setMat4("projection", projMatrix);
+    //_shader->setMat4("view", view);
+    //_shader->setMat4("projection", projMatrix);
 
     GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));
     //_mesh.render(*_shader);

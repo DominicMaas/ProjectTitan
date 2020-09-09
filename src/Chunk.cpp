@@ -67,7 +67,7 @@ void Chunk::render(Shader &shader) {
     if (!_mesh->isBuilt()) return;
 
     // Set the position of this chunk in the shader & render
-    shader.setMat4("model", _modelMatrix);
+    //shader.setMat4("model", _modelMatrix);
     //_mesh->render(shader);
 }
 
@@ -251,7 +251,7 @@ void Chunk::rebuild() {
     }
 
     // Rebuild the visual mesh
-    _mesh->rebuild(vertices, indices, std::vector<Texture>());
+    //_mesh->rebuild(vertices, indices, std::vector<Texture>());
 
     if (_collider != nullptr) {
         _world->getWorldBody()->removeCollider(_collider);

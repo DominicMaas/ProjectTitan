@@ -24,7 +24,7 @@ Entity::~Entity() {
 
 void Entity::render(Shader &shader) {
     // Update the shader model
-    shader.setMat4("model", getModelMatrix());
+    //shader.setMat4("model", getModelMatrix());
 
     // Render
     _model->render(shader);

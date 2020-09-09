@@ -3,8 +3,8 @@
 #include "spdlog/spdlog.h"
 
 TextRenderer::TextRenderer(glm::mat4 proj) : _textShader("shaders/text_shader.vert", "shaders/text_shader.frag") {
-    _textShader.use();
-    _textShader.setMat4("projection", proj);
+    //_textShader.use();
+    //_textShader.setMat4("projection", proj);
 
     if (FT_Init_FreeType(&_font)) {
         spdlog::warn("[Text Renderer] Warning! Could not init FreeType Library");
@@ -84,8 +84,8 @@ void TextRenderer::renderText(std::string text, glm::vec2 position, float scale,
     GLCall(glDisable(GL_DEPTH_TEST));
 
     // Activate corresponding render state
-    _textShader.use();
-    _textShader.setColor("textColor", color);
+    //_textShader.use();
+    //_textShader.setColor("textColor", color);
     GLCall(glActiveTexture(GL_TEXTURE0));
     GLCall(glBindVertexArray(_vao));
 

@@ -9,9 +9,15 @@ void Scene::addRenderable(std::string name, Renderable* renderable, RenderableDa
     }
 }
 
-void Scene::render(vk::CommandBuffer &commandBuffer) {
+void Scene::render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline) {
     for (boost::ptr_map<std::string, Renderable>::iterator e = _renderables.begin(); e != _renderables.end(); e++) {
-        e->second->render(commandBuffer);
+        e->second->render(commandBuffer, pipeline);
+    }
+}
+
+void Scene::update(RenderableData input, long double deltaTime) {
+    for (boost::ptr_map<std::string, Renderable>::iterator e = _renderables.begin(); e != _renderables.end(); e++) {
+        e->second->update(input, deltaTime);
     }
 }
 
@@ -20,3 +26,5 @@ void Scene::destroy(RenderableData renderableData) {
         e->second->destroy(renderableData);
     }
 }
+
+

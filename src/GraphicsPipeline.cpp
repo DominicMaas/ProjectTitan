@@ -1,20 +1,39 @@
 #include "GraphicsPipeline.h"
+#include "core/Vertex.h"
 
-vk::ShaderModule GraphicsPipeline::createShaderModule(const std::vector<char> &code) {
+vk::ShaderModule GraphicsPipeline::createShaderModule(vk::Device device, const std::vector<char> &code) {
     vk::ShaderModuleCreateInfo createInfo = {
             .codeSize = code.size(),
             .pCode = reinterpret_cast<const uint32_t*>(code.data())
     };
 
-    return _window->getDevice().createShaderModule(createInfo);
+    return device.createShaderModule(createInfo);
 }
 
-GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
-    this->_window = window;
+GraphicsPipeline::GraphicsPipeline(CreateGraphicsPipelineInfo info) {
+    assert(info.shader);
+    assert(info.device);
+    assert(info.renderPass);
+
+    // Create the descriptor set layout
+    vk::DescriptorSetLayoutBinding uboLayoutBinding = {
+            .binding = 0,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .pImmutableSamplers = nullptr
+    };
+
+    vk::DescriptorSetLayoutCreateInfo layoutInfo = {
+            .bindingCount = 1,
+            .pBindings = &uboLayoutBinding
+    };
+
+    _descriptorSetLayout = info.device.createDescriptorSetLayout(layoutInfo, nullptr);
 
     // Create the shaders
-    _vertexShader = createShaderModule(shader->getVertexSource());
-    _fragmentShader = createShaderModule(shader->getFragmentSource());
+    _vertexShader = createShaderModule(info.device, info.shader->getVertexSource());
+    _fragmentShader = createShaderModule(info.device, info.shader->getFragmentSource());
 
     // Create the shader pipelines
     vk::PipelineShaderStageCreateInfo vertexCreateInfo = {
@@ -117,16 +136,15 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
             .pDynamicStates = dynamicStates
     };
 
-    // TODO: Specify Uniforms from input shader
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {
-            .setLayoutCount = 0,
-            .pSetLayouts = nullptr,
+            .setLayoutCount = 1,
+            .pSetLayouts = &_descriptorSetLayout,
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr
     };
 
     // Create the pipeline layout
-    _pipelineLayout = _window->getDevice().createPipelineLayout(pipelineLayoutInfo, nullptr);
+    _pipelineLayout = info.device.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
     vk::GraphicsPipelineCreateInfo pipelineInfo = {
             // Shader stages
@@ -142,13 +160,13 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
             .pColorBlendState = &colorBlending,
             .pDynamicState = &dynamicStateInfo,
             .layout = _pipelineLayout,
-            .renderPass = _window->getRenderPass(),
+            .renderPass = info.renderPass,
             .subpass = 0,
             .basePipelineHandle = nullptr, // Optional
             .basePipelineIndex = -1, // Optional
     };
 
-    auto [result, pipeline] = _window->getDevice().createGraphicsPipeline(nullptr, pipelineInfo);
+    auto [result, pipeline] = info.device.createGraphicsPipeline(nullptr, pipelineInfo);
     if (result != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
@@ -156,11 +174,15 @@ GraphicsPipeline::GraphicsPipeline(Window *window, Shader* shader) {
     _graphicsPipeline = pipeline;
 }
 
-GraphicsPipeline::~GraphicsPipeline() {
-    _window->getDevice().destroyPipeline(_graphicsPipeline);
+void GraphicsPipeline::destroy(DestroyGraphicsPipelineInfo info) {
+    assert(info.device);
 
-    _window->getDevice().destroyPipelineLayout(_pipelineLayout);
+    info.device.destroyPipeline(_graphicsPipeline);
 
-    _window->getDevice().destroyShaderModule(_fragmentShader);
-    _window->getDevice().destroyShaderModule(_vertexShader);
+    info.device.destroyPipelineLayout(_pipelineLayout);
+
+    info.device.destroyDescriptorSetLayout(_descriptorSetLayout);
+
+    info.device.destroyShaderModule(_fragmentShader);
+    info.device.destroyShaderModule(_vertexShader);
 }

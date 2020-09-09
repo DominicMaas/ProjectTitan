@@ -1,5 +1,6 @@
 #include "Shader.h"
-#include <glm/gtc/type_ptr.hpp>
+#include <fstream>
+#include <sstream>
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     _vertexSource = loadShader(vertexPath);
@@ -26,15 +27,4 @@ std::vector<char> Shader::loadShader(const char *path) {
     file.close();
 
     return buffer;
-}
-
-
-
-
-void Shader::use() {
-
-}
-
-unsigned int Shader::getId() {
-    return 0;
 }

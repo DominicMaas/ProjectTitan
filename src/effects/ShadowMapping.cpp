@@ -83,9 +83,9 @@ void ShadowMapping::renderToDepthMap() {
 
 void ShadowMapping::renderDebugQuad() {
     Shader* debugDepthQuadShader = ResourceManager::getShader("debug_depth_quad");
-    debugDepthQuadShader->use();
-    debugDepthQuadShader->setFloat("near_plane", NEAR_PLANE);
-    debugDepthQuadShader->setFloat("far_plane", FAR_PLANE);
+    //debugDepthQuadShader->use();
+    //debugDepthQuadShader->setFloat("near_plane", NEAR_PLANE);
+    //debugDepthQuadShader->setFloat("far_plane", FAR_PLANE);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _depthTexture);
     renderQuad();

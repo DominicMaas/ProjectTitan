@@ -30,16 +30,14 @@ public:
     bool init();
     void run();
 
-    vk::Device getDevice() { return _device; }
-
-    vk::RenderPass getRenderPass() { return _renderPass; }
-
     RenderableData getRenderableData() {
         RenderableData data = {
                 .allocator = _allocator,
                 .device = _device,
                 .commandPool = _commandPool,
-                .graphicsQueue = _graphicsQueue };
+                .graphicsQueue = _graphicsQueue,
+                .descriptorPool = _descriptorPool,
+                .graphicsPipeline = *_graphicsPipeline };
         return data;
     }
 
@@ -56,7 +54,7 @@ private:
     Scene *_currentScene = nullptr;
     bool _recreateCommandBuffers = false;
 
-    const int MAX_FRAMES_IN_FLIGHT = 2;
+    const int MAX_FRAMES_IN_FLIGHT = 3;
 
     GLFWwindow* _window;
     unsigned int _width;
@@ -75,6 +73,7 @@ private:
     vk::Queue _presentQueue;
     vk::SwapchainKHR _swapChain;
     vk::RenderPass _renderPass;
+    vk::DescriptorPool _descriptorPool;
     vk::DebugUtilsMessengerEXT _debugMessenger;
 
     std::vector<vk::Image> _swapChainImages;
@@ -93,7 +92,7 @@ private:
 
     vk::CommandPool _commandPool;
 
-    GraphicsPipeline* _graphicsPipeline;
+    GraphicsPipeline *_graphicsPipeline;
 
     VmaAllocator _allocator;
 
@@ -151,6 +150,9 @@ private:
 
     // Create the command pool
     bool createCommandPool();
+
+    // Create the descriptor pool
+    bool createDescriptorPool();
 
     // Create the command buffers
     bool createCommandBuffers();

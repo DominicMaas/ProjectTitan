@@ -1,7 +1,3 @@
-//
-// Created by Dominic Maas on 31/08/20.
-//
-
 #include "Window.h"
 #include "core/ResourceManager.h"
 
@@ -12,10 +8,66 @@ Window::Window(const char *title, unsigned int initialWidth, unsigned int initia
 }
 
 void Window::run() {
+    // Setup for per-frame time logic
+    long double previousFrameTime = glfwGetTime();
+    long double deltaTime = 0;
+    long double deltaTimeAccum = 0;
+
+    long double timeStep = 1.0/60.0; // Constant physics time step
+
+    int frames = 0; // The framerate to display
+    long double lastFramesTime = glfwGetTime();
+    long double frameTime = 0;
+    int fps;
+
     // Enter game loop
     while(!glfwWindowShouldClose(_window)) {
-        glfwPollEvents();
+        // ---------- Per-frame time logic ---------- //
+        long double currentFrameTime = glfwGetTime(); // Current system time
+        deltaTime = currentFrameTime - previousFrameTime; // Time difference between frames
+        previousFrameTime = currentFrameTime; // Update the previous time
+
+        // Add the time difference in the accumulator
+        deltaTimeAccum += deltaTime;
+
+        // Calculate frames
+        frames++;
+        if ((currentFrameTime - lastFramesTime ) >= 1.0) {
+            frameTime = 1000.0 / double(frames);
+            fps = frames;
+            frames = 0;
+            lastFramesTime += 1.0f; // Reset timer
+        }
+
+        // ---------- Run update events ---------- //
+
+        // Update the current scene
+        if (_currentScene != nullptr) {
+            _currentScene->update(getRenderableData(), deltaTime);
+        }
+
+        // ---------- Process Physics ---------- //
+
+        // While there is enough accumulated time to take
+        // one or several physics steps
+        while (deltaTimeAccum >= timeStep) {
+            // Update the physics world with a constant time step
+            // TODO: currentWorld->getPhysicsWorld()->update(timeStep);
+
+            // Decrease the accumulated time
+            deltaTimeAccum -= timeStep;
+        }
+
+        // Update all objects within the world
+        // TODO: currentWorld->updatePhysics(timeStep, deltaTimeAccum);
+
+        // ---------- Render ---------- //
+
         drawFrame();
+
+        // ---------- End Frame ---------- //
+
+        glfwPollEvents();
     }
 
     _device.waitIdle();
@@ -108,6 +160,11 @@ bool Window::init() {
         return false;
     }
 
+    if (!createDescriptorPool()) {
+        spdlog::error("[Window] Failed to create the descriptor pool");
+        return false;
+    }
+
     if (!createCommandBuffers()) {
         spdlog::error("[Window] Failed to create the command buffers");
         return false;
@@ -124,6 +181,11 @@ bool Window::init() {
 
 void Window::drawFrame() {
     _device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
+
+    if (_recreateCommandBuffers) {
+        _recreateCommandBuffers = false;
+        recreateCommandBuffers();
+    }
 
     // Acquire the next image
     unsigned int imageIndex;
@@ -187,18 +249,13 @@ void Window::drawFrame() {
         return;
     }
 
-    if (_recreateCommandBuffers) {
-        _recreateCommandBuffers = false;
-        recreateCommandBuffers();
-    }
-
     // Change the frame
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Window::recreateCommandBuffers() {
     // Wait until idle
-    _device.waitIdle();
+    //_device.waitIdle();
 
     // Cleanup
     _device.freeCommandBuffers(_commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
@@ -283,6 +340,9 @@ void Window::cleanup() {
         _device.destroyFence(_inFlightFences[i]);
     }
 
+    // Destroy the descriptor pool
+    _device.destroyDescriptorPool(_descriptorPool, nullptr);
+
     // Destroy the command pool
     _device.destroyCommandPool(_commandPool);
 
@@ -291,6 +351,8 @@ void Window::cleanup() {
     delete _currentScene;
 
     // Destroy the pipeline
+    DestroyGraphicsPipelineInfo info = { .device = _device };
+    _graphicsPipeline->destroy(info);
     delete _graphicsPipeline;
 
     // Destroy the memory allocator
@@ -654,7 +716,12 @@ bool Window::createRenderPass() {
 }
 
 bool Window::createGraphicsPipeline() {
-    _graphicsPipeline = new GraphicsPipeline(this, ResourceManager::getShader("basic"));
+    CreateGraphicsPipelineInfo info = {
+            .shader = ResourceManager::getShader("basic"),
+            .device = _device,
+            .renderPass = _renderPass };
+
+    _graphicsPipeline = new GraphicsPipeline(info);
     return true;
 }
 
@@ -699,6 +766,19 @@ bool Window::createCommandPool() {
         return false;
     }
 
+    return true;
+}
+
+bool Window::createDescriptorPool() {
+    vk::DescriptorPoolSize poolSize = {
+            .descriptorCount = static_cast<uint32_t>(5) };
+
+    vk::DescriptorPoolCreateInfo poolInfo = {
+            .maxSets = static_cast<uint32_t>(_swapChainImages.size()),
+            .poolSizeCount = 5,
+            .pPoolSizes = &poolSize };
+
+    _descriptorPool = _device.createDescriptorPool(poolInfo);
     return true;
 }
 
@@ -751,7 +831,7 @@ bool Window::createCommandBuffers() {
 
         // Render the current scene
         if (_currentScene != nullptr) {
-            _currentScene->render(_commandBuffers[i]);
+            _currentScene->render(_commandBuffers[i], *_graphicsPipeline);
         }
 
         _commandBuffers[i].endRenderPass();

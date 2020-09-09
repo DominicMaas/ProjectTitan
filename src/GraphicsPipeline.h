@@ -1,29 +1,34 @@
 #pragma once
 
-#include "Window.h"
+#include "pch.h"
 #include "Shader.h"
-#include "Mesh.h"
 
-class Window;
-class Shader;
-class Mesh;
+struct CreateGraphicsPipelineInfo {
+    Shader* shader;
+    vk::Device device;
+    vk::RenderPass renderPass;
+};
+
+struct DestroyGraphicsPipelineInfo {
+    vk::Device device;
+};
 
 class GraphicsPipeline {
 private:
     vk::ShaderModule _vertexShader;
     vk::ShaderModule _fragmentShader;
 
+    vk::DescriptorSetLayout _descriptorSetLayout;
     vk::PipelineLayout _pipelineLayout;
     vk::Pipeline _graphicsPipeline;
 
-    // Used to get access to vulkan APIs
-    Window* _window;
-
-    vk::ShaderModule createShaderModule(const std::vector<char>& code);
+    vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code);
 
 public:
-    GraphicsPipeline(Window* window, Shader* shader);
-    ~GraphicsPipeline();
+    GraphicsPipeline(CreateGraphicsPipelineInfo info);
+    void destroy(DestroyGraphicsPipelineInfo info);
 
     vk::Pipeline getVKPipeline() { return _graphicsPipeline; }
+    vk::PipelineLayout getPipelineLayout() { return _pipelineLayout; }
+    vk::DescriptorSetLayout getDescriptorSetLayout() { return _descriptorSetLayout; }
 };

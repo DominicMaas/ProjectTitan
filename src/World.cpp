@@ -142,21 +142,21 @@ void World::render(Camera &c, Shader &shader) {
     float renderDistance = 4 * CHUNK_WIDTH;
 
     // Set light color and direction
-    shader.setVec3("light.color", _sunColor);
-    shader.setVec3("light.direction", SunPosition);
-    shader.setFloat("light.ambient", _sunAmbient);
+    //shader.setVec3("light.color", _sunColor);
+    //shader.setVec3("light.direction", SunPosition);
+    //shader.setFloat("light.ambient", _sunAmbient);
 
     // Set the camera view and view position matrix
-    shader.setMat4("view", c.getViewMatrix());
-    shader.setVec3("viewPos", c.getPosition());
-    shader.setMat4("projection", c.getProjectionMatrix());
+    //shader.setMat4("view", c.getViewMatrix());
+    //shader.setVec3("viewPos", c.getPosition());
+    //shader.setMat4("projection", c.getProjectionMatrix());
 
-    shader.setMat4("lightSpaceMatrix", getLightSpaceMatrix(c));
+    //shader.setMat4("lightSpaceMatrix", getLightSpaceMatrix(c));
 
     // DEBUG
     glm::mat4 pos(1.0f);
     pos = glm::translate(pos, glm::vec3(0,30,0));
-    shader.setMat4("model", pos);
+    //shader.setMat4("model", pos);
     //ResourceManager::getModel("backpack")->render(shader);
     // / DEBUG
 

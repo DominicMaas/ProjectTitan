@@ -122,9 +122,6 @@ int main(void) {
 
     w.run();
 
-    //delete scene;
-    //delete mesh;
-
     return 0;
 
     /*// Initialize the library

@@ -16,21 +16,14 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     this->_built = false;
 }
 
-Mesh::~Mesh() {
-    // Delete the arrays and buffers
-    //GLCall(glDeleteVertexArrays(1, &_vao));
-    //GLCall(glDeleteBuffers(1, &_ebo));
-    //GLCall(glDeleteBuffers(1, &_vbo));
-}
-
-void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
+void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, RenderableData input) {
     this->Vertices = vertices;
     this->Indices = indices;
     this->Textures = textures;
 
     this->_built = false;
 
-    //build(nullptr);
+    build(input);
 }
 
 void Mesh::build(RenderableData input) {
@@ -38,11 +31,29 @@ void Mesh::build(RenderableData input) {
     assert(input.device);
     assert(input.commandPool);
     assert(input.graphicsQueue);
+    assert(input.descriptorPool);
 
     // If the mesh has already been built, we need to destroy it first
     if (_built) {
         destroy(input);
     }
+
+    // ------------------ Create Uniform Buffer ------------------ //
+    // This will be done on local memory for now, May copy over to GPU later
+    // on, since the mesh model should not be updated too often.
+    VkBufferCreateInfo ubInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    ubInfo.size = sizeof(UniformBufferObject);
+    ubInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    ubInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo ubAllocCreateInfo = {};
+    ubAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_COPY;
+    ubAllocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    ubAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    VkBuffer tempUniformBuffer;
+    vmaCreateBuffer(input.allocator, &ubInfo, &ubAllocCreateInfo, &tempUniformBuffer, &_uniformAllocation, nullptr);
+    _uniformBuffer = tempUniformBuffer;
 
     // ------------------ Create Vertex Buffer ------------------ //
     VkBufferCreateInfo vbInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -155,11 +166,42 @@ void Mesh::build(RenderableData input) {
         vmaDestroyBuffer(input.allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
     }
 
+    // ------------------ Create the descriptor set ------------------ //
+
+    vk::DescriptorSetLayout descriptorSetLayout[] = { input.graphicsPipeline.getDescriptorSetLayout() };
+    vk::DescriptorSetAllocateInfo descriptorAllocInfo = {
+            .descriptorPool = input.descriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = descriptorSetLayout };
+
+    // Allocate the descriptor set
+    _descriptorSet = input.device.allocateDescriptorSets(descriptorAllocInfo)[0];
+
+    // Bind the uniform buffer
+    vk::DescriptorBufferInfo bufferInfo = {
+        .buffer = _uniformBuffer,
+        .offset = 0,
+        .range = sizeof(UniformBufferObject)
+    };
+
+    vk::WriteDescriptorSet descriptorWrite = {
+            .dstSet = _descriptorSet,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &bufferInfo };
+
+    input.device.updateDescriptorSets(descriptorWrite, nullptr);
+
     _built = true;
 }
 
 void Mesh::destroy(RenderableData input) {
     assert(input.allocator);
+
+    // Destroy the uniform buffer
+    vmaDestroyBuffer(input.allocator, _uniformBuffer, _uniformAllocation);
 
     // Always destroy the vertex buffer
     vmaDestroyBuffer(input.allocator, _vertexBuffer, _vertexAllocation);
@@ -170,7 +212,7 @@ void Mesh::destroy(RenderableData input) {
     }
 }
 
-void Mesh::render(vk::CommandBuffer &commandBuffer) {
+void Mesh::render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline) {
     // Only render if the mesh has been built
     if (!_built) {
         spdlog::warn("[Mesh] Attempted to render mesh before it was built");
@@ -181,6 +223,9 @@ void Mesh::render(vk::CommandBuffer &commandBuffer) {
     vk::Buffer vertexBuffers[] = { _vertexBuffer };
     vk::DeviceSize offsets[] = { 0 };
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+
+    // Bind the descriptor set
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.getPipelineLayout(), 0, 1, &_descriptorSet, 0, nullptr);
 
     // Draw
     if (Indices.empty()) {
@@ -225,6 +270,27 @@ void Mesh::render(vk::CommandBuffer &commandBuffer) {
 
     // Cleanup
     GLCall(glActiveTexture(GL_TEXTURE0));*/
+}
+
+void Mesh::update(RenderableData input, long double deltaTime) {
+    assert(input.allocator);
+
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
+
+    // Copy this data across to the local memory
+    // TODO: Maybe move this to the GPU memory?
+    void* mappedData;
+    vmaMapMemory(input.allocator, _uniformAllocation, &mappedData);
+    memcpy(mappedData, &ubo, sizeof(ubo));
+    vmaUnmapMemory(input.allocator, _uniformAllocation);
 }
 
 
