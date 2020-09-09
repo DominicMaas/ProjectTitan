@@ -27,9 +27,7 @@ file(GLOB_RECURSE DEP_FILES
 #		${CMAKE_SOURCE_DIR}/res/shaders/*.*)
 SET(DEP_SHADER_FILES ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.frag ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.vert) # TODO: Remove once shaders are fixed
 
-
-# Need OpenGL & Vulkan
-find_package(OpenGL REQUIRED)
+# Need Vulkan
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 # Need external libraries
@@ -41,7 +39,7 @@ add_subdirectory(extern/spdlog)
 add_subdirectory(extern/assimp)
 
 # Add libraries
-SET(PLATFORM_LIBRARIES glfw OpenGL::GL glm freetype reactphysics3d spdlog assimp)
+SET(PLATFORM_LIBRARIES glfw glm freetype reactphysics3d spdlog assimp)
 
 # Includes
 include_directories("${CMAKE_SOURCE_DIR}/includes")

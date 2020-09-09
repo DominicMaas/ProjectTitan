@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glad/glad.h>
+#include "../pch.h"
 #include "RenderEffect.h"
 
 class ShadowMapping : public RenderEffect {

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <glm/glm.hpp>
+#include "../pch.h"
 #include "BaseWorldGen.h"
 #include "FastNoise.h"
 #include "../BlockManager.h"

@@ -13,6 +13,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <optional>
 #include <set>
@@ -26,3 +27,11 @@ struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
 };
+
+enum ColliderCategory {
+    COLLIDER_GENERAL = 0x0001,
+    COLLIDER_WORLD_GROUND = 0x0002
+};
+
+static const int CHUNK_HEIGHT = 64;
+static const int CHUNK_WIDTH = 16;

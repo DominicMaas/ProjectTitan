@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../pch.h"
+
 class Texture2D {
 private:
     unsigned int _textureId;

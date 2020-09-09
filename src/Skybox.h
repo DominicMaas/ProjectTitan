@@ -1,9 +1,7 @@
 #pragma once
 
-#include "constants.h"
+#include "pch.h"
 #include "Shader.h"
-#include <string>
-#include <vector>
 #include <stb_image.h>
 #include "core/ResourceManager.h"
 #include "Mesh.h"

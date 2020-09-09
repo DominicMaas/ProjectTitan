@@ -1,7 +1,6 @@
 #include "World.h"
 #include "core/ResourceManager.h"
 #include "core/Frustum.h"
-#include "constants.h"
 
 void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
