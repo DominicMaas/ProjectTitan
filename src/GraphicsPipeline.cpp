@@ -122,7 +122,18 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .alphaToOneEnable = VK_FALSE
     };
 
-    // TODO: Depth
+    // Depth
+    vk::PipelineDepthStencilStateCreateInfo depthStencil = {
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = vk::CompareOp::eLess,
+            .depthBoundsTestEnable = VK_FALSE,
+            .minDepthBounds = 0.0f,
+            .maxDepthBounds = 1.0f,
+            .stencilTestEnable = VK_FALSE,
+            .front = {},
+            .back = {}
+    };
 
     // Color blending
     vk::PipelineColorBlendAttachmentState colorBlendAttachment = {
@@ -176,7 +187,7 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .pViewportState = &viewportState,
             .pRasterizationState = &rasterizer,
             .pMultisampleState = &multisampling,
-            .pDepthStencilState = nullptr, // Optional
+            .pDepthStencilState = &depthStencil,
             .pColorBlendState = &colorBlending,
             .pDynamicState = &dynamicStateInfo,
             .layout = _pipelineLayout,

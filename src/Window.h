@@ -72,7 +72,6 @@ private:
 
     vk::Instance _instance;
     vk::SurfaceKHR _surface;
-    vk::PhysicalDevice _physicalDevice;
     vk::Queue _presentQueue;
     vk::SwapchainKHR _swapChain;
     vk::RenderPass _renderPass;
@@ -91,6 +90,10 @@ private:
 
     vk::Format _swapChainImageFormat;
     vk::Extent2D _swapChainExtent;
+
+    vk::Image _depthImage;
+    VmaAllocation _depthAllocation;
+    vk::ImageView _depthImageView;
 
     // Vulkan validation layers
     const bool _enableValidationLayers = true;
@@ -146,6 +149,9 @@ private:
 
     // Create the command pool
     bool createCommandPool();
+
+    // Create resources for depth testing
+    bool createDepthResources();
 
     // Create the command buffers
     bool createCommandBuffers();

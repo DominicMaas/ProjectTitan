@@ -103,7 +103,7 @@ int main(void) {
     PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
     ResourceManager::loadTexture("block_map", "textures/block_map.png");
-    ResourceManager::loadTexture("square", "textures/square.jpg");
+    ResourceManager::loadTexture("square", "models/diffuse.jpg");
     ResourceManager::loadTexture("test", "textures/test.jpg");
 
 
@@ -121,13 +121,13 @@ int main(void) {
             0, 1, 3, 1, 2, 3
     };
 
-    //ResourceManager::loadModel("backpack", "models/backpack.obj", w.getRenderableData());
+    ResourceManager::loadModel("backpack", "models/backpack.obj", w.getRenderableData());
 
     Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
 
     auto* scene = new Scene();
     scene->addRenderable("TestMesh", mesh, w.getRenderableData());
-    //scene->addRenderable("TestModel", ResourceManager::getModel("backpack"), w.getRenderableData());
+    scene->addRenderable("TestModel", ResourceManager::getModel("backpack"), w.getRenderableData());
 
     w.setCurrentScene(scene);
 

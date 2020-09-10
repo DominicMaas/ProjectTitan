@@ -65,12 +65,12 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 
     // process indices
     // TODO: Make work
-    /*for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
             indices.push_back(face.mIndices[j]);
         }
-    }*/
+    }
 
     // process material
     if (mesh->mMaterialIndex >= 0) {

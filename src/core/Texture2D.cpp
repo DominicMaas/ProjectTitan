@@ -41,7 +41,7 @@ void Texture2D::load(unsigned char *pixels, int width, int height) {
     vmaDestroyBuffer(Renderer::Instance->Allocator, stagingBuffer, stagingBufferAlloc);
 
     // Create the texture image view
-    _textureImageView = Renderer::Instance->createImageView(_textureImage, vk::Format::eR8G8B8A8Srgb);
+    _textureImageView = Renderer::Instance->createImageView(_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 
     // Setup sampling
     vk::SamplerCreateInfo samplerInfo = {

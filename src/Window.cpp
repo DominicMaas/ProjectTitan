@@ -152,6 +152,11 @@ bool Window::init() {
         return false;
     }
 
+    if (!createDepthResources()) {
+        spdlog::error("[Window] Failed to create depth resources");
+        return false;
+    }
+
     if (!createFrameBuffers()) {
         spdlog::error("[Window] Failed to create the frame buffers");
         return false;
@@ -487,17 +492,17 @@ bool Window::selectDefaultDevice() {
         return false;
     }
 
-    _physicalDevice = selectedDevice;
+    _renderer->PhysicalDevice = selectedDevice;
 
     // Log information about the selected device
-    auto properties = _physicalDevice.getProperties();
+    auto properties = _renderer->PhysicalDevice.getProperties();
     spdlog::info("[Window] Selected GPU: {}", properties.deviceName);
 
     return true;
 }
 
 bool Window::createLogicalDevice() {
-    auto indices = findQueueFamilies(_physicalDevice);
+    auto indices = findQueueFamilies(_renderer->PhysicalDevice);
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 
@@ -534,7 +539,7 @@ bool Window::createLogicalDevice() {
     }
 
     // Create the device
-    auto result = _physicalDevice.createDevice(&deviceCreateInfo, nullptr, &_renderer->Device);
+    auto result = _renderer->PhysicalDevice.createDevice(&deviceCreateInfo, nullptr, &_renderer->Device);
     if (result != vk::Result::eSuccess) {
         spdlog::error("[Window] Could not create logical device: {}", result);
         return false;
@@ -549,7 +554,7 @@ bool Window::createLogicalDevice() {
 
 bool Window::createMemoryAllocator() {
     VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.physicalDevice = _physicalDevice;
+    allocatorInfo.physicalDevice = _renderer->PhysicalDevice;
     allocatorInfo.device = _renderer->Device;
     allocatorInfo.instance = _instance;
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
@@ -563,7 +568,7 @@ bool Window::createMemoryAllocator() {
 
 bool Window::createSwapChain() {
     // Get the wanted details
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_physicalDevice);
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_renderer->PhysicalDevice);
 
     vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -588,7 +593,7 @@ bool Window::createSwapChain() {
     };
 
     // Handle the different queues
-    QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
+    QueueFamilyIndices indices = findQueueFamilies(_renderer->PhysicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -636,13 +641,24 @@ bool Window::createImageViews() {
 
     // Iterate over images
     for (int i = 0; i < _swapChainImages.size(); i++) {
-        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat);
+        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat, vk::ImageAspectFlagBits::eColor);
     }
 
     return true;
 }
 
 bool Window::createRenderPass() {
+    vk::AttachmentDescription depthAttachment = {
+            .format = Renderer::Instance->findDepthFormat(),
+            .samples = vk::SampleCountFlagBits::e1,
+            .loadOp = vk::AttachmentLoadOp::eClear,
+            .storeOp = vk::AttachmentStoreOp::eDontCare,
+            .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+            .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+            .initialLayout = vk::ImageLayout::eUndefined,
+            .finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal
+    };
+
     vk::AttachmentDescription colorAttachment = {
             .format = _swapChainImageFormat,
             .samples = vk::SampleCountFlagBits::e1,
@@ -655,11 +671,13 @@ bool Window::createRenderPass() {
     };
 
     vk::AttachmentReference colorAttachmentRef = { 0, vk::ImageLayout::eColorAttachmentOptimal };
+    vk::AttachmentReference depthAttachmentRef = { 1, vk::ImageLayout::eDepthStencilAttachmentOptimal };
 
     vk::SubpassDescription subpass = {
             .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
             .colorAttachmentCount = 1,
-            .pColorAttachments = &colorAttachmentRef
+            .pColorAttachments = &colorAttachmentRef,
+            .pDepthStencilAttachment = &depthAttachmentRef
     };
 
     vk::SubpassDependency dependency = {
@@ -673,9 +691,10 @@ bool Window::createRenderPass() {
            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
     };
 
+    vk::AttachmentDescription attachments[] = { colorAttachment, depthAttachment };
     vk::RenderPassCreateInfo renderPassInfo = {
-            .attachmentCount = 1,
-            .pAttachments = &colorAttachment,
+            .attachmentCount = 2,
+            .pAttachments = attachments,
             .subpassCount = 1,
             .pSubpasses = &subpass,
             .dependencyCount = 1,
@@ -706,11 +725,11 @@ bool Window::createFrameBuffers() {
     _swapChainFrameBuffers.resize(_swapChainImageViews.size());
 
     for (size_t i = 0; i < _swapChainImageViews.size(); i++) {
-        vk::ImageView attachments[] = { _swapChainImageViews[i] };
+        vk::ImageView attachments[] = { _swapChainImageViews[i], _depthImageView };
 
         vk::FramebufferCreateInfo framebufferInfo = {
                 .renderPass = _renderPass,
-                .attachmentCount = 1,
+                .attachmentCount = 2,
                 .pAttachments = attachments,
                 .width = _swapChainExtent.width,
                 .height = _swapChainExtent.height,
@@ -729,7 +748,7 @@ bool Window::createFrameBuffers() {
 }
 
 bool Window::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice);
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_renderer->PhysicalDevice);
 
     vk::CommandPoolCreateInfo poolInfo = {
             .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
@@ -741,6 +760,15 @@ bool Window::createCommandPool() {
         spdlog::error("[Window] Failed to create command pool: {}", e.what());
         return false;
     }
+
+    return true;
+}
+
+bool Window::createDepthResources() {
+    vk::Format depthFormat = Renderer::Instance->findDepthFormat();
+
+    Renderer::Instance->createImage(_depthImage, _depthAllocation, _swapChainExtent.width, _swapChainExtent.height, VkFormat(depthFormat), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    _depthImageView = Renderer::Instance->createImageView(_depthImage, depthFormat, vk::ImageAspectFlagBits::eDepth);
 
     return true;
 }
@@ -766,15 +794,17 @@ bool Window::createCommandBuffers() {
         vk::CommandBufferBeginInfo beginInfo = {};
         _commandBuffers[i].begin(beginInfo);
 
-        vk::ClearValue clearColor = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
+        vk::ClearValue clearValues[2];
+        clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
+        clearValues[1].depthStencil = {1.0f, 0};
 
         vk::RenderPassBeginInfo renderPassInfo = {
                 .renderPass = _renderPass,
                 .framebuffer = _swapChainFrameBuffers[i],
                 .renderArea.extent = _swapChainExtent,
                 .renderArea.offset = {0, 0},
-                .clearValueCount = 1,
-                .pClearValues = &clearColor
+                .clearValueCount = 2,
+                .pClearValues = clearValues
         };
 
         _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);

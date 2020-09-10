@@ -11,6 +11,7 @@ public:
 
     vk::CommandPool CommandPool;
     vk::Device Device;
+    vk::PhysicalDevice PhysicalDevice;
     vk::Queue GraphicsQueue;
 
     VmaAllocator Allocator;
@@ -28,8 +29,19 @@ public:
 
     void createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage);
 
-    vk::ImageView createImageView(vk::Image image, vk::Format format);
+    vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
 
     // Copy a buffer to an image
     void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+
+    vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
+    // Find an appropriate depth format
+    vk::Format findDepthFormat() {
+        return findSupportedFormat(
+                { vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint },
+                vk::ImageTiling::eOptimal,
+                vk::FormatFeatureFlagBits::eDepthStencilAttachment
+        );
+    }
 };
