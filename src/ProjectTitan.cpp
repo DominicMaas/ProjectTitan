@@ -27,6 +27,7 @@
 #include "pch.h"
 #include "Window.h"
 #include "core/ResourceManager.h"
+#include "core/managers/PipelineManager.h"
 #include "core/Scene.h"
 
 /*int WIDTH = 1920;
@@ -94,12 +95,15 @@ void processKeyboardInput(GLFWwindow *window, long double delta) {
 }*/
 
 int main(void) {
-    ResourceManager::loadShader("basic", "shaders/vulkan_test");
+
 
     Window w("Test Window", 800, 600);
     if (!w.init()) {
         return -1;
     }
+
+    ResourceManager::loadShader("basic", "shaders/vulkan_test");
+    PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
     const std::vector<Vertex> vertices = {
             {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {}},

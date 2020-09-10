@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "core/Scene.h"
+#include "core/managers/PipelineManager.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -31,13 +32,17 @@ public:
     void run();
 
     RenderableData getRenderableData() {
+
+        //TODO: REMOVE THIS
+        GraphicsPipeline* pipeline = PipelineManager::getPipeline("basic");
+
         RenderableData data = {
                 .allocator = _allocator,
                 .device = _device,
                 .commandPool = _commandPool,
                 .graphicsQueue = _graphicsQueue,
-                .descriptorPool = _descriptorPool,
-                .graphicsPipeline = *_graphicsPipeline };
+                .descriptorPool = pipeline->DescriptorPool,
+                .graphicsPipeline = *pipeline };
         return data;
     }
 
@@ -73,7 +78,6 @@ private:
     vk::Queue _presentQueue;
     vk::SwapchainKHR _swapChain;
     vk::RenderPass _renderPass;
-    vk::DescriptorPool _descriptorPool;
     vk::DebugUtilsMessengerEXT _debugMessenger;
 
     std::vector<vk::Image> _swapChainImages;
@@ -91,8 +95,6 @@ private:
     vk::Extent2D _swapChainExtent;
 
     vk::CommandPool _commandPool;
-
-    GraphicsPipeline *_graphicsPipeline;
 
     VmaAllocator _allocator;
 
@@ -150,9 +152,6 @@ private:
 
     // Create the command pool
     bool createCommandPool();
-
-    // Create the descriptor pool
-    bool createDescriptorPool();
 
     // Create the command buffers
     bool createCommandBuffers();

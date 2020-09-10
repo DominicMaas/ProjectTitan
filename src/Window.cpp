@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "core/ResourceManager.h"
 
 Window::Window(const char *title, unsigned int initialWidth, unsigned int initialHeight) {
     this->_title = title;
@@ -157,11 +156,6 @@ bool Window::init() {
 
     if (!createCommandPool()) {
         spdlog::error("[Window] Failed to create the command pool");
-        return false;
-    }
-
-    if (!createDescriptorPool()) {
-        spdlog::error("[Window] Failed to create the descriptor pool");
         return false;
     }
 
@@ -340,9 +334,6 @@ void Window::cleanup() {
         _device.destroyFence(_inFlightFences[i]);
     }
 
-    // Destroy the descriptor pool
-    _device.destroyDescriptorPool(_descriptorPool, nullptr);
-
     // Destroy the command pool
     _device.destroyCommandPool(_commandPool);
 
@@ -350,10 +341,8 @@ void Window::cleanup() {
     _currentScene->destroy(getRenderableData());
     delete _currentScene;
 
-    // Destroy the pipeline
-    DestroyGraphicsPipelineInfo info = { .device = _device };
-    _graphicsPipeline->destroy(info);
-    delete _graphicsPipeline;
+    // Destroy the pipelines
+    PipelineManager::cleanup({ .device = _device });
 
     // Destroy the memory allocator
     vmaDestroyAllocator(_allocator);
@@ -716,12 +705,11 @@ bool Window::createRenderPass() {
 }
 
 bool Window::createGraphicsPipeline() {
-    CreateGraphicsPipelineInfo info = {
-            .shader = ResourceManager::getShader("basic"),
+    CreateGraphicsPipelineInfo createInfo = {
             .device = _device,
             .renderPass = _renderPass };
 
-    _graphicsPipeline = new GraphicsPipeline(info);
+    PipelineManager::init(createInfo);
     return true;
 }
 
@@ -769,19 +757,6 @@ bool Window::createCommandPool() {
     return true;
 }
 
-bool Window::createDescriptorPool() {
-    vk::DescriptorPoolSize poolSize = {
-            .descriptorCount = static_cast<uint32_t>(5) };
-
-    vk::DescriptorPoolCreateInfo poolInfo = {
-            .maxSets = static_cast<uint32_t>(_swapChainImages.size()),
-            .poolSizeCount = 5,
-            .pPoolSizes = &poolSize };
-
-    _descriptorPool = _device.createDescriptorPool(poolInfo);
-    return true;
-}
-
 bool Window::createCommandBuffers() {
     // Resize for data
     _commandBuffers.resize(_swapChainFrameBuffers.size());
@@ -816,22 +791,26 @@ bool Window::createCommandBuffers() {
 
         _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
-        _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, _graphicsPipeline->getVKPipeline());
+        // Attempt to get the pipeline
+        auto* pipeline = PipelineManager::getPipeline("basic");
+        if (pipeline != nullptr) {
+            _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->getVKPipeline());
 
-        // Set the viewport
-        vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
-                                  (float)_swapChainExtent.height, 0.0f, 1.0f };
+            // Set the viewport
+            vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
+                                      (float)_swapChainExtent.height, 0.0f, 1.0f };
 
-        // We want to render to the entire framebuffer, so don't worry about this
-        vk::Rect2D scissor = { {0,0}, _swapChainExtent };
+            // We want to render to the entire framebuffer, so don't worry about this
+            vk::Rect2D scissor = { {0,0}, _swapChainExtent };
 
-        // Set the viewport
-        _commandBuffers[i].setViewport(0, 1, &viewport);
-        _commandBuffers[i].setScissor(0, 1, &scissor);
+            // Set the viewport
+            _commandBuffers[i].setViewport(0, 1, &viewport);
+            _commandBuffers[i].setScissor(0, 1, &scissor);
 
-        // Render the current scene
-        if (_currentScene != nullptr) {
-            _currentScene->render(_commandBuffers[i], *_graphicsPipeline);
+            // Render the current scene
+            if (_currentScene != nullptr) {
+                _currentScene->render(_commandBuffers[i], *pipeline);
+            }
         }
 
         _commandBuffers[i].endRenderPass();

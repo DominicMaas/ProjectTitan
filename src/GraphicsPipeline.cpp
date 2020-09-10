@@ -10,10 +10,13 @@ vk::ShaderModule GraphicsPipeline::createShaderModule(vk::Device device, const s
     return device.createShaderModule(createInfo);
 }
 
-GraphicsPipeline::GraphicsPipeline(CreateGraphicsPipelineInfo info) {
-    assert(info.shader);
-    assert(info.device);
-    assert(info.renderPass);
+GraphicsPipeline::GraphicsPipeline(PipelineInfo info) {
+    _info = info;
+}
+
+void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
+    assert(createInfo.device);
+    assert(createInfo.renderPass);
 
     // Create the descriptor set layout
     vk::DescriptorSetLayoutBinding uboLayoutBinding = {
@@ -29,11 +32,12 @@ GraphicsPipeline::GraphicsPipeline(CreateGraphicsPipelineInfo info) {
             .pBindings = &uboLayoutBinding
     };
 
-    _descriptorSetLayout = info.device.createDescriptorSetLayout(layoutInfo, nullptr);
+    _descriptorSetLayout = createInfo.device.createDescriptorSetLayout(layoutInfo, nullptr);
 
     // Create the shaders
-    _vertexShader = createShaderModule(info.device, info.shader->getVertexSource());
-    _fragmentShader = createShaderModule(info.device, info.shader->getFragmentSource());
+    Shader* shader = ResourceManager::getShader(_info.shaderName);
+    _vertexShader = createShaderModule(createInfo.device, shader->getVertexSource());
+    _fragmentShader = createShaderModule(createInfo.device, shader->getFragmentSource());
 
     // Create the shader pipelines
     vk::PipelineShaderStageCreateInfo vertexCreateInfo = {
@@ -144,7 +148,7 @@ GraphicsPipeline::GraphicsPipeline(CreateGraphicsPipelineInfo info) {
     };
 
     // Create the pipeline layout
-    _pipelineLayout = info.device.createPipelineLayout(pipelineLayoutInfo, nullptr);
+    _pipelineLayout = createInfo.device.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
     vk::GraphicsPipelineCreateInfo pipelineInfo = {
             // Shader stages
@@ -160,22 +164,36 @@ GraphicsPipeline::GraphicsPipeline(CreateGraphicsPipelineInfo info) {
             .pColorBlendState = &colorBlending,
             .pDynamicState = &dynamicStateInfo,
             .layout = _pipelineLayout,
-            .renderPass = info.renderPass,
+            .renderPass = createInfo.renderPass,
             .subpass = 0,
             .basePipelineHandle = nullptr, // Optional
             .basePipelineIndex = -1, // Optional
     };
 
-    auto [result, pipeline] = info.device.createGraphicsPipeline(nullptr, pipelineInfo);
+    auto [result, pipeline] = createInfo.device.createGraphicsPipeline(nullptr, pipelineInfo);
     if (result != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     _graphicsPipeline = pipeline;
+
+    // Create the descriptor pool for this pipeline
+    vk::DescriptorPoolSize poolSize = {
+            .type = vk::DescriptorType::eUniformBuffer,
+            .descriptorCount = static_cast<uint32_t>(5) };
+
+    vk::DescriptorPoolCreateInfo poolInfo = {
+            .maxSets = static_cast<uint32_t>(5),
+            .poolSizeCount = 1,
+            .pPoolSizes = &poolSize };
+
+    DescriptorPool = createInfo.device.createDescriptorPool(poolInfo);
 }
 
 void GraphicsPipeline::destroy(DestroyGraphicsPipelineInfo info) {
     assert(info.device);
+
+    info.device.destroyDescriptorPool(DescriptorPool);
 
     info.device.destroyPipeline(_graphicsPipeline);
 
