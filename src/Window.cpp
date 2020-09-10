@@ -70,7 +70,7 @@ void Window::run() {
         glfwPollEvents();
     }
 
-    _device.waitIdle();
+    _renderer->Device.waitIdle();
 
     // Clean up user resources
 
@@ -80,6 +80,8 @@ void Window::run() {
 
 bool Window::init() {
     spdlog::info("[Window] Initializing GLFW...");
+
+    _renderer = new Renderer();
 
     // Initialise GLFW
     if (!glfwInit()) {
@@ -175,7 +177,7 @@ bool Window::init() {
 }
 
 void Window::drawFrame() {
-    _device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
+    _renderer->Device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
 
     if (_recreateCommandBuffers) {
         _recreateCommandBuffers = false;
@@ -185,7 +187,7 @@ void Window::drawFrame() {
     // Acquire the next image
     unsigned int imageIndex;
     try {
-        imageIndex = _device.acquireNextImageKHR(_swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame], nullptr);
+        imageIndex = _renderer->Device.acquireNextImageKHR(_swapChain, UINT64_MAX, _imageAvailableSemaphores[_currentFrame], nullptr);
     } catch (vk::OutOfDateKHRError const &e) {
         _framebufferResized = false;
         recreateSwapchain();
@@ -194,7 +196,7 @@ void Window::drawFrame() {
 
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
     if (VkFence(_imagesInFlight[imageIndex]) != VK_NULL_HANDLE) {
-        _device.waitForFences(1, &_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+        _renderer->Device.waitForFences(1, &_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
 
     // Mark the image as now being in use by this frame
@@ -216,10 +218,10 @@ void Window::drawFrame() {
             .pSignalSemaphores = signalSemaphores
     };
 
-    _device.resetFences(1, &_inFlightFences[_currentFrame]);
+    _renderer->Device.resetFences(1, &_inFlightFences[_currentFrame]);
 
     // Submit to the graphics queue
-    _graphicsQueue.submit(1, &submitInfo, _inFlightFences[_currentFrame]);
+    _renderer->GraphicsQueue.submit(1, &submitInfo, _inFlightFences[_currentFrame]);
 
     vk::SwapchainKHR swapChains[] = { _swapChain };
     vk::PresentInfoKHR presentInfo = {
@@ -233,7 +235,7 @@ void Window::drawFrame() {
 
     // Present to the GPU
     try {
-        auto result = _graphicsQueue.presentKHR(presentInfo);
+        auto result = _renderer->GraphicsQueue.presentKHR(presentInfo);
         if (result == vk::Result::eSuboptimalKHR || _framebufferResized) {
             _framebufferResized = false;
             recreateSwapchain();
@@ -253,7 +255,7 @@ void Window::recreateCommandBuffers() {
     //_device.waitIdle();
 
     // Cleanup
-    _device.freeCommandBuffers(_commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+    _renderer->Device.freeCommandBuffers(_renderer->CommandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 
     // Create
     createCommandBuffers();
@@ -269,7 +271,7 @@ bool Window::recreateSwapchain() {
     }
 
     // Wait until idle
-    _device.waitIdle();
+    _renderer->Device.waitIdle();
 
     // Clean up
     cleanupSwapchain();
@@ -306,22 +308,22 @@ bool Window::recreateSwapchain() {
 void Window::cleanupSwapchain() {
     // Destroy the frame buffers
     for (auto frameBuffer : _swapChainFrameBuffers) {
-        _device.destroyFramebuffer(frameBuffer);
+        _renderer->Device.destroyFramebuffer(frameBuffer);
     }
 
     // Free the command buffers
-    _device.freeCommandBuffers(_commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+    _renderer->Device.freeCommandBuffers(_renderer->CommandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 
     // Destroy the render pass
-    _device.destroyRenderPass(_renderPass);
+    _renderer->Device.destroyRenderPass(_renderPass);
 
     // Destroy the image views
     for (auto imageView : _swapChainImageViews) {
-        _device.destroyImageView(imageView);
+        _renderer->Device.destroyImageView(imageView);
     }
 
     // Destroy the swapchain
-    _device.destroySwapchainKHR(_swapChain);
+    _renderer->Device.destroySwapchainKHR(_swapChain);
 }
 
 void Window::cleanup() {
@@ -330,26 +332,26 @@ void Window::cleanup() {
 
     // Destroy the sync objects
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        _device.destroySemaphore(_imageAvailableSemaphores[i]);
-        _device.destroySemaphore(_renderFinishedSemaphores[i]);
-        _device.destroyFence(_inFlightFences[i]);
+        _renderer->Device.destroySemaphore(_imageAvailableSemaphores[i]);
+        _renderer->Device.destroySemaphore(_renderFinishedSemaphores[i]);
+        _renderer->Device.destroyFence(_inFlightFences[i]);
     }
 
     // Destroy the command pool
-    _device.destroyCommandPool(_commandPool);
+    _renderer->Device.destroyCommandPool(_renderer->CommandPool);
 
     // Delete the current scene
     _currentScene->destroy(getRenderableData());
     delete _currentScene;
 
     // Destroy the pipelines
-    PipelineManager::cleanup({ .device = _device });
+    PipelineManager::cleanup({ .device = _renderer->Device });
 
     // Destroy the memory allocator
-    vmaDestroyAllocator(_allocator);
+    vmaDestroyAllocator(_renderer->Allocator);
 
     // Destroy the device
-    _device.destroy();
+    _renderer->Device.destroy();
 
     // Destroy the surface
     _instance.destroySurfaceKHR(_surface);
@@ -532,15 +534,15 @@ bool Window::createLogicalDevice() {
     }
 
     // Create the device
-    auto result = _physicalDevice.createDevice(&deviceCreateInfo, nullptr, &_device);
+    auto result = _physicalDevice.createDevice(&deviceCreateInfo, nullptr, &_renderer->Device);
     if (result != vk::Result::eSuccess) {
         spdlog::error("[Window] Could not create logical device: {}", result);
         return false;
     }
 
     // Get the queues
-    _device.getQueue(indices.graphicsFamily.value(), 0, &_graphicsQueue);
-    _device.getQueue(indices.presentFamily.value(), 0, &_presentQueue);
+    _renderer->Device.getQueue(indices.graphicsFamily.value(), 0, &_renderer->GraphicsQueue);
+    _renderer->Device.getQueue(indices.presentFamily.value(), 0, &_presentQueue);
 
     return true;
 }
@@ -548,11 +550,11 @@ bool Window::createLogicalDevice() {
 bool Window::createMemoryAllocator() {
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = _physicalDevice;
-    allocatorInfo.device = _device;
+    allocatorInfo.device = _renderer->Device;
     allocatorInfo.instance = _instance;
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
 
-    if (vmaCreateAllocator(&allocatorInfo, &_allocator) != VK_SUCCESS) {
+    if (vmaCreateAllocator(&allocatorInfo, &_renderer->Allocator) != VK_SUCCESS) {
         return false;
     }
 
@@ -612,14 +614,14 @@ bool Window::createSwapChain() {
     swapchainCreateInfoKhr.oldSwapchain = nullptr;
 
     // Create the swapchain
-    auto result = _device.createSwapchainKHR(&swapchainCreateInfoKhr, nullptr, &_swapChain);
+    auto result = _renderer->Device.createSwapchainKHR(&swapchainCreateInfoKhr, nullptr, &_swapChain);
     if (result != vk::Result::eSuccess) {
         spdlog::error("[Window] Could not create logical device: {}", result);
         return false;
     }
 
     // TODO: This might not work
-    _swapChainImages = _device.getSwapchainImagesKHR(_swapChain);
+    _swapChainImages = _renderer->Device.getSwapchainImagesKHR(_swapChain);
 
     // We need these later
     _swapChainImageFormat = surfaceFormat.format;
@@ -649,7 +651,7 @@ bool Window::createImageViews() {
                 .subresourceRange.layerCount = 1
         };
 
-        _swapChainImageViews[i] = _device.createImageView(createInfo);
+        _swapChainImageViews[i] = _renderer->Device.createImageView(createInfo);
     }
 
     return true;
@@ -696,7 +698,7 @@ bool Window::createRenderPass() {
     };
 
     try {
-        _renderPass = _device.createRenderPass(renderPassInfo, nullptr);
+        _renderPass = _renderer->Device.createRenderPass(renderPassInfo, nullptr);
     } catch (std::exception const &e) {
         spdlog::error("[Window] Could not create render pass: {}", e.what());
         return false;
@@ -707,7 +709,7 @@ bool Window::createRenderPass() {
 
 bool Window::createGraphicsPipeline() {
     CreateGraphicsPipelineInfo createInfo = {
-            .device = _device,
+            .device = _renderer->Device,
             .renderPass = _renderPass };
 
     PipelineManager::init(createInfo);
@@ -731,7 +733,7 @@ bool Window::createFrameBuffers() {
         };
 
         try {
-            _swapChainFrameBuffers[i] = _device.createFramebuffer(framebufferInfo);
+            _swapChainFrameBuffers[i] = _renderer->Device.createFramebuffer(framebufferInfo);
         } catch (std::exception const &e) {
             spdlog::error("[Window] Could not create frame buffer: {}", e.what());
             return false;
@@ -749,7 +751,7 @@ bool Window::createCommandPool() {
     };
 
     try {
-        _commandPool = _device.createCommandPool(poolInfo);
+        _renderer->CommandPool = _renderer->Device.createCommandPool(poolInfo);
     } catch (std::exception const &e) {
         spdlog::error("[Window] Failed to create command pool: {}", e.what());
         return false;
@@ -763,13 +765,13 @@ bool Window::createCommandBuffers() {
     _commandBuffers.resize(_swapChainFrameBuffers.size());
 
     vk::CommandBufferAllocateInfo allocInfo = {
-            .commandPool = _commandPool,
+            .commandPool = _renderer->CommandPool,
             .level = vk::CommandBufferLevel::ePrimary,
             .commandBufferCount = (uint32_t) _commandBuffers.size()
     };
 
     try {
-        _commandBuffers = _device.allocateCommandBuffers(allocInfo);
+        _commandBuffers = _renderer->Device.allocateCommandBuffers(allocInfo);
     } catch (std::exception const &e) {
         spdlog::error("[Window] Failed to create command buffers: {}", e.what());
         return false;
@@ -832,9 +834,9 @@ bool Window::createSyncObjects() {
 
     try {
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            _imageAvailableSemaphores[i] = _device.createSemaphore(semaphoreInfo);
-            _renderFinishedSemaphores[i] = _device.createSemaphore(semaphoreInfo);
-            _inFlightFences[i] = _device.createFence(fenceInfo);
+            _imageAvailableSemaphores[i] = _renderer->Device.createSemaphore(semaphoreInfo);
+            _renderFinishedSemaphores[i] = _renderer->Device.createSemaphore(semaphoreInfo);
+            _inFlightFences[i] = _renderer->Device.createFence(fenceInfo);
         }
     } catch (std::exception const &e) {
         spdlog::error("[Window] Failed to create sync objects: {}", e.what());

@@ -12,7 +12,7 @@ public:
     Texture2D();
     ~Texture2D();
 
-    void load(unsigned char *data, int width, int height, int wrap, int filter);
+    void load(unsigned char *data, int width, int height);
     void bind() const;
 
     int getWidth() const { return _width; }

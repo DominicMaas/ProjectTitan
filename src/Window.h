@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "core/Scene.h"
+#include "core/Renderer.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -32,10 +33,10 @@ public:
 
     RenderableData getRenderableData() {
         RenderableData data = {
-                .allocator = _allocator,
-                .device = _device,
-                .commandPool = _commandPool,
-                .graphicsQueue = _graphicsQueue };
+                .allocator = _renderer->Allocator,
+                .device = _renderer->Device,
+                .commandPool = _renderer->CommandPool,
+                .graphicsQueue = _renderer->GraphicsQueue };
         return data;
     }
 
@@ -46,6 +47,10 @@ public:
         // This recreates the command buffers to
         // use the current scene
         _recreateCommandBuffers = true;
+    }
+
+    Renderer* getRenderer() {
+        return _renderer;
     }
 
 private:
@@ -63,11 +68,11 @@ private:
 
     size_t _currentFrame = 0;
 
+    Renderer* _renderer;
+
     vk::Instance _instance;
     vk::SurfaceKHR _surface;
     vk::PhysicalDevice _physicalDevice;
-    vk::Device _device;
-    vk::Queue _graphicsQueue;
     vk::Queue _presentQueue;
     vk::SwapchainKHR _swapChain;
     vk::RenderPass _renderPass;
@@ -86,10 +91,6 @@ private:
 
     vk::Format _swapChainImageFormat;
     vk::Extent2D _swapChainExtent;
-
-    vk::CommandPool _commandPool;
-
-    VmaAllocator _allocator;
 
     // Vulkan validation layers
     const bool _enableValidationLayers = true;

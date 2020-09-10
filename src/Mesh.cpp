@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include "core/managers/PipelineManager.h"
+#include "core/Renderer.h"
 
 Mesh::Mesh(const std::string& pipelineName) {
     this->_pipelineName = pipelineName;
@@ -45,130 +46,62 @@ void Mesh::build(RenderableData input) {
     // ------------------ Create Uniform Buffer ------------------ //
     // This will be done on local memory for now, May copy over to GPU later
     // on, since the mesh model should not be updated too often.
-    VkBufferCreateInfo ubInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    ubInfo.size = sizeof(UniformBufferObject);
-    ubInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    ubInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo ubAllocCreateInfo = {};
-    ubAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-    ubAllocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    ubAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-
-    VkBuffer tempUniformBuffer;
-    vmaCreateBuffer(input.allocator, &ubInfo, &ubAllocCreateInfo, &tempUniformBuffer, &_uniformAllocation, nullptr);
-    _uniformBuffer = tempUniformBuffer;
+    VmaAllocationInfo uniformBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(_uniformBuffer, _uniformAllocation,uniformBufferAllocInfo,
+         sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+         VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     // ------------------ Create Vertex Buffer ------------------ //
-    VkBufferCreateInfo vbInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    vbInfo.size = sizeof(Vertex) * Vertices.size();
-    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VmaAllocationCreateInfo vbAllocCreateInfo = {};
-    vbAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-    vbAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    auto vertexSize = sizeof(Vertex) * Vertices.size();
 
-    VkBuffer stagingVertexBuffer = VK_NULL_HANDLE;
+    // ON CPU
+    vk::Buffer stagingVertexBuffer = nullptr;
     VmaAllocation stagingVertexBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingVertexBufferAllocInfo = {};
-    vmaCreateBuffer(input.allocator, &vbInfo, &vbAllocCreateInfo, &stagingVertexBuffer, &stagingVertexBufferAlloc, &stagingVertexBufferAllocInfo);
+    Renderer::Instance->createBuffer(stagingVertexBuffer, stagingVertexBufferAlloc, stagingVertexBufferAllocInfo,
+                                     vertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+                                     VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-    memcpy(stagingVertexBufferAllocInfo.pMappedData, Vertices.data(), (size_t) vbInfo.size);
+    // Copy to buffer
+    memcpy(stagingVertexBufferAllocInfo.pMappedData, Vertices.data(), (size_t) vertexSize);
 
-    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vbAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    vbAllocCreateInfo.flags = 0;
-
-    VkBuffer tempVertexBuffer;
-    vmaCreateBuffer(input.allocator, &vbInfo, &vbAllocCreateInfo, &tempVertexBuffer, &_vertexAllocation, nullptr);
-    _vertexBuffer = tempVertexBuffer;
+    // On GPU
+    VmaAllocationInfo vertexBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(_vertexBuffer, _vertexAllocation, vertexBufferAllocInfo, vertexSize,
+                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                     VMA_MEMORY_USAGE_GPU_ONLY);
 
     // ------------------ Create Index Buffer ------------------ //
-    VkBufferCreateInfo ibInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    ibInfo.size = sizeof(unsigned short) * Indices.size();
-    ibInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    ibInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VmaAllocationCreateInfo ibAllocCreateInfo = {};
-    ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-    ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    auto indexSize = sizeof(unsigned short) * Indices.size();
 
-    VkBuffer stagingIndexBuffer = VK_NULL_HANDLE;
+    // ON CPU
+    vk::Buffer stagingIndexBuffer = nullptr;
     VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo stagingIndexBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(stagingIndexBuffer, stagingIndexBufferAlloc, stagingIndexBufferAllocInfo,
+                                     vertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+                                     VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-    if (!Indices.empty()) {
-        if (vmaCreateBuffer(input.allocator, &ibInfo, &ibAllocCreateInfo, &stagingIndexBuffer, &stagingIndexBufferAlloc, &stagingIndexBufferAllocInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Could not create the temporary index buffer");
-        }
+    // Copy to buffer
+    memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) indexSize);
 
-        memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) ibInfo.size);
-
-        ibInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        ibAllocCreateInfo.flags = 0;
-
-        VkBuffer tempIndexBuffer;
-        if (vmaCreateBuffer(input.allocator, &ibInfo, &ibAllocCreateInfo, &tempIndexBuffer, &_indexAllocation, nullptr) != VK_SUCCESS) {
-            throw std::runtime_error("Could not create the index buffer");
-        }
-        _indexBuffer = tempIndexBuffer;
-    }
+    // On GPU
+    VmaAllocationInfo indexBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(_indexBuffer, _indexAllocation, indexBufferAllocInfo, indexSize,
+                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                     VMA_MEMORY_USAGE_GPU_ONLY);
 
     // ------------------ Copy Buffers ------------------ //
 
-    // Copy data from staging CPU buffer to actual GPU buffer. Memory transfer operations are executed using command
-    // pools, so we need to create a new temporary command pool and execute it.
-
-    // Allocate a command buffer to use
-    vk::CommandBufferAllocateInfo allocInfo = {
-            .commandPool = input.commandPool,
-            .level = vk::CommandBufferLevel::ePrimary,
-            .commandBufferCount = 1 };
-    vk::CommandBuffer commandBuffer = input.device.allocateCommandBuffers(allocInfo)[0];
-
-    // We are only running this once
-    commandBuffer.begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
-
-    // Copy the vertex buffer
-    vk::BufferCopy vertexCopyRegion = {
-            .srcOffset = 0,
-            .dstOffset = 0,
-            .size = vbInfo.size };
-    commandBuffer.copyBuffer(stagingVertexBuffer, _vertexBuffer, 1, &vertexCopyRegion);
-
-    if (!Indices.empty()) {
-        // Copy the index buffer
-        vk::BufferCopy indexCopyRegion = {
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size = ibInfo.size };
-        commandBuffer.copyBuffer(stagingIndexBuffer, _indexBuffer, 1, &indexCopyRegion);
-    }
-
-    // End
-    commandBuffer.end();
-
-    vk::SubmitInfo submitInfo = {
-            .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffer
-    };
-
-    // Submit and wait
-    input.graphicsQueue.submit(1, &submitInfo, nullptr);
-    input.graphicsQueue.waitIdle();
-
-    // Cleanup
-    input.device.freeCommandBuffers(input.commandPool, 1, &commandBuffer);
+    Renderer::Instance->copyBuffer(stagingVertexBuffer, _vertexBuffer, vertexSize);
+    Renderer::Instance->copyBuffer(stagingIndexBuffer, _indexBuffer, indexSize);
 
     // ------------------ Destroy Staging Buffers ------------------ //
 
     vmaDestroyBuffer(input.allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
-
-    if (!Indices.empty()) {
-        vmaDestroyBuffer(input.allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
-    }
+    vmaDestroyBuffer(input.allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
 
     // ------------------ Create the descriptor set ------------------ //
 

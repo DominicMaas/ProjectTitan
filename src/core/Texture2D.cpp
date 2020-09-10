@@ -14,9 +14,11 @@ void Texture2D::bind() const {
     //GLCall(glBindTexture(GL_TEXTURE_2D, this->_textureId));
 }
 
-void Texture2D::load(unsigned char *data, int width, int height, int wrap, int filter) {
+void Texture2D::load(unsigned char *data, int width, int height) {
     this->_width = width;
     this->_height = height;
+
+    vk::DeviceSize imageSize = width * height * 4;
 
     // Bind to this resource and start building it
     //GLCall(glBindTexture(GL_TEXTURE_2D, this->_textureId));
