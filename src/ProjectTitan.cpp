@@ -116,7 +116,7 @@ int main(void) {
             0, 1, 2, 2, 3, 0
     };
 
-    Mesh* mesh = new Mesh(vertices, std::vector<unsigned int>(), std::vector<Texture>());
+    Mesh* mesh = new Mesh("basic", vertices, std::vector<unsigned int>(), std::vector<Texture>());
 
     auto* scene = new Scene();
     scene->addRenderable("TestMesh", mesh, w.getRenderableData());

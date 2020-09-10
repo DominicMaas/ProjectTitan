@@ -59,6 +59,7 @@ private:
     };
 
 public:
+    Skybox() : _mesh("basic") {}
     ~Skybox();
 
     void setup(std::vector<std::string> faces);

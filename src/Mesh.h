@@ -23,16 +23,18 @@ private:
 
     vk::DescriptorSet _descriptorSet;
 
+    std::string _pipelineName;
+
     bool _built;
 
 public:
     // Create a new mesh with a set of vertices, indices and textures. The mesh will not be built
     // until build() is called.
-    Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+    Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
     // Create a new empty mesh, make sure you call rebuild() to place vertices, indices and textures within
     // the mesh at a later time.
-    Mesh();
+    Mesh(const std::string& pipelineName);
 
     // Rebuilds the mesh with a new set of vertices, indices and textures
     void rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, RenderableData input);

@@ -24,11 +24,12 @@ private:
     vk::ShaderModule _fragmentShader;
 
     vk::DescriptorSetLayout _descriptorSetLayout;
+    vk::DescriptorPool _descriptorPool;
 
     vk::PipelineLayout _pipelineLayout;
     vk::Pipeline _graphicsPipeline;
 
-    vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code);
+    static vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code);
 
 public:
     GraphicsPipeline(PipelineInfo info);
@@ -36,10 +37,8 @@ public:
     void create(CreateGraphicsPipelineInfo createInfo);
     void destroy(DestroyGraphicsPipelineInfo info);
 
-    vk::DescriptorPool DescriptorPool;
-
     vk::Pipeline getVKPipeline() { return _graphicsPipeline; }
     vk::PipelineLayout getPipelineLayout() { return _pipelineLayout; }
-    vk::DescriptorPool getDescriptorSetPool() { return DescriptorPool; }
+    vk::DescriptorPool getDescriptorPool() { return _descriptorPool; }
     vk::DescriptorSetLayout getDescriptorSetLayout() { return _descriptorSetLayout; }
 };

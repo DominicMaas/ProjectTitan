@@ -4,7 +4,6 @@
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "core/Scene.h"
-#include "core/managers/PipelineManager.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -32,17 +31,11 @@ public:
     void run();
 
     RenderableData getRenderableData() {
-
-        //TODO: REMOVE THIS
-        GraphicsPipeline* pipeline = PipelineManager::getPipeline("basic");
-
         RenderableData data = {
                 .allocator = _allocator,
                 .device = _device,
                 .commandPool = _commandPool,
-                .graphicsQueue = _graphicsQueue,
-                .descriptorPool = pipeline->DescriptorPool,
-                .graphicsPipeline = *pipeline };
+                .graphicsQueue = _graphicsQueue };
         return data;
     }
 

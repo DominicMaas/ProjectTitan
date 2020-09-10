@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "core/managers/PipelineManager.h"
 
 Window::Window(const char *title, unsigned int initialWidth, unsigned int initialHeight) {
     this->_title = title;

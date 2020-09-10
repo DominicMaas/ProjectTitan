@@ -1,6 +1,9 @@
 #include "Mesh.h"
+#include "core/managers/PipelineManager.h"
 
-Mesh::Mesh() {
+Mesh::Mesh(const std::string& pipelineName) {
+    this->_pipelineName = pipelineName;
+
     this->Vertices = std::vector<Vertex>();
     this->Indices = std::vector<unsigned int>();
     this->Textures = std::vector<Texture>();
@@ -8,7 +11,9 @@ Mesh::Mesh() {
     this->_built = false;
 }
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
+Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
+    this->_pipelineName = pipelineName;
+
     this->Vertices = vertices;
     this->Indices = indices;
     this->Textures = textures;
@@ -31,7 +36,6 @@ void Mesh::build(RenderableData input) {
     assert(input.device);
     assert(input.commandPool);
     assert(input.graphicsQueue);
-    assert(input.descriptorPool);
 
     // If the mesh has already been built, we need to destroy it first
     if (_built) {
@@ -168,9 +172,14 @@ void Mesh::build(RenderableData input) {
 
     // ------------------ Create the descriptor set ------------------ //
 
-    vk::DescriptorSetLayout descriptorSetLayout[] = { input.graphicsPipeline.getDescriptorSetLayout() };
+    auto* pipeline = PipelineManager::getPipeline(_pipelineName);
+    if (pipeline == nullptr) {
+        throw std::invalid_argument("Unable to retrieve the specified pipeline ("+_pipelineName+")");
+    }
+
+    vk::DescriptorSetLayout descriptorSetLayout[] = { pipeline->getDescriptorSetLayout() };
     vk::DescriptorSetAllocateInfo descriptorAllocInfo = {
-            .descriptorPool = input.descriptorPool,
+            .descriptorPool = pipeline->getDescriptorPool(),
             .descriptorSetCount = 1,
             .pSetLayouts = descriptorSetLayout };
 

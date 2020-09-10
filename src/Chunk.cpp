@@ -10,7 +10,7 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
     // Create a new empty mesh
-    _mesh = new Mesh();
+    _mesh = new Mesh("basic");
 
     // Create the blocks
     _blocks = new Block **[CHUNK_WIDTH];

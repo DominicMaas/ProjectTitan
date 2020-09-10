@@ -8,8 +8,6 @@ struct RenderableData {
     vk::Device &device;
     vk::CommandPool &commandPool;
     vk::Queue &graphicsQueue;
-    vk::DescriptorPool &descriptorPool;
-    GraphicsPipeline &graphicsPipeline;
 };
 
 class GraphicsPipeline;

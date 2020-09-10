@@ -187,13 +187,13 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .poolSizeCount = 1,
             .pPoolSizes = &poolSize };
 
-    DescriptorPool = createInfo.device.createDescriptorPool(poolInfo);
+    _descriptorPool = createInfo.device.createDescriptorPool(poolInfo);
 }
 
 void GraphicsPipeline::destroy(DestroyGraphicsPipelineInfo info) {
     assert(info.device);
 
-    info.device.destroyDescriptorPool(DescriptorPool);
+    info.device.destroyDescriptorPool(_descriptorPool);
 
     info.device.destroyPipeline(_graphicsPipeline);
 
