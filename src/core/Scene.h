@@ -17,7 +17,7 @@ public:
 
     void addRenderable(std::string name, Renderable* renderable, RenderableData renderableData);
 
-    void render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline);
+    void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName);
     void update(RenderableData input, long double deltaTime);
 
     void destroy(RenderableData renderableData);

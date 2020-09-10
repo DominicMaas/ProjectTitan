@@ -27,7 +27,7 @@ void Entity::render(Shader &shader) {
     //shader.setMat4("model", getModelMatrix());
 
     // Render
-    _model->render(shader);
+    //_model->render(shader);
 }
 
 void Entity::update(long double delta) {

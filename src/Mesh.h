@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pch.h>
-#include "GraphicsPipeline.h"
+
 #include "core/Renderable.h"
 #include "core/Vertex.h"
 
@@ -40,7 +40,7 @@ public:
     void rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures, RenderableData input);
 
     void build(RenderableData input) override;
-    void render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline) override;
+    void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) override;
     void update(RenderableData input, long double deltaTime) override;
     void destroy(RenderableData input) override;
 

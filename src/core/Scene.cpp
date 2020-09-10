@@ -9,9 +9,9 @@ void Scene::addRenderable(std::string name, Renderable* renderable, RenderableDa
     }
 }
 
-void Scene::render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline) {
+void Scene::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) {
     for (boost::ptr_map<std::string, Renderable>::iterator e = _renderables.begin(); e != _renderables.end(); e++) {
-        e->second->render(commandBuffer, pipeline);
+        e->second->render(commandBuffer, pipelineName);
     }
 }
 

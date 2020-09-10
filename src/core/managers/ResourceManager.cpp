@@ -3,7 +3,7 @@
 // Instantiate static variables
 std::map<std::string, Shader*> ResourceManager::_shaders;
 //std::map<std::string, Texture2D*> ResourceManager::_textures;
-//std::map<std::string, Model*> ResourceManager::_models;
+std::map<std::string, Model*> ResourceManager::_models;
 
 void ResourceManager::loadShader(std::string name, std::string path) {
     spdlog::info("[Resource Manager] Loading shader '" + name + "'...");
@@ -38,27 +38,28 @@ Shader* ResourceManager::getShader(std::string name) {
     stbi_image_free(data);
 }
 
-void ResourceManager::loadModel(std::string name, std::string path) {
-    spdlog::info("[Resource Manager] Loading model '" + name + "'...");
 
-    Model* model = new Model(path.c_str());
-    model->build();
 
-    _models[name] = model;
-}
 
-Shader* ResourceManager::getShader(std::string name) {
-    return _shaders[name];
-}
 
 Texture2D* ResourceManager::getTexture(std::string name) {
     return _textures[name];
+}
+*/
+
+void ResourceManager::loadModel(std::string name, std::string path, RenderableData data) {
+    spdlog::info("[Resource Manager] Loading model '" + name + "'...");
+
+    Model* model = new Model(path.c_str());
+    model->build(data);
+
+    _models[name] = model;
 }
 
 Model *ResourceManager::getModel(std::string name) {
     return _models[name];
 }
-*/
+
 void ResourceManager::clean() {
 
 }

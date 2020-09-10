@@ -180,10 +180,10 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
     // Create the descriptor pool for this pipeline
     vk::DescriptorPoolSize poolSize = {
             .type = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = static_cast<uint32_t>(5) };
+            .descriptorCount = static_cast<uint32_t>(500) };
 
     vk::DescriptorPoolCreateInfo poolInfo = {
-            .maxSets = static_cast<uint32_t>(5),
+            .maxSets = static_cast<uint32_t>(500),
             .poolSizeCount = 1,
             .pPoolSizes = &poolSize };
 

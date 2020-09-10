@@ -2,19 +2,6 @@
 
 unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma = false);
 
-void Model::render(Shader &shader) {
-    for (auto& mesh : _meshes) {
-        //mesh.render(shader);
-    }
-}
-
-void Model::build() {
-    for (auto& mesh : _meshes) {
-        //mesh.build();
-    }
-}
-
-
 void Model::loadModel(std::string path) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -124,6 +111,30 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
         }
     }
     return textures;
+}
+
+void Model::build(RenderableData input) {
+    for (auto& mesh : _meshes) {
+        mesh.build(input);
+    }
+}
+
+void Model::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) {
+    for (auto& mesh : _meshes) {
+        mesh.render(commandBuffer, pipelineName);
+    }
+}
+
+void Model::update(RenderableData input, long double deltaTime) {
+    for (auto& mesh : _meshes) {
+        mesh.update(input, deltaTime);
+    }
+}
+
+void Model::destroy(RenderableData input) {
+    for (auto& mesh : _meshes) {
+        mesh.destroy(input);
+    }
 }
 
 // TODO: Merge this into the texture2d class

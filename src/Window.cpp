@@ -810,7 +810,7 @@ bool Window::createCommandBuffers() {
 
             // Render the current scene
             if (_currentScene != nullptr) {
-                _currentScene->render(_commandBuffers[i], *pipeline);
+                _currentScene->render(_commandBuffers[i], "basic");
             }
         }
 

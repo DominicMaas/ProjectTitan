@@ -2,6 +2,10 @@
 
 #include <pch.h>
 #include "../../Shader.h"
+#include "../Model.h"
+
+class Model;
+struct RenderableData;
 
 class ResourceManager {
 private:
@@ -10,7 +14,7 @@ private:
 
     static std::map<std::string, Shader*> _shaders;
     //static std::map<std::string, Texture2D*> _textures;
-    //static std::map<std::string, Model*> _models;
+    static std::map<std::string, Model*> _models;
 
 public:
     // Loads a shader into the resource manager, do not include
@@ -22,7 +26,7 @@ public:
     //static void loadTexture(std::string name, std::string path, int wrap = 0x812F, int filter = 0x2601);
 
     // Loads a model into the resource manager
-    //static void loadModel(std::string name, std::string path);
+    static void loadModel(std::string name, std::string path, RenderableData data);
 
     // Get a shader of the specified name
     static Shader* getShader(std::string name);
@@ -31,7 +35,7 @@ public:
     //static Texture2D* getTexture(std::string name);
 
     // Get a model of the specified name
-    //static Model* getModel(std::string name);
+    static Model* getModel(std::string name);
 
     // Removes all resources from the resource manager, call this
     // when the game is closing

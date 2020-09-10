@@ -1,13 +1,15 @@
 #pragma once
 
 #include <pch.h>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-#include "../Shader.h"
+
+#include "Renderable.h"
 #include "../Mesh.h"
 
-class Model {
+class Model: public Renderable {
 public:
     Model(std::string path) {
         loadModel(path);
@@ -17,10 +19,10 @@ public:
         _meshes.push_back(m);
     }
 
-    // Builds all the meshes for rendering
-    void build();
-
-    void render(Shader &shader);
+    void build(RenderableData input) override;
+    void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) override;
+    void update(RenderableData input, long double deltaTime) override;
+    void destroy(RenderableData input) override;
 
 private:
 

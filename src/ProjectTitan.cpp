@@ -112,10 +112,13 @@ int main(void) {
             0, 1, 3, 1, 2, 3
     };
 
+    //ResourceManager::loadModel("backpack", "models/backpack.obj", w.getRenderableData());
+
     Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
 
     auto* scene = new Scene();
     scene->addRenderable("TestMesh", mesh, w.getRenderableData());
+    //scene->addRenderable("TestModel", ResourceManager::getModel("backpack"), w.getRenderableData());
 
     w.setCurrentScene(scene);
 
