@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../pch.h"
+#include <pch.h>
 #include "../../GraphicsPipeline.h"
 #include <boost/concept_check.hpp>
 #include <boost/ptr_container/ptr_map.hpp>

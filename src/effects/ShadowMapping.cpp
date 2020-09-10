@@ -1,6 +1,6 @@
 #include "ShadowMapping.h"
 #include "../Shader.h"
-#include "../core/ResourceManager.h"
+#include "../core/managers/ResourceManager.h"
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------

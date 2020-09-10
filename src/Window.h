@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pch.h"
+#include <pch.h>
 #include "Mesh.h"
 #include "GraphicsPipeline.h"
 #include "core/Scene.h"

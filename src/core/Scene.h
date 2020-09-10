@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 #include "../Camera.h"
 #include "Renderable.h"
 #include <boost/concept_check.hpp>

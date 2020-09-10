@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pch.h"
-#include "core/ResourceManager.h"
+#include <pch.h>
+#include "core/managers/ResourceManager.h"
 
 struct CreateGraphicsPipelineInfo {
     vk::Device device;

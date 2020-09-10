@@ -16,7 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <spdlog/spdlog.h>
-#include "vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 
 #include <optional>
 #include <set>

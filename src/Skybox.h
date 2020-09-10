@@ -1,8 +1,8 @@
 #pragma once
 
-#include "pch.h"
+#include <pch.h>
 #include "Shader.h"
-#include "core/ResourceManager.h"
+#include "core/managers/ResourceManager.h"
 #include "Mesh.h"
 
 class Skybox {

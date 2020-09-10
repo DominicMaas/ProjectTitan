@@ -1,11 +1,11 @@
 #pragma once
 
-#include "pch.h"
+#include <pch.h>
 
 #include "Shader.h"
 #include "Camera.h"
 #include <limits>
-#include "BlockManager.h"
+#include "core/managers/BlockManager.h"
 #include "World.h"
 #include "Block.h"
 #include "Mesh.h"

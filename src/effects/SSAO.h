@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 #include "RenderEffect.h"
 
 class SSAO : public RenderEffect {

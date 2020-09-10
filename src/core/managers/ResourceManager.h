@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../pch.h"
-#include "../Shader.h"
+#include <pch.h>
+#include "../../Shader.h"
 
 class ResourceManager {
 private:

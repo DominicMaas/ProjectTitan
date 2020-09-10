@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../pch.h"
+#include <pch.h>
 #include "BaseWorldGen.h"
 #include "FastNoise.h"
-#include "../BlockManager.h"
+#include "../core/managers/BlockManager.h"
 
 class StandardWorldGen : public BaseWorldGen {
 public:

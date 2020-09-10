@@ -19,9 +19,9 @@
 //#include "effects/ShadowMapping.h"
 #define VMA_IMPLEMENTATION
 
-#include "pch.h"
+#include <pch.h>
 #include "Window.h"
-#include "core/ResourceManager.h"
+#include "core/managers/ResourceManager.h"
 #include "core/managers/PipelineManager.h"
 #include "core/Scene.h"
 

@@ -1,5 +1,5 @@
 #include "World.h"
-#include "core/ResourceManager.h"
+#include "core/managers/ResourceManager.h"
 #include "core/Frustum.h"
 
 void World::rebuildChunks() {

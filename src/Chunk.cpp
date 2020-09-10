@@ -1,5 +1,5 @@
 #include "Chunk.h"
-#include "core/ResourceManager.h"
+#include "core/managers/ResourceManager.h"
 
 Chunk::Chunk(glm::vec3 position, World *world) {
     // Set chunk details
