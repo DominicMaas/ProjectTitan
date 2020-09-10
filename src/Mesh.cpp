@@ -5,13 +5,13 @@ Mesh::Mesh(const std::string& pipelineName) {
     this->_pipelineName = pipelineName;
 
     this->Vertices = std::vector<Vertex>();
-    this->Indices = std::vector<unsigned int>();
+    this->Indices = std::vector<unsigned short>();
     this->Textures = std::vector<Texture>();
 
     this->_built = false;
 }
 
-Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
+Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures) {
     this->_pipelineName = pipelineName;
 
     this->Vertices = vertices;
@@ -21,7 +21,7 @@ Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::v
     this->_built = false;
 }
 
-void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, RenderableData input) {
+void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures, RenderableData input) {
     this->Vertices = vertices;
     this->Indices = indices;
     this->Textures = textures;
@@ -51,7 +51,7 @@ void Mesh::build(RenderableData input) {
     ubInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo ubAllocCreateInfo = {};
-    ubAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_COPY;
+    ubAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
     ubAllocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     ubAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
@@ -86,7 +86,7 @@ void Mesh::build(RenderableData input) {
 
     // ------------------ Create Index Buffer ------------------ //
     VkBufferCreateInfo ibInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    ibInfo.size = sizeof(unsigned int) * Indices.size();
+    ibInfo.size = sizeof(unsigned short) * Indices.size();
     ibInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     ibInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -241,7 +241,8 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, GraphicsPipeline &pipeline) 
         commandBuffer.draw(Vertices.size(), 1, 0, 0);
     } else {
         commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
-        commandBuffer.drawIndexed(static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
+
+        commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
     }
 
 

@@ -86,7 +86,7 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
 
             // Enable face culling
             .cullMode = vk::CullModeFlagBits::eBack,
-            .frontFace = vk::FrontFace::eClockwise,
+            .frontFace = vk::FrontFace::eCounterClockwise,
 
             // Sometimes used for shadow mapping
             .depthBiasEnable = VK_FALSE,
