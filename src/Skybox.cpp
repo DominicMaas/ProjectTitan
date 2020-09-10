@@ -1,6 +1,4 @@
-
 #include "Skybox.h"
-#include "iostream"
 
 void Skybox::setup(std::vector<std::string> faces) {
     // Get the shader
@@ -26,7 +24,7 @@ void Skybox::setup(std::vector<std::string> faces) {
             //));
             stbi_image_free(data);
         } else {
-            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            //std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
     }

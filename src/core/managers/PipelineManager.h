@@ -1,7 +1,3 @@
-//
-// Created by Dominic Maas on 10/09/20.
-//
-
 #pragma once
 
 #include "../../pch.h"

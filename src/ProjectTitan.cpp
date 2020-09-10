@@ -1,15 +1,10 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-//#define GLFW_INCLUDE_VULKAN
-//#include <glad/glad.h>
-//#include <GLFW/glfw3.h>
 //#include <iostream>
 //#include "Shader.h"
 //#include "effects/RenderEffect.h"
 //#include "effects/SSAO.h"
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
 //#include "Camera.h"
 //#include "Chunk.h"
 //#include "World.h"

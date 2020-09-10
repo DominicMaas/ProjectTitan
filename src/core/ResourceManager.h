@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../pch.h"
-
-#include <stb_image.h>
 #include "../Shader.h"
 
 class ResourceManager {

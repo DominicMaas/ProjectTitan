@@ -9,7 +9,6 @@
 #include "World.h"
 #include "Block.h"
 #include "Mesh.h"
-#include "core/ExecutionTimer.h"
 #include "core/BlockMap.h"
 #include <reactphysics3d/reactphysics3d.h>
 

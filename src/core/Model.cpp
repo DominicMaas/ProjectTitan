@@ -1,6 +1,4 @@
 #include "Model.h"
-#include <stb_image.h>
-#include <iostream>
 
 unsigned int textureFromFile(const char *path, const std::string &directory, bool gamma = false);
 
@@ -161,7 +159,7 @@ unsigned int textureFromFile(const char *path, const std::string &directory, boo
     }
     else
     {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
+        spdlog::warn("Texture failed to load at path: {}", path);
         stbi_image_free(data);
     }
 

@@ -2,7 +2,6 @@
 
 #include "pch.h"
 #include "Shader.h"
-#include <stb_image.h>
 #include "core/ResourceManager.h"
 #include "Mesh.h"
 

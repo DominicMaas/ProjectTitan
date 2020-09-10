@@ -1,19 +1,22 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <stb_image.h>
+
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-
 #include <GLFW/glfw3.h>
-#include <spdlog/spdlog.h>
-#include <vulkan/vulkan.hpp>
-#include "vk_mem_alloc.h"
 
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <vulkan/vulkan.hpp>
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include <spdlog/spdlog.h>
+#include "vk_mem_alloc.h"
 
 #include <optional>
 #include <set>
