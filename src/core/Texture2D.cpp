@@ -2,20 +2,10 @@
 #include "Renderer.h"
 #include "managers/PipelineManager.h"
 
-Texture2D::Texture2D() {
-    // Generate the resource
-    //GLCall(glGenTextures(1, &this->_textureId));
-}
-
 Texture2D::~Texture2D() {
     Renderer::Instance->Device.destroySampler(_textureSampler);
     Renderer::Instance->Device.destroyImageView(_textureImageView);
     vmaDestroyImage(Renderer::Instance->Allocator, _textureImage, _allocation);
-}
-
-void Texture2D::bind() const {
-    //GLCall(glActiveTexture(GL_TEXTURE0));
-    //GLCall(glBindTexture(GL_TEXTURE_2D, this->_textureId));
 }
 
 void Texture2D::load(unsigned char *pixels, int width, int height) {
@@ -87,11 +77,15 @@ void Texture2D::load(unsigned char *pixels, int width, int height) {
 
     vk::WriteDescriptorSet descriptorWrite = {
             .dstSet = _descriptorSet,
-            .dstBinding = 1,
+            .dstBinding = 0,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,
             .pImageInfo = &imageInfo };
 
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
+}
+
+void Texture2D::bind(vk::CommandBuffer &commandBuffer, vk::PipelineLayout pipelineLayout) const {
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &_descriptorSet, 0, nullptr);
 }

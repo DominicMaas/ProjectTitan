@@ -156,23 +156,20 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
     }
 
     auto* pipeline = PipelineManager::getPipeline(pipelineName);
+
+    // Bind the square texture
     auto* basicTexture = ResourceManager::getTexture("square");
+    basicTexture->bind(commandBuffer, pipeline->getPipelineLayout());
 
     // Bind
     vk::Buffer vertexBuffers[] = { _vertexBuffer };
     vk::DeviceSize offsets[] = { 0 };
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-    //vk::DescriptorSet descriptorSets[] = {
-    //    _descriptorSet,
-    //    basicTexture->getDescriptorSet()
-    //};
-
-    auto texSet = basicTexture->getDescriptorSet();
 
     // Bind the descriptor set
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 0, 1, &_descriptorSet, 0, nullptr);
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 1, 1, &texSet, 0, nullptr);
+
 
     // Draw
     if (Indices.empty()) {

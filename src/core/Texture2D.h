@@ -16,13 +16,11 @@ private:
     int _height;
 
 public:
-    Texture2D();
+    Texture2D() {}
     ~Texture2D();
 
     void load(unsigned char *data, int width, int height);
-    vk::DescriptorSet getDescriptorSet() { return _descriptorSet; }
-
-    void bind() const;
+    void bind(vk::CommandBuffer &commandBuffer, vk::PipelineLayout pipelineLayout) const;
 
     int getWidth() const { return _width; }
     int getHeight() const { return _height; }

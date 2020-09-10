@@ -29,7 +29,7 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
     };
 
     vk::DescriptorSetLayoutBinding samplerLayoutBinding = {
-            .binding = 1,
+            .binding = 0,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eFragment,
