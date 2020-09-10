@@ -1,5 +1,6 @@
 #include "GraphicsPipeline.h"
 #include "core/Vertex.h"
+#include "core/Renderer.h"
 
 vk::ShaderModule GraphicsPipeline::createShaderModule(vk::Device device, const std::vector<char> &code) {
     vk::ShaderModuleCreateInfo createInfo = {
@@ -27,12 +28,26 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .pImmutableSamplers = nullptr
     };
 
-    vk::DescriptorSetLayoutCreateInfo layoutInfo = {
+    vk::DescriptorSetLayoutBinding samplerLayoutBinding = {
+            .binding = 1,
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eFragment,
+            .pImmutableSamplers = nullptr
+    };
+
+    vk::DescriptorSetLayoutCreateInfo uboLayoutInfo = {
             .bindingCount = 1,
             .pBindings = &uboLayoutBinding
     };
 
-    _descriptorSetLayout = createInfo.device.createDescriptorSetLayout(layoutInfo, nullptr);
+    vk::DescriptorSetLayoutCreateInfo texSamplerLayoutInfo = {
+            .bindingCount = 1,
+            .pBindings = &samplerLayoutBinding
+    };
+
+    _uboDescriptorSetLayout = createInfo.device.createDescriptorSetLayout(uboLayoutInfo);
+    _texSamplerDescriptorSetLayout = createInfo.device.createDescriptorSetLayout(texSamplerLayoutInfo);
 
     // Create the shaders
     Shader* shader = ResourceManager::getShader(_info.shaderName);
@@ -140,9 +155,10 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .pDynamicStates = dynamicStates
     };
 
+    vk::DescriptorSetLayout descriptorSetLayouts[] = { _uboDescriptorSetLayout, _texSamplerDescriptorSetLayout };
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {
-            .setLayoutCount = 1,
-            .pSetLayouts = &_descriptorSetLayout,
+            .setLayoutCount = 2,
+            .pSetLayouts = descriptorSetLayouts,
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr
     };
@@ -178,14 +194,17 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
     _graphicsPipeline = pipeline;
 
     // Create the descriptor pool for this pipeline
-    vk::DescriptorPoolSize poolSize = {
-            .type = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = static_cast<uint32_t>(500) };
+    vk::DescriptorPoolSize poolSizes[2];
+
+    poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(500);
+    poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(500);
 
     vk::DescriptorPoolCreateInfo poolInfo = {
             .maxSets = static_cast<uint32_t>(500),
-            .poolSizeCount = 1,
-            .pPoolSizes = &poolSize };
+            .poolSizeCount = 2,
+            .pPoolSizes = poolSizes };
 
     _descriptorPool = createInfo.device.createDescriptorPool(poolInfo);
 }
@@ -199,8 +218,29 @@ void GraphicsPipeline::destroy(DestroyGraphicsPipelineInfo info) {
 
     info.device.destroyPipelineLayout(_pipelineLayout);
 
-    info.device.destroyDescriptorSetLayout(_descriptorSetLayout);
+    info.device.destroyDescriptorSetLayout(_texSamplerDescriptorSetLayout);
+    info.device.destroyDescriptorSetLayout(_uboDescriptorSetLayout);
 
     info.device.destroyShaderModule(_fragmentShader);
     info.device.destroyShaderModule(_vertexShader);
+}
+
+vk::DescriptorSet GraphicsPipeline::createUBODescriptorSet() {
+    vk::DescriptorSetLayout descriptorSetLayout[] = { _uboDescriptorSetLayout };
+    vk::DescriptorSetAllocateInfo descriptorAllocInfo = {
+            .descriptorPool = _descriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = descriptorSetLayout };
+
+    return Renderer::Instance->Device.allocateDescriptorSets(descriptorAllocInfo)[0];
+}
+
+vk::DescriptorSet GraphicsPipeline::createTexSamplerDescriptorSet() {
+    vk::DescriptorSetLayout descriptorSetLayout[] = { _texSamplerDescriptorSetLayout };
+    vk::DescriptorSetAllocateInfo descriptorAllocInfo = {
+            .descriptorPool = _descriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = descriptorSetLayout };
+
+    return Renderer::Instance->Device.allocateDescriptorSets(descriptorAllocInfo)[0];
 }

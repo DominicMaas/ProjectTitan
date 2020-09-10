@@ -514,7 +514,7 @@ bool Window::createLogicalDevice() {
     }
 
     // The wanted device features
-    vk::PhysicalDeviceFeatures deviceFeatures { };
+    vk::PhysicalDeviceFeatures deviceFeatures { .samplerAnisotropy = VK_TRUE };
 
     // Device creation info
     vk::DeviceCreateInfo deviceCreateInfo {
@@ -636,22 +636,7 @@ bool Window::createImageViews() {
 
     // Iterate over images
     for (int i = 0; i < _swapChainImages.size(); i++) {
-        vk::ImageViewCreateInfo createInfo = {
-                .image = _swapChainImages[i],
-                .viewType = vk::ImageViewType::e2D,
-                .format = _swapChainImageFormat,
-                .components.r = vk::ComponentSwizzle::eIdentity,
-                .components.g = vk::ComponentSwizzle::eIdentity,
-                .components.b = vk::ComponentSwizzle::eIdentity,
-                .components.a = vk::ComponentSwizzle::eIdentity,
-                .subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor,
-                .subresourceRange.baseMipLevel = 0,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.baseArrayLayer = 0,
-                .subresourceRange.layerCount = 1
-        };
-
-        _swapChainImageViews[i] = _renderer->Device.createImageView(createInfo);
+        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat);
     }
 
     return true;

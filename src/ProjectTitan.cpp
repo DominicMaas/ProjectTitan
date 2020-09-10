@@ -98,14 +98,23 @@ int main(void) {
         return -1;
     }
 
+    // Load in resources
     ResourceManager::loadShader("basic", "shaders/vulkan_test");
     PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
+    ResourceManager::loadTexture("block_map", "textures/block_map.png");
+    ResourceManager::loadTexture("square", "textures/square.jpg");
+    ResourceManager::loadTexture("test", "textures/test.jpg");
+
+
+
+
+
     const std::vector<Vertex> vertices = {
-            {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {}},
-            {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {}},
-            {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {}},
-            {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {}}
+            {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+            {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+            {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
     };
 
     const std::vector<unsigned short> indices = {
@@ -121,7 +130,6 @@ int main(void) {
     //scene->addRenderable("TestModel", ResourceManager::getModel("backpack"), w.getRenderableData());
 
     w.setCurrentScene(scene);
-
 
     w.run();
 

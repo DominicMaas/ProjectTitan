@@ -110,14 +110,8 @@ void Mesh::build(RenderableData input) {
         throw std::invalid_argument("Unable to retrieve the specified pipeline ("+_pipelineName+")");
     }
 
-    vk::DescriptorSetLayout descriptorSetLayout[] = { pipeline->getDescriptorSetLayout() };
-    vk::DescriptorSetAllocateInfo descriptorAllocInfo = {
-            .descriptorPool = pipeline->getDescriptorPool(),
-            .descriptorSetCount = 1,
-            .pSetLayouts = descriptorSetLayout };
-
     // Allocate the descriptor set
-    _descriptorSet = input.device.allocateDescriptorSets(descriptorAllocInfo)[0];
+    _descriptorSet = pipeline->createUBODescriptorSet();
 
     // Bind the uniform buffer
     vk::DescriptorBufferInfo bufferInfo = {
@@ -162,14 +156,23 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
     }
 
     auto* pipeline = PipelineManager::getPipeline(pipelineName);
+    auto* basicTexture = ResourceManager::getTexture("square");
 
     // Bind
     vk::Buffer vertexBuffers[] = { _vertexBuffer };
     vk::DeviceSize offsets[] = { 0 };
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
+    //vk::DescriptorSet descriptorSets[] = {
+    //    _descriptorSet,
+    //    basicTexture->getDescriptorSet()
+    //};
+
+    auto texSet = basicTexture->getDescriptorSet();
+
     // Bind the descriptor set
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 0, 1, &_descriptorSet, 0, nullptr);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 1, 1, &texSet, 0, nullptr);
 
     // Draw
     if (Indices.empty()) {
@@ -226,8 +229,8 @@ void Mesh::update(RenderableData input, long double deltaTime) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     UniformBufferObject ubo{};
-    ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    //ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
 
