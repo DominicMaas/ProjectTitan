@@ -30,6 +30,7 @@ void PipelineManager::createPipeline(std::string name, PipelineInfo info) {
 
 GraphicsPipeline *PipelineManager::getPipeline(const std::string& name) {
     if (_graphicsPipelines.find(name) == _graphicsPipelines.end()) {
+        spdlog::error("[Pipeline Manager] Pipeline of name {} does not exist! Returning null pointer...", name);
         return nullptr;
     }
 
@@ -40,4 +41,6 @@ void PipelineManager::cleanup(DestroyGraphicsPipelineInfo info) {
     for (boost::ptr_map<std::string, GraphicsPipeline>::iterator e = _graphicsPipelines.begin(); e != _graphicsPipelines.end(); e++) {
         e->second->destroy(info);
     }
+
+    _graphicsPipelines.release();
 }

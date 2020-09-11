@@ -41,9 +41,14 @@ void Window::run() {
 
         // ---------- Run update events ---------- //
 
+        // Run manual updates
+        if (onUpdate) {
+            onUpdate(deltaTime);
+        }
+
         // Update the current scene
         if (Renderer::Instance->CurrentScene != nullptr) {
-            Renderer::Instance->CurrentScene->update(getRenderableData(), deltaTime);
+            Renderer::Instance->CurrentScene->update(deltaTime);
         }
 
         // ---------- Process Physics ---------- //
@@ -96,6 +101,8 @@ bool Window::init() {
     _window = glfwCreateWindow(_width, _height, _title, nullptr, nullptr);
     glfwSetWindowUserPointer(_window, this);
     glfwSetFramebufferSizeCallback(_window, framebufferResizeCallback);
+    glfwSetMouseButtonCallback(_window, mouseButtonCallback);
+    glfwSetCursorPosCallback(_window, cursorPosCallback);
 
     // Attempt to create the vulkan instance
     if (!createVulkanInstance()) {
@@ -256,9 +263,6 @@ void Window::drawFrame() {
 }
 
 void Window::recreateCommandBuffers() {
-    // Wait until idle
-    //_device.waitIdle();
-
     // Cleanup
     _renderer->Device.freeCommandBuffers(_renderer->CommandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
 
@@ -346,9 +350,10 @@ void Window::cleanup() {
     _renderer->Device.destroyCommandPool(_renderer->CommandPool);
 
     // Delete the current scene
-    Renderer::Instance->CurrentScene->destroy(getRenderableData());
     delete Renderer::Instance->CurrentScene;
     Renderer::Instance->CurrentScene = nullptr;
+
+    ResourceManager::cleanup();
 
     // Destroy the pipelines
     PipelineManager::cleanup({ .device = _renderer->Device });

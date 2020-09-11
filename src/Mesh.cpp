@@ -22,25 +22,34 @@ Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::v
     this->_built = false;
 }
 
-void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures, RenderableData input) {
+Mesh::~Mesh() {
+    assert(Renderer::Instance->Allocator);
+
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+}
+
+
+void Mesh::rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures) {
     this->Vertices = vertices;
     this->Indices = indices;
     this->Textures = textures;
 
     this->_built = false;
 
-    build(input);
+    build();
 }
 
-void Mesh::build(RenderableData input) {
-    assert(input.allocator);
-    assert(input.device);
-    assert(input.commandPool);
-    assert(input.graphicsQueue);
+void Mesh::build() {
+    assert(Renderer::Instance->Allocator);
+    assert(Renderer::Instance->Device);
 
     // If the mesh has already been built, we need to destroy it first
     if (_built) {
-        destroy(input);
+        vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
+        vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
+        _built = false;
     }
 
     // ------------------ Create Uniform Buffer ------------------ //
@@ -100,8 +109,8 @@ void Mesh::build(RenderableData input) {
 
     // ------------------ Destroy Staging Buffers ------------------ //
 
-    vmaDestroyBuffer(input.allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
-    vmaDestroyBuffer(input.allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
+    vmaDestroyBuffer(Renderer::Instance->Allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
+    vmaDestroyBuffer(Renderer::Instance->Allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
 
     // ------------------ Create the descriptor set ------------------ //
 
@@ -128,24 +137,9 @@ void Mesh::build(RenderableData input) {
             .descriptorType = vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &bufferInfo };
 
-    input.device.updateDescriptorSets(descriptorWrite, nullptr);
+    Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 
     _built = true;
-}
-
-void Mesh::destroy(RenderableData input) {
-    assert(input.allocator);
-
-    // Destroy the uniform buffer
-    vmaDestroyBuffer(input.allocator, _uniformBuffer, _uniformAllocation);
-
-    // Always destroy the vertex buffer
-    vmaDestroyBuffer(input.allocator, _vertexBuffer, _vertexAllocation);
-
-    // Only destroy the index buffer if it exists
-    if (_indexBuffer) {
-        vmaDestroyBuffer(input.allocator, _indexBuffer, _indexAllocation);
-    }
 }
 
 void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) {
@@ -202,8 +196,8 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
     }*/
 }
 
-void Mesh::update(RenderableData input, long double deltaTime) {
-    assert(input.allocator);
+void Mesh::update(long double deltaTime) {
+    assert(Renderer::Instance->Allocator);
 
     static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -216,9 +210,8 @@ void Mesh::update(RenderableData input, long double deltaTime) {
     // Copy this data across to the local memory
     // TODO: Maybe move this to the GPU memory?
     void* mappedData;
-    vmaMapMemory(input.allocator, _uniformAllocation, &mappedData);
+    vmaMapMemory(Renderer::Instance->Allocator, _uniformAllocation, &mappedData);
     memcpy(mappedData, &ubo, sizeof(ubo));
-    vmaUnmapMemory(input.allocator, _uniformAllocation);
+    vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 }
-
 

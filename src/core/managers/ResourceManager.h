@@ -4,18 +4,19 @@
 #include "../../Shader.h"
 #include "../Model.h"
 #include "../Texture2D.h"
+#include <boost/concept_check.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
 
 class Model;
-struct RenderableData;
 
 class ResourceManager {
 private:
 private:
     ResourceManager() = default; // Private constructor
 
-    static std::map<std::string, Shader*> _shaders;
-    static std::map<std::string, Texture2D*> _textures;
-    static std::map<std::string, Model*> _models;
+    static boost::ptr_map<std::string, Shader> _shaders;
+    static boost::ptr_map<std::string, Texture2D> _textures;
+    static boost::ptr_map<std::string, Model> _models;
 
 public:
     // Loads a shader into the resource manager, do not include
@@ -27,7 +28,7 @@ public:
     static void loadTexture(std::string name, std::string path);
 
     // Loads a model into the resource manager
-    static void loadModel(std::string name, std::string path, RenderableData data);
+    static void loadModel(std::string name, std::string path);
 
     // Get a shader of the specified name
     static Shader* getShader(std::string name);
@@ -40,5 +41,5 @@ public:
 
     // Removes all resources from the resource manager, call this
     // when the game is closing
-    static void clean();
+    static void cleanup();
 };

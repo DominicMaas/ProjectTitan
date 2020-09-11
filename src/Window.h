@@ -31,15 +31,6 @@ public:
     bool init();
     void run();
 
-    RenderableData getRenderableData() {
-        RenderableData data = {
-                .allocator = _renderer->Allocator,
-                .device = _renderer->Device,
-                .commandPool = _renderer->CommandPool,
-                .graphicsQueue = _renderer->GraphicsQueue };
-        return data;
-    }
-
     void setCurrentScene(Scene* scene) {
         // Set the new current scene
         Renderer::Instance->CurrentScene = scene;
@@ -48,6 +39,14 @@ public:
         // use the current scene
         _recreateCommandBuffers = true;
     }
+
+    GLFWwindow* getGLFWWindow() { return _window; }
+
+    // Lambdas
+    std::function<void(int, int, int)> onMouseButton;
+    std::function<void(double, double)> onMouseMove;
+    std::function<void(int, int)> onWindowResize;
+    std::function<void(long double)> onUpdate;
 
 private:
     bool _recreateCommandBuffers = false;
@@ -177,6 +176,26 @@ private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
         auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         app->_framebufferResized = true;
+
+        if (app->onWindowResize) {
+            app->onWindowResize(width, height);
+        }
+    }
+
+    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+        auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+
+        if (app->onMouseButton) {
+            app->onMouseButton(button, action, mods);
+        }
+    }
+
+    static void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
+        auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+
+        if (app->onMouseMove) {
+            app->onMouseMove(xPos, yPos);
+        }
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

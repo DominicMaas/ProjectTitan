@@ -36,13 +36,14 @@ public:
     // the mesh at a later time.
     Mesh(const std::string& pipelineName);
 
-    // Rebuilds the mesh with a new set of vertices, indices and textures
-    void rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures, RenderableData input);
+    ~Mesh();
 
-    void build(RenderableData input) override;
+    // Rebuilds the mesh with a new set of vertices, indices and textures
+    void rebuild(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures);
+
+    void build() override;
     void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) override;
-    void update(RenderableData input, long double deltaTime) override;
-    void destroy(RenderableData input) override;
+    void update(long double deltaTime) override;
 
     // If this mesh has been built
     [[nodiscard]] bool isBuilt() const { return _built; }

@@ -5,6 +5,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <boost/concept_check.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "Renderable.h"
 #include "../Mesh.h"
@@ -15,24 +17,25 @@ public:
         loadModel(path);
     }
 
-    Model(Mesh m) {
+    Model(Mesh *m) {
         _meshes.push_back(m);
     }
 
-    void build(RenderableData input) override;
+    ~Model();
+
+    void build() override;
     void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) override;
-    void update(RenderableData input, long double deltaTime) override;
-    void destroy(RenderableData input) override;
+    void update(long double deltaTime) override;
 
 private:
 
-    std::vector<Mesh> _meshes;
+    boost::ptr_vector<Mesh> _meshes;
     std::string _directory;
 
     std::vector<Texture> _loadedTextures;
 
     void loadModel(std::string path);
     void processNode(aiNode *node, const aiScene *scene);
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+    Mesh* processMesh(aiMesh *mesh, const aiScene *scene);
     std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
 };

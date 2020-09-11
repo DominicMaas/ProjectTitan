@@ -26,8 +26,19 @@
 #include "core/managers/PipelineManager.h"
 #include "core/Scene.h"
 
-/*int WIDTH = 1920;
-int HEIGHT = 1080;
+bool mouseCaptured = true;
+
+void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
+    mouseCaptured = _mouseCapture;
+
+    if (mouseCaptured) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+}
+
+/*
 
 Camera camera(glm::vec3(8, 40, 8));
 World *currentWorld;
@@ -39,41 +50,6 @@ bool displayShadowMap = false;
 bool mouseCaptured = true;
 bool guiHasMouse = false;
 
-std::vector<RenderEffect> renderEffects;
-
-void setWindowSize(GLFWwindow *window, int width, int height) {
-    WIDTH = width;
-    HEIGHT = height;
-
-    GLCall(glViewport(0, 0, width, height));
-    camera.setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f));
-}
-
-void processMouseInput(GLFWwindow *window, double xPos, double yPos) {
-    // Process camera inputs
-    if (mouseCaptured) {
-        camera.processMouseInput(xPos, yPos);
-    }
-}
-
-void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
-    if (guiHasMouse) {
-        return; // Don't run this if the GUI has the mouse
-    }
-
-    mouseCaptured = _mouseCapture;
-
-    if (mouseCaptured) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    } else {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-}
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-        setMouseCapture(window, true);
-}
 
 void processKeyboardInput(GLFWwindow *window, long double delta) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -91,24 +67,53 @@ void processKeyboardInput(GLFWwindow *window, long double delta) {
 }*/
 
 int main(void) {
-
-
+    // Create the window
     Window w("Test Window", 800, 600);
     if (!w.init()) {
         return -1;
     }
 
+    // Start without mouse capture
+    setMouseCapture(w.getGLFWWindow(), false);
+
     // Load in resources
     ResourceManager::loadShader("basic", "shaders/vulkan_test");
     PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
-    ResourceManager::loadTexture("block_map", "textures/block_map.png");
     ResourceManager::loadTexture("square", "models/diffuse.jpg");
-    ResourceManager::loadTexture("test", "textures/test.jpg");
 
+    ResourceManager::loadModel("backpack", "models/backpack.obj");
 
+    // Create the main camera and scene
+    auto* camera = new Camera(glm::vec3(0,0,0));
+    camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
 
+    auto* scene = new Scene(camera);
 
+    // Set window events
+    w.onMouseMove = [&](double xPos, double yPos) {
+        if (mouseCaptured) {
+            camera->processMouseInput((float)xPos, (float)yPos);
+        }
+    };
+
+    w.onMouseButton = [&](int button, int action, int mods) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            setMouseCapture(w.getGLFWWindow(), true);
+        }
+    };
+
+    w.onWindowResize = [&](int width, int height) {
+        camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f));
+    };
+
+    w.onUpdate = [&](long double delta) {
+        if (glfwGetKey(w.getGLFWWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            setMouseCapture(w.getGLFWWindow(), false);
+
+        // Process camera inputs
+        camera->processKeyboardInput(w.getGLFWWindow(), delta);
+    };
 
     const std::vector<Vertex> vertices = {
             {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
@@ -121,20 +126,19 @@ int main(void) {
             0, 1, 3, 1, 2, 3
     };
 
-    //ResourceManager::loadModel("backpack", "models/backpack.obj", w.getRenderableData());
 
-    Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
+    //Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
+    //scene->addRenderable("TestMesh", mesh);
+    scene->addRenderable("TestModel", ResourceManager::getModel("backpack"));
 
-    auto* camera = new Camera(glm::vec3(0,0,0));
-    auto* scene = new Scene(camera);
-    scene->addRenderable("TestMesh", mesh, w.getRenderableData());
-    //scene->addRenderable("TestModel", ResourceManager::getModel("backpack"), w.getRenderableData());
-
+    // Set the scene and run
     w.setCurrentScene(scene);
-
     w.run();
 
+    // Cleanup
+    //delete mesh;
     delete camera;
+
 
     return 0;
 

@@ -17,13 +17,12 @@ private:
 
 public:
     Scene(Camera* camera);
+    ~Scene();
 
-    void addRenderable(std::string name, Renderable* renderable, RenderableData renderableData);
+    void addRenderable(std::string name, Renderable* renderable);
 
     void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName);
-    void update(RenderableData input, long double deltaTime);
-
-    void destroy(RenderableData renderableData);
+    void update(long double deltaTime);
 
     vk::DescriptorSet getDescriptorSet() { return _descriptorSet; }
 };

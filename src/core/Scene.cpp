@@ -33,10 +33,14 @@ Scene::Scene(Camera *camera) {
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 }
 
-void Scene::addRenderable(std::string name, Renderable* renderable, RenderableData renderableData) {
+Scene::~Scene() {
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _sceneUboBuffer, _sceneUboAllocation);
+}
+
+void Scene::addRenderable(std::string name, Renderable* renderable) {
     if (_renderables.find(name) == _renderables.end()) {
         _renderables.insert(name, renderable);
-        renderable->build(renderableData);
+        renderable->build();
     } else {
         throw std::invalid_argument("Could not add the renderable, a renderable of this name already exists.");
     }
@@ -53,13 +57,12 @@ void Scene::render(vk::CommandBuffer &commandBuffer, const std::string &pipeline
     }
 }
 
-void Scene::update(RenderableData input, long double deltaTime) {
-    // Perform camera updates
-
+void Scene::update(long double deltaTime) {
     // Write updates for the camera
     SceneUBO ubo {};
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
+    ubo.view = _mainCamera->getViewMatrix();
+    ubo.proj = _mainCamera->getProjectionMatrix();
+    ubo.proj[1][1] *= -1; // Adjust for Vulkan coords, vs OpenGL coords
 
     // Copy to the correct memory location
     void* mappedData;
@@ -68,16 +71,6 @@ void Scene::update(RenderableData input, long double deltaTime) {
     vmaUnmapMemory(Renderer::Instance->Allocator, _sceneUboAllocation);
 
     for (boost::ptr_map<std::string, Renderable>::iterator e = _renderables.begin(); e != _renderables.end(); e++) {
-        e->second->update(input, deltaTime);
+        e->second->update(deltaTime);
     }
 }
-
-void Scene::destroy(RenderableData renderableData) {
-    for (boost::ptr_map<std::string, Renderable>::iterator e = _renderables.begin(); e != _renderables.end(); e++) {
-        e->second->destroy(renderableData);
-    }
-
-    vmaDestroyBuffer(Renderer::Instance->Allocator, _sceneUboBuffer, _sceneUboAllocation);
-}
-
-

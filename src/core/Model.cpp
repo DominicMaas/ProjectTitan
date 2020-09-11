@@ -30,7 +30,7 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
+Mesh* Model::processMesh(aiMesh *mesh, const aiScene *scene) {
     std::vector<Vertex> vertices;
     std::vector<unsigned short> indices;
     std::vector<Texture> textures;
@@ -63,8 +63,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
         vertices.push_back(vertex);
     }
 
-    // process indices
-    // TODO: Make work
+    // Process indices
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
@@ -83,7 +82,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
-    return Mesh("basic", vertices, indices, textures);
+    return new Mesh("basic", vertices, indices, textures);
 }
 
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
@@ -113,9 +112,9 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
     return textures;
 }
 
-void Model::build(RenderableData input) {
+void Model::build() {
     for (auto& mesh : _meshes) {
-        mesh.build(input);
+        mesh.build();
     }
 }
 
@@ -125,16 +124,15 @@ void Model::render(vk::CommandBuffer &commandBuffer, const std::string &pipeline
     }
 }
 
-void Model::update(RenderableData input, long double deltaTime) {
+void Model::update(long double deltaTime) {
     for (auto& mesh : _meshes) {
-        mesh.update(input, deltaTime);
+        mesh.update(deltaTime);
     }
 }
 
-void Model::destroy(RenderableData input) {
-    for (auto& mesh : _meshes) {
-        mesh.destroy(input);
-    }
+Model::~Model() {
+    _meshes.release();
+    _meshes.clear();
 }
 
 // TODO: Merge this into the texture2d class
