@@ -87,5 +87,5 @@ void Texture2D::load(unsigned char *pixels, int width, int height) {
 }
 
 void Texture2D::bind(vk::CommandBuffer &commandBuffer, vk::PipelineLayout pipelineLayout) const {
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &_descriptorSet, 0, nullptr);
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 2, 1, &_descriptorSet, 0, nullptr);
 }

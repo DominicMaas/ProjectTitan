@@ -42,8 +42,8 @@ void Window::run() {
         // ---------- Run update events ---------- //
 
         // Update the current scene
-        if (_currentScene != nullptr) {
-            _currentScene->update(getRenderableData(), deltaTime);
+        if (Renderer::Instance->CurrentScene != nullptr) {
+            Renderer::Instance->CurrentScene->update(getRenderableData(), deltaTime);
         }
 
         // ---------- Process Physics ---------- //
@@ -346,8 +346,9 @@ void Window::cleanup() {
     _renderer->Device.destroyCommandPool(_renderer->CommandPool);
 
     // Delete the current scene
-    _currentScene->destroy(getRenderableData());
-    delete _currentScene;
+    Renderer::Instance->CurrentScene->destroy(getRenderableData());
+    delete Renderer::Instance->CurrentScene;
+    Renderer::Instance->CurrentScene = nullptr;
 
     // Destroy the pipelines
     PipelineManager::cleanup({ .device = _renderer->Device });
@@ -826,8 +827,8 @@ bool Window::createCommandBuffers() {
             _commandBuffers[i].setScissor(0, 1, &scissor);
 
             // Render the current scene
-            if (_currentScene != nullptr) {
-                _currentScene->render(_commandBuffers[i], "basic");
+            if (Renderer::Instance->CurrentScene != nullptr) {
+                Renderer::Instance->CurrentScene->render(_commandBuffers[i], "basic");
             }
         }
 

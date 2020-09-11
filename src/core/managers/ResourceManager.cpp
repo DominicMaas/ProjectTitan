@@ -21,6 +21,7 @@ void ResourceManager::loadTexture(std::string name, std::string path) {
     auto* texture = new Texture2D();
 
     // load image
+    stbi_set_flip_vertically_on_load(true);
     int width, height, texChannels;
     unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
 

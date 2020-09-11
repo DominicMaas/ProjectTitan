@@ -166,9 +166,9 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .pDynamicStates = dynamicStates
     };
 
-    vk::DescriptorSetLayout descriptorSetLayouts[] = { _uboDescriptorSetLayout, _texSamplerDescriptorSetLayout };
+    vk::DescriptorSetLayout descriptorSetLayouts[] = { _uboDescriptorSetLayout, _uboDescriptorSetLayout, _texSamplerDescriptorSetLayout };
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {
-            .setLayoutCount = 2,
+            .setLayoutCount = 3,
             .pSetLayouts = descriptorSetLayouts,
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr

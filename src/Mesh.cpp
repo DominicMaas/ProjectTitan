@@ -48,7 +48,7 @@ void Mesh::build(RenderableData input) {
     // on, since the mesh model should not be updated too often.
     VmaAllocationInfo uniformBufferAllocInfo = {};
     Renderer::Instance->createBuffer(_uniformBuffer, _uniformAllocation,uniformBufferAllocInfo,
-         sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+         sizeof(ModelUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
          VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     // ------------------ Create Vertex Buffer ------------------ //
@@ -117,7 +117,7 @@ void Mesh::build(RenderableData input) {
     vk::DescriptorBufferInfo bufferInfo = {
         .buffer = _uniformBuffer,
         .offset = 0,
-        .range = sizeof(UniformBufferObject)
+        .range = sizeof(ModelUBO)
     };
 
     vk::WriteDescriptorSet descriptorWrite = {
@@ -166,10 +166,8 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
     vk::DeviceSize offsets[] = { 0 };
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-
     // Bind the descriptor set
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 0, 1, &_descriptorSet, 0, nullptr);
-
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 1, 1, &_descriptorSet, 0, nullptr);
 
     // Draw
     if (Indices.empty()) {
@@ -201,20 +199,7 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
 
         shader.setFloat(("material." + name + number).c_str(), i);
         GLCall(glBindTexture(GL_TEXTURE_2D, Textures[i].id));
-    }
-
-    // Draw mesh
-    GLCall(glBindVertexArray(_vao));
-
-    // Draw from the element buffer
-    if (!Indices.empty()) {
-        GLCall(glDrawElements(GL_TRIANGLES, Indices.size(), GL_UNSIGNED_INT, 0));
-    } else { // Draw from the array buffer
-        GLCall(glDrawArrays(GL_TRIANGLES, 0, Vertices.size()));
-    }
-
-    // Cleanup
-    GLCall(glActiveTexture(GL_TEXTURE0));*/
+    }*/
 }
 
 void Mesh::update(RenderableData input, long double deltaTime) {
@@ -225,11 +210,8 @@ void Mesh::update(RenderableData input, long double deltaTime) {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    UniformBufferObject ubo{};
-    //ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ModelUBO ubo {};
     ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
 
     // Copy this data across to the local memory
     // TODO: Maybe move this to the GPU memory?

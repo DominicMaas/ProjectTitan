@@ -26,10 +26,13 @@
 #include <vector>
 #include <tuple>
 
-struct UniformBufferObject {
-    glm::mat4 model;
+struct SceneUBO {
     glm::mat4 view;
     glm::mat4 proj;
+};
+
+struct ModelUBO {
+    glm::mat4 model;
 };
 
 enum ColliderCategory {

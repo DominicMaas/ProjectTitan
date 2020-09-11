@@ -2,12 +2,17 @@
 
 #include <pch.h>
 
+#include "Scene.h"
+
 class Renderer {
 public:
     static Renderer* Instance;
     Renderer() {
         Instance = this;
     }
+
+    // The current scene that is being rendered
+    Scene* CurrentScene = nullptr;
 
     vk::CommandPool CommandPool;
     vk::Device Device;

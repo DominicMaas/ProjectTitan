@@ -42,19 +42,14 @@ public:
 
     void setCurrentScene(Scene* scene) {
         // Set the new current scene
-        _currentScene = scene;
+        Renderer::Instance->CurrentScene = scene;
 
         // This recreates the command buffers to
         // use the current scene
         _recreateCommandBuffers = true;
     }
 
-    Renderer* getRenderer() {
-        return _renderer;
-    }
-
 private:
-    Scene *_currentScene = nullptr;
     bool _recreateCommandBuffers = false;
 
     const int MAX_FRAMES_IN_FLIGHT = 3;
