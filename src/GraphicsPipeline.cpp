@@ -208,12 +208,12 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
     vk::DescriptorPoolSize poolSizes[2];
 
     poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(500);
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(1000);
     poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(500);
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(1000);
 
     vk::DescriptorPoolCreateInfo poolInfo = {
-            .maxSets = static_cast<uint32_t>(500),
+            .maxSets = static_cast<uint32_t>(1000),
             .poolSizeCount = 2,
             .pPoolSizes = poolSizes };
 

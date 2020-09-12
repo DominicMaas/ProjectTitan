@@ -23,11 +23,20 @@ static void loadChunk(Chunk* chunk) {
 }
 
 void World::loadChunks() {
+    int chunksLoaded = 0;
+
     // Loop through all the chunks
     for (Chunk *chunk : _chunks) {
         // If the chunk needs to be loaded, and it's not currently loading
         if (!chunk->isLoaded() && !chunk->isLoaded()) {
-            _futures.push_back(std::async(std::launch::async, loadChunk, chunk));
+
+            //_futures.push_back(std::async(std::launch::async, loadChunk, chunk));
+            loadChunk(chunk);
+            chunksLoaded++;
+        }
+
+        if (chunksLoaded > LOADED_CHUNKS_PER_FRAME) {
+            return;
         }
     }
 }
@@ -108,7 +117,7 @@ void World::update(float deltaTime, Camera &c) {
     // Rebuild any chunks
     rebuildChunks();
 
-    float renderDistance = 4 * CHUNK_WIDTH;
+    float renderDistance = 8 * CHUNK_WIDTH;
 
     // Calculation about the camera position and render distance
     int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
@@ -139,7 +148,7 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
-    float renderDistance = 4 * CHUNK_WIDTH;
+    float renderDistance = 8 * CHUNK_WIDTH;
 
     // Bind the blocks texture
     auto* pipeline = PipelineManager::getPipeline("basic");
