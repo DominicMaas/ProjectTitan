@@ -127,8 +127,8 @@ int main(void) {
     };
 
 
-    //Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
-    //scene->addRenderable("TestMesh", mesh);
+    Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
+    scene->addRenderable("TestMesh", mesh);
     scene->addRenderable("TestModel", ResourceManager::getModel("backpack"));
 
     // Set the scene and run

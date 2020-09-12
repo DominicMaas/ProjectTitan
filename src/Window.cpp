@@ -206,6 +206,10 @@ void Window::drawFrame() {
         return;
     }
 
+    // Run the command buffer
+
+
+
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
     if (VkFence(_imagesInFlight[imageIndex]) != VK_NULL_HANDLE) {
         _renderer->Device.waitForFences(1, &_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
