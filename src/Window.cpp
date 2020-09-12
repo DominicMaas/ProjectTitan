@@ -191,10 +191,8 @@ bool Window::init() {
 void Window::drawFrame() {
     _renderer->Device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
 
-    if (_recreateCommandBuffers) {
-        _recreateCommandBuffers = false;
-        recreateCommandBuffers();
-    }
+
+
 
     // Acquire the next image
     unsigned int imageIndex;
@@ -207,7 +205,7 @@ void Window::drawFrame() {
     }
 
     // Run the command buffer
-
+    recordCommandBuffers(imageIndex);
 
 
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
@@ -266,12 +264,53 @@ void Window::drawFrame() {
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Window::recreateCommandBuffers() {
-    // Cleanup
-    _renderer->Device.freeCommandBuffers(_renderer->CommandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+void Window::recordCommandBuffers(int i) {
+    // Record
+    //for (size_t i = 0; i < _commandBuffers.size(); i++) {
+        _commandBuffers[i].reset({});
 
-    // Create
-    createCommandBuffers();
+        _commandBuffers[i].begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+
+        vk::ClearValue clearValues[2];
+        clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        vk::RenderPassBeginInfo renderPassInfo = {
+                .renderPass = _renderPass,
+                .framebuffer = _swapChainFrameBuffers[i],
+                .renderArea.extent = _swapChainExtent,
+                .renderArea.offset = {0, 0},
+                .clearValueCount = 2,
+                .pClearValues = clearValues
+        };
+
+        _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+
+        // Attempt to get the pipeline
+        auto* pipeline = PipelineManager::getPipeline("basic");
+        if (pipeline != nullptr) {
+            _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->getVKPipeline());
+
+            // Set the viewport
+            vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
+                                      (float)_swapChainExtent.height, 0.0f, 1.0f };
+
+            // We want to render to the entire framebuffer, so don't worry about this
+            vk::Rect2D scissor = { {0,0}, _swapChainExtent };
+
+            // Set the viewport
+            _commandBuffers[i].setViewport(0, 1, &viewport);
+            _commandBuffers[i].setScissor(0, 1, &scissor);
+
+            // Render the current scene
+            if (Renderer::Instance->CurrentScene != nullptr) {
+                Renderer::Instance->CurrentScene->render(_commandBuffers[i], "basic");
+            }
+        }
+
+        _commandBuffers[i].endRenderPass();
+        _commandBuffers[i].end();
+    //}
 }
 
 bool Window::recreateSwapchain() {
@@ -761,8 +800,8 @@ bool Window::createCommandPool() {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_renderer->PhysicalDevice);
 
     vk::CommandPoolCreateInfo poolInfo = {
-            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
-    };
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value() };
 
     try {
         _renderer->CommandPool = _renderer->Device.createCommandPool(poolInfo);
@@ -798,51 +837,6 @@ bool Window::createCommandBuffers() {
     } catch (std::exception const &e) {
         spdlog::error("[Window] Failed to create command buffers: {}", e.what());
         return false;
-    }
-
-    for (size_t i = 0; i < _commandBuffers.size(); i++) {
-        vk::CommandBufferBeginInfo beginInfo = {};
-        _commandBuffers[i].begin(beginInfo);
-
-        vk::ClearValue clearValues[2];
-        clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        vk::RenderPassBeginInfo renderPassInfo = {
-                .renderPass = _renderPass,
-                .framebuffer = _swapChainFrameBuffers[i],
-                .renderArea.extent = _swapChainExtent,
-                .renderArea.offset = {0, 0},
-                .clearValueCount = 2,
-                .pClearValues = clearValues
-        };
-
-        _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-        // Attempt to get the pipeline
-        auto* pipeline = PipelineManager::getPipeline("basic");
-        if (pipeline != nullptr) {
-            _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->getVKPipeline());
-
-            // Set the viewport
-            vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
-                                      (float)_swapChainExtent.height, 0.0f, 1.0f };
-
-            // We want to render to the entire framebuffer, so don't worry about this
-            vk::Rect2D scissor = { {0,0}, _swapChainExtent };
-
-            // Set the viewport
-            _commandBuffers[i].setViewport(0, 1, &viewport);
-            _commandBuffers[i].setScissor(0, 1, &scissor);
-
-            // Render the current scene
-            if (Renderer::Instance->CurrentScene != nullptr) {
-                Renderer::Instance->CurrentScene->render(_commandBuffers[i], "basic");
-            }
-        }
-
-        _commandBuffers[i].endRenderPass();
-        _commandBuffers[i].end();
     }
 
     return true;

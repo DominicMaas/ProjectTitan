@@ -101,7 +101,7 @@ private:
 
     void drawFrame();
 
-    void recreateCommandBuffers();
+    void recordCommandBuffers(int frame);
 
     bool recreateSwapchain();
 
