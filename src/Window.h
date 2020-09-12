@@ -31,26 +31,17 @@ public:
     bool init();
     void run();
 
-    void setCurrentScene(Scene* scene) {
-        // Set the new current scene
-        Renderer::Instance->CurrentScene = scene;
-
-        // This recreates the command buffers to
-        // use the current scene
-        _recreateCommandBuffers = true;
-    }
-
     GLFWwindow* getGLFWWindow() { return _window; }
 
     // Lambdas
     std::function<void(int, int, int)> onMouseButton;
     std::function<void(double, double)> onMouseMove;
     std::function<void(int, int)> onWindowResize;
-    std::function<void(long double)> onUpdate;
+    std::function<void(float)> onUpdate;
+    std::function<void(vk::CommandBuffer&)> onRender;
+    std::function<void()> onCleanUp;
 
 private:
-    bool _recreateCommandBuffers = false;
-
     const int MAX_FRAMES_IN_FLIGHT = 3;
 
     GLFWwindow* _window;

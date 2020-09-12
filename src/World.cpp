@@ -1,6 +1,7 @@
 #include "World.h"
 #include "core/managers/ResourceManager.h"
 #include "core/Frustum.h"
+#include "core/managers/PipelineManager.h"
 
 void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
@@ -63,17 +64,17 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     }
 
     // Setup skybox
-    std::vector<std::string> faces
-    {
-        "textures/skybox/right.jpg",
-        "textures/skybox/left.jpg",
-        "textures/skybox/top.jpg",
-        "textures/skybox/bottom.jpg",
-        "textures/skybox/front.jpg",
-        "textures/skybox/back.jpg"
-    };
+    //std::vector<std::string> faces
+   // {
+   //     "textures/skybox/right.jpg",
+   //     "textures/skybox/left.jpg",
+   //     "textures/skybox/top.jpg",
+   //     "textures/skybox/bottom.jpg",
+    //    "textures/skybox/front.jpg",
+   //     "textures/skybox/back.jpg"
+    //};
 
-    this->_worldSkybox.setup(faces);
+    //this->_worldSkybox.setup(faces);
 }
 
 World::World(std::string worldName, reactphysics3d::PhysicsCommon *physics) : World(0, worldName, physics) {}
@@ -94,9 +95,9 @@ World::~World() {
     delete _worldGen;
 }
 
-void World::update(Camera &c, long double delta) {
+void World::update(float deltaTime, Camera &c) {
     // Update the sun position
-    float sunVelocity = _sunSpeed * delta;
+    float sunVelocity = _sunSpeed * deltaTime;
     glm::mat4 rotationMat(1);
     rotationMat = glm::rotate(rotationMat, sunVelocity, glm::vec3(0.0, 0.0, 1.0));
     _sunDirection = glm::vec3(rotationMat * glm::vec4(_sunDirection, 1.0));
@@ -123,7 +124,7 @@ void World::update(Camera &c, long double delta) {
 
     // Update entities
     for (Entity* entity : _entities) {
-        entity->update(delta);
+        entity->update(deltaTime);
     }
 }
 
@@ -133,35 +134,19 @@ void World::updatePhysics(long double timeStep, long double accumulator) {
     }
 }
 
-void World::render(Camera &c, Shader &shader) {
+void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     // Calculate the frustum
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
     float renderDistance = 4 * CHUNK_WIDTH;
 
-    // Set light color and direction
-    //shader.setVec3("light.color", _sunColor);
-    //shader.setVec3("light.direction", SunPosition);
-    //shader.setFloat("light.ambient", _sunAmbient);
+    // Bind the blocks texture
+    auto* pipeline = PipelineManager::getPipeline("basic");
+    auto* basicTexture = ResourceManager::getTexture("block_map");
+    basicTexture->bind(commandBuffer, pipeline->getPipelineLayout());
 
-    // Set the camera view and view position matrix
-    //shader.setMat4("view", c.getViewMatrix());
-    //shader.setVec3("viewPos", c.getPosition());
-    //shader.setMat4("projection", c.getProjectionMatrix());
-
-    //shader.setMat4("lightSpaceMatrix", getLightSpaceMatrix(c));
-
-    // DEBUG
-    glm::mat4 pos(1.0f);
-    pos = glm::translate(pos, glm::vec3(0,30,0));
-    //shader.setMat4("model", pos);
-    //ResourceManager::getModel("backpack")->render(shader);
-    // / DEBUG
-
-    // Bind the texture
-    //ResourceManager::getTexture("block_map")->bind();
-
+    // Keep track of the number of chunks being rendered
     ChunksRendered = 0;
 
     // Loop through all the chunks
@@ -184,17 +169,17 @@ void World::render(Camera &c, Shader &shader) {
         ChunksRendered++;
 
         // Render the chunk
-        chunk->render(shader);
+        chunk->render(commandBuffer);
     }
 
     for (Entity* entity : _entities) {
-        entity->render(shader);
+        //entity->render(shader);
     }
 }
 
 void World::postRender(Camera &c, Shader &shader) {
     // Render the skybox
-    this->_worldSkybox.render(c.getViewMatrix(), c.getProjectionMatrix());
+    //this->_worldSkybox.render(c.getViewMatrix(), c.getProjectionMatrix());
 }
 
 void World::reset(bool resetSeed) {

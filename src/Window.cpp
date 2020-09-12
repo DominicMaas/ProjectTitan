@@ -41,14 +41,9 @@ void Window::run() {
 
         // ---------- Run update events ---------- //
 
-        // Run manual updates
+        // Update engine input resources with the delta time
         if (onUpdate) {
             onUpdate(deltaTime);
-        }
-
-        // Update the current scene
-        if (Renderer::Instance->CurrentScene != nullptr) {
-            Renderer::Instance->CurrentScene->update(deltaTime);
         }
 
         // ---------- Process Physics ---------- //
@@ -189,10 +184,8 @@ bool Window::init() {
 }
 
 void Window::drawFrame() {
+    // Wait for the current frame to be ready
     _renderer->Device.waitForFences(1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
-
-
-
 
     // Acquire the next image
     unsigned int imageIndex;
@@ -204,9 +197,8 @@ void Window::drawFrame() {
         return;
     }
 
-    // Run the command buffer
+    // Record the command buffers for this index
     recordCommandBuffers(imageIndex);
-
 
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
     if (VkFence(_imagesInFlight[imageIndex]) != VK_NULL_HANDLE) {
@@ -265,52 +257,49 @@ void Window::drawFrame() {
 }
 
 void Window::recordCommandBuffers(int i) {
-    // Record
-    //for (size_t i = 0; i < _commandBuffers.size(); i++) {
-        _commandBuffers[i].reset({});
+    _commandBuffers[i].reset({});
 
-        _commandBuffers[i].begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+    _commandBuffers[i].begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
 
-        vk::ClearValue clearValues[2];
-        clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
-        clearValues[1].depthStencil = {1.0f, 0};
+    vk::ClearValue clearValues[2];
+    clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
+    clearValues[1].depthStencil = {1.0f, 0};
 
-        vk::RenderPassBeginInfo renderPassInfo = {
-                .renderPass = _renderPass,
-                .framebuffer = _swapChainFrameBuffers[i],
-                .renderArea.extent = _swapChainExtent,
-                .renderArea.offset = {0, 0},
-                .clearValueCount = 2,
-                .pClearValues = clearValues
-        };
+    vk::RenderPassBeginInfo renderPassInfo = {
+            .renderPass = _renderPass,
+            .framebuffer = _swapChainFrameBuffers[i],
+            .renderArea.extent = _swapChainExtent,
+            .renderArea.offset = {0, 0},
+            .clearValueCount = 2,
+            .pClearValues = clearValues
+    };
 
-        _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+    _commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
-        // Attempt to get the pipeline
-        auto* pipeline = PipelineManager::getPipeline("basic");
-        if (pipeline != nullptr) {
-            _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->getVKPipeline());
+    // Attempt to get the pipeline
+    auto* pipeline = PipelineManager::getPipeline("basic");
+    if (pipeline != nullptr) {
+        _commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->getVKPipeline());
 
-            // Set the viewport
-            vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
-                                      (float)_swapChainExtent.height, 0.0f, 1.0f };
+        // Set the viewport
+        vk::Viewport viewport = { 0, 0, (float)_swapChainExtent.width,
+                                  (float)_swapChainExtent.height, 0.0f, 1.0f };
 
-            // We want to render to the entire framebuffer, so don't worry about this
-            vk::Rect2D scissor = { {0,0}, _swapChainExtent };
+        // We want to render to the entire framebuffer, so don't worry about this
+        vk::Rect2D scissor = { {0,0}, _swapChainExtent };
 
-            // Set the viewport
-            _commandBuffers[i].setViewport(0, 1, &viewport);
-            _commandBuffers[i].setScissor(0, 1, &scissor);
+        // Set the viewport
+        _commandBuffers[i].setViewport(0, 1, &viewport);
+        _commandBuffers[i].setScissor(0, 1, &scissor);
 
-            // Render the current scene
-            if (Renderer::Instance->CurrentScene != nullptr) {
-                Renderer::Instance->CurrentScene->render(_commandBuffers[i], "basic");
-            }
+        // Render the current scene
+        if (onRender) {
+            onRender(_commandBuffers[i]);
         }
+    }
 
-        _commandBuffers[i].endRenderPass();
-        _commandBuffers[i].end();
-    //}
+    _commandBuffers[i].endRenderPass();
+    _commandBuffers[i].end();
 }
 
 bool Window::recreateSwapchain() {
@@ -389,14 +378,16 @@ void Window::cleanup() {
         _renderer->Device.destroyFence(_inFlightFences[i]);
     }
 
+    // Clean up user resources
+    if (onCleanUp) {
+        onCleanUp();
+    }
+
+    // Destroy any resources
+    ResourceManager::cleanup();
+
     // Destroy the command pool
     _renderer->Device.destroyCommandPool(_renderer->CommandPool);
-
-    // Delete the current scene
-    delete Renderer::Instance->CurrentScene;
-    Renderer::Instance->CurrentScene = nullptr;
-
-    ResourceManager::cleanup();
 
     // Destroy the pipelines
     PipelineManager::cleanup({ .device = _renderer->Device });

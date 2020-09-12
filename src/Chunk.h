@@ -18,6 +18,10 @@ class Mesh;
 
 class Chunk {
 private:
+    vk::Buffer _uniformBuffer;
+    VmaAllocation _uniformAllocation;
+    vk::DescriptorSet _descriptorSet;
+
     // Data
     glm::vec3 _position;
     Block ***_blocks;
@@ -44,7 +48,7 @@ public:
 
     void load();
 
-    void render(Shader &shader);
+    void render(vk::CommandBuffer &commandBuffer);
 
     void rebuild();
 

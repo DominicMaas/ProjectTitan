@@ -15,13 +15,13 @@ class Mesh: public Renderable {
 private:
     vk::Buffer _vertexBuffer;
     vk::Buffer _indexBuffer;
-    vk::Buffer _uniformBuffer;
+
 
     VmaAllocation _vertexAllocation;
     VmaAllocation _indexAllocation;
-    VmaAllocation _uniformAllocation;
 
-    vk::DescriptorSet _descriptorSet;
+
+
 
     std::string _pipelineName;
 

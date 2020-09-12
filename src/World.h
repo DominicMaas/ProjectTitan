@@ -59,10 +59,10 @@ public:
 
     ~World();
 
-    void update(Camera &c, long double delta);
+    void update(float deltaTime, Camera &c);
     void updatePhysics(long double timeStep, long double accumulator);
 
-    void render(Camera &c, Shader &shader);
+    void render(vk::CommandBuffer &commandBuffer, Camera &c);
     void postRender(Camera &c, Shader &shader);
 
     void reset(bool resetSeed);

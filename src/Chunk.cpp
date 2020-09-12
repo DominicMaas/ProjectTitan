@@ -1,5 +1,7 @@
 #include "Chunk.h"
 #include "core/managers/ResourceManager.h"
+#include "core/managers/PipelineManager.h"
+#include "core/Renderer.h"
 
 Chunk::Chunk(glm::vec3 position, World *world) {
     // Set chunk details
@@ -11,6 +13,51 @@ Chunk::Chunk(glm::vec3 position, World *world) {
 
     // Create a new empty mesh
     _mesh = new Mesh("basic");
+
+    // ------------------ Create Uniform Buffer ------------------ //
+    // This will be done on local memory for now, May copy over to GPU later
+    // on, since the mesh model should not be updated too often.
+    VmaAllocationInfo uniformBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(_uniformBuffer, _uniformAllocation,uniformBufferAllocInfo,
+                                     sizeof(ModelUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+                                     VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+
+    // Create the descriptor set to store the chunk position
+    auto* pipeline = PipelineManager::getPipeline("basic");
+    if (pipeline == nullptr) {
+        throw std::invalid_argument("Unable to retrieve the specified pipeline ('basic')");
+    }
+
+    // Allocate the descriptor set
+    _descriptorSet = pipeline->createUBODescriptorSet();
+
+    // Bind the uniform buffer
+    vk::DescriptorBufferInfo bufferInfo = {
+            .buffer = _uniformBuffer,
+            .offset = 0,
+            .range = sizeof(ModelUBO)
+    };
+
+    vk::WriteDescriptorSet descriptorWrite = {
+            .dstSet = _descriptorSet,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &bufferInfo };
+
+    Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
+
+    ModelUBO ubo {};
+    ubo.model = _modelMatrix;
+
+    // Copy this data across to the local memory
+    // TODO: Maybe move this to the GPU memory?
+    void* mappedData;
+    vmaMapMemory(Renderer::Instance->Allocator, _uniformAllocation, &mappedData);
+    memcpy(mappedData, &ubo, sizeof(ubo));
+    vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 
     // Create the blocks
     _blocks = new Block **[CHUNK_WIDTH];
@@ -39,6 +86,8 @@ Chunk::~Chunk() {
         _world->getWorldBody()->removeCollider(_collider);
     }
 
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
+
     // Delete the mesh
     delete _mesh;
 }
@@ -59,16 +108,19 @@ void Chunk::load() {
     _loading = false;
 }
 
-void Chunk::render(Shader &shader) {
+void Chunk::render(vk::CommandBuffer &commandBuffer) {
     // Quick check to make sure this chunk is loaded
     if (!_loaded) return;
 
     // Only render if the mesh is ready to render
     if (!_mesh->isBuilt()) return;
 
-    // Set the position of this chunk in the shader & render
-    //shader.setMat4("model", _modelMatrix);
-    //_mesh->render(shader);
+    // Bind the descriptor set for the chunk position
+    auto* pipeline = PipelineManager::getPipeline("basic");
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 1, 1, &_descriptorSet, 0, nullptr);
+
+    // Render the mesh
+    _mesh->render(commandBuffer, "basic");
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {
@@ -109,7 +161,7 @@ void Chunk::rebuild() {
     if (!_loaded) return;
 
     std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
+    std::vector<unsigned short> indices;
 
     int currIndex = 0;
 
@@ -251,32 +303,32 @@ void Chunk::rebuild() {
     }
 
     // Rebuild the visual mesh
-    //_mesh->rebuild(vertices, indices, std::vector<Texture>());
+    _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
-    if (_collider != nullptr) {
-        _world->getWorldBody()->removeCollider(_collider);
-    }
+    //if (_collider != nullptr) {
+    //    _world->getWorldBody()->removeCollider(_collider);
+    //}
 
     // Create the polygon vertex array
-    auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-            _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
-            _mesh->Indices.data(), 3 * sizeof(int),
-            reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-            reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+    //auto* triangleArray = new reactphysics3d::TriangleVertexArray(
+    //        _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
+    //        _mesh->Indices.data(), 3 * sizeof(int),
+    //        reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+    //        reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
 
     // Convert the chunk position into physics coords
-    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
-    reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
+    //reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+    //reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
 
     // Perform the mesh collider rebuild
-    auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
-    physicsMesh->addSubpart(triangleArray);
+    //auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
+    //physicsMesh->addSubpart(triangleArray);
 
     // Create a physics shape based on this mesh
-    auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
+    //auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
 
     // Create the collider for this chunk and add it to the world body
-    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
+    //_collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
 
     // The chunk has been rebuilt
     _changed = false;

@@ -7,10 +7,9 @@
 //#include "effects/SSAO.h"
 //#include "Camera.h"
 //#include "Chunk.h"
-//#include "World.h"
+//
 //#include "TextRenderer.h"
 //#include "Mesh.h"
-//#include <reactphysics3d/reactphysics3d.h>
 //#include "imgui.h"
 //#include "imgui_impl_glfw.h"
 //#include "imgui_impl_opengl3.h"
@@ -20,11 +19,15 @@
 #define VMA_IMPLEMENTATION
 
 #include <pch.h>
+#include <reactphysics3d/reactphysics3d.h>
 #include "Window.h"
 #include "core/managers/ResourceManager.h"
 #include "core/managers/BlockManager.h"
 #include "core/managers/PipelineManager.h"
 #include "core/Scene.h"
+#include "World.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
 
 bool mouseCaptured = true;
 
@@ -39,9 +42,6 @@ void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
 }
 
 /*
-
-Camera camera(glm::vec3(8, 40, 8));
-World *currentWorld;
 
 bool renderPhysics = false;
 bool renderLines = false;
@@ -67,30 +67,54 @@ void processKeyboardInput(GLFWwindow *window, long double delta) {
 }*/
 
 int main(void) {
+    // Variables that we will need
+    Camera* camera = nullptr;
+    World* currentWorld = nullptr;
+
     // Create the window
-    Window w("Test Window", 800, 600);
+    Window w("Project Titan [Vulkan]", 800, 600);
+
+    // Initialise window and renderer resources
     if (!w.init()) {
         return -1;
     }
 
+    // Setup Dear ImGui context
+    // IMGUI_CHECKVERSION();
+    // ImGui::CreateContext();
+    // ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Setup Dear ImGui style
+    // ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer bindings for ImGui
+    // ImGui_ImplGlfw_InitForOpenGL(window, true);
+    // ImGui_ImplOpenGL3_Init();
+
+    // Load in shaders
+    ResourceManager::loadShader("basic", "shaders/vulkan_test");
+    // ResourceManager::loadShader("shadow_depth", "shaders/shadow_depth");
+    // ResourceManager::loadShader("debug", "shaders/basic");
+    // ResourceManager::loadShader("backpack_shader", "shaders/model");
+    // ResourceManager::loadShader("skybox", "shaders/skybox_shader");
+    // ResourceManager::loadShader("chunk", "shaders/chunk_shader");
+    // ResourceManager::loadShader("debug_depth_quad", "shaders/debug_depth_quad");
+
+    // The main pipeline used throughout the game, warning this is hard coded in some places
+    PipelineManager::createPipeline("basic", { .shaderName = "basic" });
+
+    // Textures must be loaded in before the basic pipeline
+    ResourceManager::loadTexture("block_map", "textures/block_map.png");
+    ResourceManager::loadTexture("square", "textures/square.jpg");
+    ResourceManager::loadTexture("test", "textures/test.jpg");
+
+    // Load in models
+    ResourceManager::loadModel("backpack", "models/backpack.obj");
+
     // Start without mouse capture
     setMouseCapture(w.getGLFWWindow(), false);
 
-    // Load in resources
-    ResourceManager::loadShader("basic", "shaders/vulkan_test");
-    PipelineManager::createPipeline("basic", { .shaderName = "basic" });
-
-    ResourceManager::loadTexture("square", "models/diffuse.jpg");
-
-    ResourceManager::loadModel("backpack", "models/backpack.obj");
-
-    // Create the main camera and scene
-    auto* camera = new Camera(glm::vec3(0,0,0));
-    camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
-
-    auto* scene = new Scene(camera);
-
-    // Set window events
+    // Set the window callbacks
     w.onMouseMove = [&](double xPos, double yPos) {
         if (mouseCaptured) {
             camera->processMouseInput((float)xPos, (float)yPos);
@@ -107,128 +131,66 @@ int main(void) {
         camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) width / (float) height, 0.1f, 1000.0f));
     };
 
-    w.onUpdate = [&](long double delta) {
+    w.onUpdate = [&](float deltaTime) {
         if (glfwGetKey(w.getGLFWWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
             setMouseCapture(w.getGLFWWindow(), false);
 
-        // Process camera inputs
-        camera->processKeyboardInput(w.getGLFWWindow(), delta);
+        // Process camera inputs, this also updates the camera UBO for all objects
+        camera->processKeyboardInput(w.getGLFWWindow(), deltaTime);
+        camera->update();
+
+        // Update the world
+        currentWorld->update(deltaTime, *camera);
     };
 
-    const std::vector<Vertex> vertices = {
-            {{1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-            {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-            {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+    w.onRender = [&](vk::CommandBuffer& commandBuffer) {
+        // Bind the descriptor set for the camera (position 0), all objects within
+        // the scene will use this, so only bind at the start of the frame
+        camera->bind(commandBuffer);
+
+        // Render all chunks and entities within the world
+        currentWorld->render(commandBuffer, *camera);
+
+        // TODO: Render GUI and debug stuff??
+        // ImGui_ImplOpenGL3_NewFrame();
+        // ImGui_ImplGlfw_NewFrame();
+        // ImGui::NewFrame();
     };
 
-    const std::vector<unsigned short> indices = {
-            0, 1, 3, 1, 2, 3
+    // This cleanup function is called after rendering is complete, but before
+    // engine resources are destroyed. (Some cleanup functions need to access renderer
+    // resources to correctly cleanup)
+    w.onCleanUp = [&]() {
+        // ImGui_ImplOpenGL3_Shutdown();
+        // ImGui_ImplGlfw_Shutdown();
+        // ImGui::DestroyContext();
+
+        delete currentWorld;
+        delete camera;
     };
-
-
-    Mesh* mesh = new Mesh("basic", vertices, indices, std::vector<Texture>());
-    scene->addRenderable("TestMesh", mesh);
-    scene->addRenderable("TestModel", ResourceManager::getModel("backpack"));
-
-    // Set the scene and run
-    w.setCurrentScene(scene);
-    w.run();
-
-    // Cleanup
-    //delete mesh;
-    delete camera;
-
-
-    return 0;
-
-    /*// Initialize the library
-    if (!glfwInit()) {
-        spdlog::error("[Main] Failed to init GLFW");
-        return -1;
-    }
-
-    // Setup OpenGL Version
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-    glfwWindowHint(GLFW_SAMPLES, 4);
-
-    // Create a windowed mode window and its OpenGL context
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Project Titan", NULL, NULL);
-    if (!window) {
-        spdlog::error("[Main] Failed to create GLFW window");
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window); // Make the window's context current
-    glfwSwapInterval(1); // Enable vsync
-
-    // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        spdlog::error("[Main] Failed to initialize GLAD");
-        glfwTerminate();
-        return -1;
-    }
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-
-    // Setup Platform/Renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init();
-
-    // 3D
-    GLCall(glEnable(GL_DEPTH_TEST));
-    GLCall(glEnable(GL_MULTISAMPLE));
-    GLCall(glEnable(GL_CULL_FACE));
-
-    // Other effects
-    GLCall(glEnable(GL_BLEND));
-    GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
-
-    // Load in resources
-    ResourceManager::loadTexture("block_map", "textures/block_map.png", GL_CLAMP_TO_EDGE, GL_NEAREST);
-    ResourceManager::loadTexture("square", "textures/square.jpg");
-    ResourceManager::loadTexture("test", "textures/test.jpg");
-
-    ResourceManager::loadShader("shadow_depth", "shaders/shadow_depth");
-    ResourceManager::loadShader("debug", "shaders/basic");
-    ResourceManager::loadShader("backpack_shader", "shaders/model");
-    ResourceManager::loadShader("skybox", "shaders/skybox_shader");
-    ResourceManager::loadShader("chunk", "shaders/chunk_shader");
-    ResourceManager::loadShader("debug_depth_quad", "shaders/debug_depth_quad");
-
-    ResourceManager::loadModel("backpack", "models/backpack.obj");
-
-    // Capture the mouse input
-    setMouseCapture(window, false);
-
-    // Set the GLFW callbacks
-    glfwSetFramebufferSizeCallback(window, setWindowSize);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, processMouseInput);
-
-    // Set the initial window size
-    setWindowSize(window, WIDTH, HEIGHT);
 
     // Physics engine for the game
     reactphysics3d::PhysicsCommon physicsCommon;
 
+    // Create the main camera and scene
+    camera = new Camera(glm::vec3(8, 40, 8));
+    camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
+
     // The world
     currentWorld = new World("Test World", &physicsCommon);
 
+    // Run the engine
+    w.run();
+
+    return 0;
+
+
+
+
+
+
+
+    /*
     // Physics debugging
     Mesh physicsDebugMesh;
 
@@ -472,9 +434,7 @@ int main(void) {
 
     delete currentWorld;
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+
 
     // Exit the program
     glfwTerminate();

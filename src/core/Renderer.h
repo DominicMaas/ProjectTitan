@@ -11,9 +11,6 @@ public:
         Instance = this;
     }
 
-    // The current scene that is being rendered
-    Scene* CurrentScene = nullptr;
-
     vk::CommandPool CommandPool;
     vk::Device Device;
     vk::PhysicalDevice PhysicalDevice;
