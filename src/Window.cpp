@@ -156,10 +156,8 @@ bool Window::init() {
         return false;
     }
 
-    if (!createDepthResources()) {
-        spdlog::error("[Window] Failed to create depth resources");
-        return false;
-    }
+    createColorResources();
+    createDepthResources();
 
     if (!createFrameBuffers()) {
         spdlog::error("[Window] Failed to create the frame buffers");
@@ -335,10 +333,8 @@ bool Window::recreateSwapchain() {
         return false;
     }
 
-    if (!createDepthResources()) {
-        spdlog::error("[Window] Failed to create depth resources");
-        return false;
-    }
+    createColorResources();
+    createDepthResources();
 
     if (!createFrameBuffers()) {
         spdlog::error("[Window] Failed to create the frame buffers");
@@ -355,8 +351,8 @@ bool Window::recreateSwapchain() {
 
 void Window::cleanupSwapchain() {
     // Destroy the depth texture, image view and allocation
-    Renderer::Instance->Device.destroyImageView(_depthImageView);
-    vmaDestroyImage(Renderer::Instance->Allocator, _depthImage, _depthAllocation);
+    _renderer->destroyImageSet(_depthImageSet);
+    _renderer->destroyImageSet(_colorImageSet);
 
     // Destroy the frame buffers
     for (auto frameBuffer : _swapChainFrameBuffers) {
@@ -545,9 +541,12 @@ bool Window::selectDefaultDevice() {
 
     _renderer->PhysicalDevice = selectedDevice;
 
+    _renderer->MSAASamples = _renderer->getMaxUsableSampleCount();
+
     // Log information about the selected device
     auto properties = _renderer->PhysicalDevice.getProperties();
     spdlog::info("[Window] Selected GPU: {}", properties.deviceName);
+    spdlog::info("[Window] MSAA Samples: {}", _renderer->MSAASamples);
 
     return true;
 }
@@ -701,7 +700,7 @@ bool Window::createImageViews() {
 bool Window::createRenderPass() {
     vk::AttachmentDescription depthAttachment = {
             .format = Renderer::Instance->findDepthFormat(),
-            .samples = vk::SampleCountFlagBits::e1,
+            .samples = _renderer->MSAASamples,
             .loadOp = vk::AttachmentLoadOp::eClear,
             .storeOp = vk::AttachmentStoreOp::eDontCare,
             .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
@@ -712,8 +711,19 @@ bool Window::createRenderPass() {
 
     vk::AttachmentDescription colorAttachment = {
             .format = _swapChainImageFormat,
-            .samples = vk::SampleCountFlagBits::e1,
+            .samples = _renderer->MSAASamples,
             .loadOp = vk::AttachmentLoadOp::eClear,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+            .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+            .initialLayout = vk::ImageLayout::eUndefined,
+            .finalLayout = vk::ImageLayout::eColorAttachmentOptimal
+    };
+
+    vk::AttachmentDescription colorAttachmentResolve = {
+            .format = _swapChainImageFormat,
+            .samples = vk::SampleCountFlagBits::e1,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
             .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
@@ -723,11 +733,13 @@ bool Window::createRenderPass() {
 
     vk::AttachmentReference colorAttachmentRef = { 0, vk::ImageLayout::eColorAttachmentOptimal };
     vk::AttachmentReference depthAttachmentRef = { 1, vk::ImageLayout::eDepthStencilAttachmentOptimal };
+    vk::AttachmentReference colorAttachmentResolveRef = { 2, vk::ImageLayout::eColorAttachmentOptimal };
 
     vk::SubpassDescription subpass = {
             .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
             .colorAttachmentCount = 1,
             .pColorAttachments = &colorAttachmentRef,
+            .pResolveAttachments = &colorAttachmentResolveRef,
             .pDepthStencilAttachment = &depthAttachmentRef
     };
 
@@ -742,9 +754,9 @@ bool Window::createRenderPass() {
            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
     };
 
-    vk::AttachmentDescription attachments[] = { colorAttachment, depthAttachment };
+    vk::AttachmentDescription attachments[] = { colorAttachment, depthAttachment, colorAttachmentResolve };
     vk::RenderPassCreateInfo renderPassInfo = {
-            .attachmentCount = 2,
+            .attachmentCount = 3,
             .pAttachments = attachments,
             .subpassCount = 1,
             .pSubpasses = &subpass,
@@ -776,11 +788,11 @@ bool Window::createFrameBuffers() {
     _swapChainFrameBuffers.resize(_swapChainImageViews.size());
 
     for (size_t i = 0; i < _swapChainImageViews.size(); i++) {
-        vk::ImageView attachments[] = { _swapChainImageViews[i], _depthImageView };
+        vk::ImageView attachments[] = { _colorImageSet.imageView, _depthImageSet.imageView, _swapChainImageViews[i] };
 
         vk::FramebufferCreateInfo framebufferInfo = {
                 .renderPass = _renderPass,
-                .attachmentCount = 2,
+                .attachmentCount = 3,
                 .pAttachments = attachments,
                 .width = _swapChainExtent.width,
                 .height = _swapChainExtent.height,
@@ -815,13 +827,18 @@ bool Window::createCommandPool() {
     return true;
 }
 
-bool Window::createDepthResources() {
+void Window::createDepthResources() {
     vk::Format depthFormat = Renderer::Instance->findDepthFormat();
 
-    Renderer::Instance->createImage(_depthImage, _depthAllocation, _swapChainExtent.width, _swapChainExtent.height, VkFormat(depthFormat), VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    _depthImageView = Renderer::Instance->createImageView(_depthImage, depthFormat, vk::ImageAspectFlagBits::eDepth);
+    Renderer::Instance->createImage(_depthImageSet.image, _depthImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, depthFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+    _depthImageSet.imageView = Renderer::Instance->createImageView(_depthImageSet.image, depthFormat, vk::ImageAspectFlagBits::eDepth);
+}
 
-    return true;
+void Window::createColorResources() {
+    vk::Format colorFormat = _swapChainImageFormat;
+
+    Renderer::Instance->createImage(_colorImageSet.image, _colorImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, colorFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment);
+    _colorImageSet.imageView = Renderer::Instance->createImageView(_colorImageSet.image, colorFormat, vk::ImageAspectFlagBits::eColor);
 }
 
 bool Window::createCommandBuffers() {
@@ -996,13 +1013,11 @@ void Window::createImGuiContext() {
     init_info.Instance = _instance;
     init_info.PhysicalDevice = _renderer->PhysicalDevice;
     init_info.Device = _renderer->Device;
-    //init_info.QueueFamily = g_QueueFamily;
     init_info.Queue = _renderer->GraphicsQueue;
-    //init_info.PipelineCache = g_PipelineCache;
     init_info.DescriptorPool = pipeline->getDescriptorPool();
-    //init_info.Allocator = _renderer->Allocator;
     init_info.MinImageCount = _commandBuffers.size();
     init_info.ImageCount = _commandBuffers.size();
+    init_info.MSAASamples = VkSampleCountFlagBits(_renderer->MSAASamples);
 
     ImGui_ImplVulkan_Init(&init_info, _renderPass);
 

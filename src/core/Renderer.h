@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pch.h>
+#include "ImageSet.h"
 
 class Renderer {
 public:
@@ -13,6 +14,8 @@ public:
     vk::Device Device;
     vk::PhysicalDevice PhysicalDevice;
     vk::Queue GraphicsQueue;
+
+    vk::SampleCountFlagBits MSAASamples = vk::SampleCountFlagBits::e1;
 
     VmaAllocator Allocator;
 
@@ -27,7 +30,7 @@ public:
 
     void createBuffer(vk::Buffer &buffer, VmaAllocation &allocation, VmaAllocationInfo &allocationInfo, uint64_t size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, int memoryFlags = 0, int memoryRequiredFlags = 0);
 
-    void createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage);
+    void createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage);
 
     vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
 
@@ -44,4 +47,22 @@ public:
                 vk::FormatFeatureFlagBits::eDepthStencilAttachment
         );
     }
+
+    vk::SampleCountFlagBits getMaxUsableSampleCount() {
+        assert(PhysicalDevice);
+
+        auto physicalDeviceProperties = PhysicalDevice.getProperties();
+
+        vk::SampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+        if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; }
+        if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; }
+        if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; }
+        if (counts & vk::SampleCountFlagBits::e8) { return vk::SampleCountFlagBits::e8; }
+        if (counts & vk::SampleCountFlagBits::e4) { return vk::SampleCountFlagBits::e4; }
+        if (counts & vk::SampleCountFlagBits::e2) { return vk::SampleCountFlagBits::e2; }
+
+        return vk::SampleCountFlagBits::e1;
+    }
+
+    void destroyImageSet(ImageSet imageSet);
 };

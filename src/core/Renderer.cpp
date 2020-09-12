@@ -117,12 +117,11 @@ void Renderer::createBuffer(vk::Buffer &buffer, VmaAllocation &allocation, VmaAl
     }
 }
 
-void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage) {
+void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage) {
     assert(Allocator);
 
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    vk::ImageCreateInfo imageInfo = {};
+    imageInfo.imageType = vk::ImageType::e2D;
     imageInfo.extent.width = width;
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
@@ -130,16 +129,18 @@ void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.initialLayout = vk::ImageLayout::eUndefined;
     imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.samples = numSamples;
+    imageInfo.sharingMode = vk::SharingMode::eExclusive;;
+
+    auto tempCreateInfo = VkImageCreateInfo(imageInfo);
 
     VmaAllocationCreateInfo imageAllocCreateInfo = {};
     imageAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
     VkImage tempImage;
-    vmaCreateImage(Allocator, &imageInfo, &imageAllocCreateInfo, &tempImage, &allocation, nullptr);
+    vmaCreateImage(Allocator, &tempCreateInfo, &imageAllocCreateInfo, &tempImage, &allocation, nullptr);
     image = tempImage;
 }
 
@@ -198,4 +199,12 @@ vk::Format Renderer::findSupportedFormat(const std::vector<vk::Format>& candidat
     }
 
     throw std::runtime_error("Failed to find supported format!");
+}
+
+void Renderer::destroyImageSet(ImageSet imageSet) {
+    assert(Device);
+    assert(Allocator);
+
+    Device.destroyImageView(imageSet.imageView);
+    vmaDestroyImage(Allocator, imageSet.image, imageSet.allocation);
 }

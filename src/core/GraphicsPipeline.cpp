@@ -114,9 +114,9 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .lineWidth = 1.0f,
     };
 
-    // Multisampling (disable for now)
+    // Multisampling
     vk::PipelineMultisampleStateCreateInfo multisampling = {
-            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+            .rasterizationSamples = Renderer::Instance->MSAASamples,
             .sampleShadingEnable = VK_FALSE,
             .minSampleShading = 1.0f,
             .pSampleMask = nullptr,

@@ -4,6 +4,7 @@
 #include "core/Mesh.h"
 #include "core/GraphicsPipeline.h"
 #include "core/Renderer.h"
+#include "core/ImageSet.h"
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -56,6 +57,8 @@ private:
     unsigned int _height;
     const char* _title;
 
+
+
     bool _framebufferResized = false;
 
     size_t _currentFrame = 0;
@@ -83,9 +86,8 @@ private:
     vk::Format _swapChainImageFormat;
     vk::Extent2D _swapChainExtent;
 
-    vk::Image _depthImage;
-    VmaAllocation _depthAllocation;
-    vk::ImageView _depthImageView;
+    ImageSet _depthImageSet;
+    ImageSet _colorImageSet;
 
     // Vulkan validation layers
     const bool _enableValidationLayers = true;
@@ -142,8 +144,8 @@ private:
     // Create the command pool
     bool createCommandPool();
 
-    // Create resources for depth testing
-    bool createDepthResources();
+    void createDepthResources();
+    void createColorResources();
 
     // Create the command buffers
     bool createCommandBuffers();

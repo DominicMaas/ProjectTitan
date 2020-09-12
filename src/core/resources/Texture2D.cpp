@@ -31,7 +31,7 @@ void Texture2D::load(unsigned char *pixels, int width, int height, LoadTextureIn
     memcpy(stagingBufferAllocInfo.pMappedData, pixels, imageSize);
 
     // ON GPU
-    Renderer::Instance->createImage(_textureImage, _allocation, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    Renderer::Instance->createImage(_textureImage, _allocation, width, height, vk::SampleCountFlagBits::e1, info.format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
     // Transition image for transfer
     Renderer::Instance->transitionImageLayout(_textureImage, info.format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
