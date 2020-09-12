@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pch.h>
-#include "core/Model.h"
+#include "core/resources/Model.h"
 #include "World.h"
 
 class World;
@@ -17,8 +17,8 @@ public:
     void setPosition(glm::vec3 position) { _position = position; }
     void setRotation(glm::vec3 rotation) { _rotation = rotation; }
 
-    void render(Shader& shader);
-    void update(long double delta);
+    void render(vk::CommandBuffer &commandBuffer);
+    void update(float deltaTime);
     void updatePhysics(long double timeStep, long double accumulator);
 
 private:

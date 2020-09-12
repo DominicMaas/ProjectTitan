@@ -7,28 +7,28 @@ void World::rebuildChunks() {
     _rebuiltChunksThisFrame = 0;
 
     // Loop through all the chunks
-    for (Chunk *chunk : _chunks) {
-        if (chunk->isLoaded() && chunk->shouldRebuildChunk()) {
+    for (Chunk &chunk : _chunks) {
+        if (chunk.isLoaded() && chunk.shouldRebuildChunk()) {
             // Only reload a certain number of chunks per frame
             if (_rebuiltChunksThisFrame < REBUILD_CHUNKS_PER_FRAME) {
-                chunk->rebuild();
+                chunk.rebuild();
                 _rebuiltChunksThisFrame++;
             }
         }
     }
 }
 
-static void loadChunk(Chunk* chunk) {
-    chunk->load();
+static void loadChunk(Chunk &chunk) {
+    chunk.load();
 }
 
 void World::loadChunks() {
     int chunksLoaded = 0;
 
     // Loop through all the chunks
-    for (Chunk *chunk : _chunks) {
+    for (Chunk &chunk : _chunks) {
         // If the chunk needs to be loaded, and it's not currently loading
-        if (!chunk->isLoaded() && !chunk->isLoaded()) {
+        if (!chunk.isLoaded() && !chunk.isLoaded()) {
 
             //_futures.push_back(std::async(std::launch::async, loadChunk, chunk));
             loadChunk(chunk);
@@ -90,15 +90,11 @@ World::World(std::string worldName, reactphysics3d::PhysicsCommon *physics) : Wo
 
 World::~World() {
     // Remove all chunks
-    for (Chunk *b : _chunks) {
-        delete b;
-    }
-
-    for (Entity *e : _entities) {
-        delete e;
-    }
-
+    _chunks.release();
     _chunks.clear();
+
+    // Remove all entities
+    _entities.release();
     _entities.clear();
 
     delete _worldGen;
@@ -132,14 +128,14 @@ void World::update(float deltaTime, Camera &c) {
     }
 
     // Update entities
-    for (Entity* entity : _entities) {
-        entity->update(deltaTime);
+    for (Entity &entity : _entities) {
+        entity.update(deltaTime);
     }
 }
 
 void World::updatePhysics(long double timeStep, long double accumulator) {
-    for (Entity* entity : _entities) {
-        entity->updatePhysics(timeStep, accumulator);
+    for (Entity &entity : _entities) {
+        entity.updatePhysics(timeStep, accumulator);
     }
 }
 
@@ -151,38 +147,37 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     float renderDistance = 8 * CHUNK_WIDTH;
 
     // Bind the blocks texture
-    auto* pipeline = PipelineManager::getPipeline("basic");
     auto* basicTexture = ResourceManager::getTexture("block_map");
-    basicTexture->bind(commandBuffer, pipeline->getPipelineLayout());
+    basicTexture->bind(commandBuffer);
 
     // Keep track of the number of chunks being rendered
     ChunksRendered = 0;
 
     // Loop through all the chunks
-    for (Chunk *chunk : _chunks) {
+    for (Chunk &chunk : _chunks) {
         // This chunk is not loaded
-        if (!chunk->isLoaded())
+        if (!chunk.isLoaded())
             continue;
 
         // The chunk is not in the players view distance
-        if (abs(chunk->getCenter().x - c.getPosition().x) >= renderDistance ||
-            abs(chunk->getCenter().z - c.getPosition().z) >= renderDistance)
+        if (abs(chunk.getCenter().x - c.getPosition().x) >= renderDistance ||
+            abs(chunk.getCenter().z - c.getPosition().z) >= renderDistance)
             continue;
 
         // TODO: Fix this when lighting is working
         // Ensure the chunk is in the frustum
-        bool isVisible = frustum.isBoxVisible(chunk->getPosition(), chunk->getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
+        bool isVisible = frustum.isBoxVisible(chunk.getPosition(), chunk.getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
         if (!isVisible)
             continue;
 
         ChunksRendered++;
 
         // Render the chunk
-        chunk->render(commandBuffer);
+        chunk.render(commandBuffer);
     }
 
-    for (Entity* entity : _entities) {
-        //entity->render(shader);
+    for (Entity &entity : _entities) {
+        entity.render(commandBuffer);
     }
 }
 
@@ -193,19 +188,19 @@ void World::postRender(Camera &c, Shader &shader) {
 
 void World::reset(bool resetSeed) {
     // Rebuild all chunks
-    for (Chunk *chunk : _chunks) {
-        chunk->setChanged();
+    for (Chunk &chunk : _chunks) {
+        chunk.setChanged();
     }
 }
 
 Chunk *World::findChunk(glm::vec3 position) {
     // Loop through all the chunks
-    for (Chunk *chunk : _chunks) {
-        glm::vec3 chunkPos = chunk->getPosition();
+    for (Chunk &chunk : _chunks) {
+        glm::vec3 chunkPos = chunk.getPosition();
 
         if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + CHUNK_WIDTH) &&
             (position.z < chunkPos.z + CHUNK_WIDTH)) {
-            return chunk;
+            return &chunk;
         }
     }
 

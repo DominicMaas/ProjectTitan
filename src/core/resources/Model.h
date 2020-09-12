@@ -8,24 +8,17 @@
 #include <boost/concept_check.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
-#include "Renderable.h"
 #include "../Mesh.h"
 
-class Model: public Renderable {
+class Model {
 public:
     Model(std::string path) {
         loadModel(path);
     }
-
-    Model(Mesh *m) {
-        _meshes.push_back(m);
-    }
-
     ~Model();
 
-    void build() override;
-    void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) override;
-    void update(long double deltaTime) override;
+    void build();
+    void render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName);
 
 private:
 

@@ -1,16 +1,12 @@
 #pragma once
 
 #include <pch.h>
-#include "Shader.h"
 #include "core/managers/ResourceManager.h"
-#include "Mesh.h"
+#include "core/Mesh.h"
 
 class Skybox {
 private:
-    unsigned int _texture;
-
     Mesh _mesh;
-    Shader* _shader;
 
     const Vertex _skyboxVertices[36] = {
         // positions
@@ -58,7 +54,6 @@ private:
     };
 
 public:
-    Skybox() : _mesh("basic") {}
     ~Skybox();
 
     void setup(std::vector<std::string> faces);

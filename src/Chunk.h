@@ -2,15 +2,15 @@
 
 #include <pch.h>
 
-#include "Shader.h"
-#include "Camera.h"
 #include <limits>
+#include <reactphysics3d/reactphysics3d.h>
+
+#include "Camera.h"
 #include "core/managers/BlockManager.h"
 #include "World.h"
 #include "Block.h"
-#include "Mesh.h"
+#include "core/Mesh.h"
 #include "core/BlockMap.h"
-#include <reactphysics3d/reactphysics3d.h>
 
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;

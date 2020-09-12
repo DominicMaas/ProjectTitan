@@ -82,7 +82,7 @@ Mesh* Model::processMesh(aiMesh *mesh, const aiScene *scene) {
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
 
-    return new Mesh("basic", vertices, indices, textures);
+    return new Mesh(vertices, indices, textures);
 }
 
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName) {
@@ -120,13 +120,7 @@ void Model::build() {
 
 void Model::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) {
     for (auto& mesh : _meshes) {
-        mesh.render(commandBuffer, pipelineName);
-    }
-}
-
-void Model::update(long double deltaTime) {
-    for (auto& mesh : _meshes) {
-        mesh.update(deltaTime);
+        mesh.render(commandBuffer);
     }
 }
 

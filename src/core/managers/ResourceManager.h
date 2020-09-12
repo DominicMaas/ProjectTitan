@@ -1,9 +1,9 @@
 #pragma once
 
 #include <pch.h>
-#include "../../Shader.h"
-#include "../Model.h"
-#include "../Texture2D.h"
+#include "../resources/Shader.h"
+#include "../resources/Model.h"
+#include "../resources/Texture2D.h"
 #include <boost/concept_check.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 
@@ -25,7 +25,7 @@ public:
     static void loadShader(std::string name, std::string path);
 
     // Loads a texture into the resource manager
-    static void loadTexture(std::string name, std::string path);
+    static void loadTexture(std::string name, std::string path, LoadTextureInfo info);
 
     // Loads a model into the resource manager
     static void loadModel(std::string name, std::string path);

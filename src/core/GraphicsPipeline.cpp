@@ -1,6 +1,8 @@
 #include "GraphicsPipeline.h"
-#include "core/Vertex.h"
-#include "core/Renderer.h"
+#include "Vertex.h"
+#include "Renderer.h"
+#include "resources/Shader.h"
+#include "managers/ResourceManager.h"
 
 vk::ShaderModule GraphicsPipeline::createShaderModule(vk::Device device, const std::vector<char> &code) {
     vk::ShaderModuleCreateInfo createInfo = {

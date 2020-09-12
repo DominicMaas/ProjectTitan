@@ -12,7 +12,7 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
 
     // Create a new empty mesh
-    _mesh = new Mesh("basic");
+    _mesh = new Mesh();
 
     // ------------------ Create Uniform Buffer ------------------ //
     // This will be done on local memory for now, May copy over to GPU later
@@ -120,7 +120,7 @@ void Chunk::render(vk::CommandBuffer &commandBuffer) {
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline->getPipelineLayout(), 1, 1, &_descriptorSet, 0, nullptr);
 
     // Render the mesh
-    _mesh->render(commandBuffer, "basic");
+    _mesh->render(commandBuffer);
 }
 
 bool Chunk::isTransparent(int x, int y, int z) {

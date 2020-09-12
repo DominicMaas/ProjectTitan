@@ -1,9 +1,7 @@
 #include "Mesh.h"
-#include "core/Renderer.h"
+#include "Renderer.h"
 
-Mesh::Mesh(const std::string& pipelineName) {
-    this->_pipelineName = pipelineName;
-
+Mesh::Mesh() {
     this->Vertices = std::vector<Vertex>();
     this->Indices = std::vector<unsigned short>();
     this->Textures = std::vector<Texture>();
@@ -11,9 +9,7 @@ Mesh::Mesh(const std::string& pipelineName) {
     this->_built = false;
 }
 
-Mesh::Mesh(const std::string& pipelineName, std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures) {
-    this->_pipelineName = pipelineName;
-
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned short> indices, std::vector<Texture> textures) {
     this->Vertices = vertices;
     this->Indices = indices;
     this->Textures = textures;
@@ -105,7 +101,7 @@ void Mesh::build() {
     _built = true;
 }
 
-void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineName) {
+void Mesh::render(vk::CommandBuffer &commandBuffer) {
     // Only render if the mesh has been built
     if (!_built) {
         spdlog::warn("[Mesh] Attempted to render mesh before it was built");
@@ -118,15 +114,6 @@ void Mesh::render(vk::CommandBuffer &commandBuffer, const std::string &pipelineN
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
     // Draw
-    if (Indices.empty()) {
-        commandBuffer.draw(Vertices.size(), 1, 0, 0);
-    } else {
-        commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
-
-        commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
-    }
-}
-
-void Mesh::update(long double deltaTime) {
-    assert(Renderer::Instance->Allocator);
+    commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
+    commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
 }

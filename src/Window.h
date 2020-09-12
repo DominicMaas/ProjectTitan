@@ -1,9 +1,8 @@
 #pragma once
 
 #include <pch.h>
-#include "Mesh.h"
-#include "GraphicsPipeline.h"
-#include "core/Scene.h"
+#include "core/Mesh.h"
+#include "core/GraphicsPipeline.h"
 #include "core/Renderer.h"
 
 struct QueueFamilyIndices {

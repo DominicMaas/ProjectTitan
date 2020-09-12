@@ -2,17 +2,21 @@
 
 #include <pch.h>
 
+#include <algorithm>
 #include <future>
+#include <thread>
+
+#include <reactphysics3d/reactphysics3d.h>
+#include <boost/concept_check.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+
 #include "Chunk.h"
 #include "Camera.h"
-#include <thread>
+#include "Entity.h"
 #include "Skybox.h"
-#include <algorithm>
+
 #include "worldgen/BaseWorldGen.h"
 #include "worldgen/StandardWorldGen.h"
-#include <reactphysics3d/reactphysics3d.h>
-#include "effects/ShadowMapping.h"
-#include "Entity.h"
 
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)
 class Chunk;
@@ -26,8 +30,8 @@ private:
 
     reactphysics3d::RigidBody *_worldBody;
 
-    std::vector<Chunk *> _chunks;
-    std::vector<Entity *> _entities;
+    boost::ptr_vector<Chunk> _chunks;
+    boost::ptr_vector<Entity> _entities;
 
     Skybox _worldSkybox;
 
@@ -90,11 +94,12 @@ public:
 
         glm::vec3 sunPos(0,1000.0f,0);
 
-        auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, ShadowMapping::NEAR_PLANE, ShadowMapping::FAR_PLANE);
-        auto lightView = glm::lookAt(sunPos, sunPos + (SunPosition * glm::vec3(10)), glm::vec3(0.0, 1.0, 0.0));
+        //auto lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, ShadowMapping::NEAR_PLANE, ShadowMapping::FAR_PLANE);
+        //auto lightView = glm::lookAt(sunPos, sunPos + (SunPosition * glm::vec3(10)), glm::vec3(0.0, 1.0, 0.0));
 
         //auto pos = glm::translate(lightProjection, -camera.getPosition());
-        return lightProjection * lightView;
+        //return lightProjection * lightView;
+        return glm::mat4();
     }
 
     void addEntity(Entity* entity) {

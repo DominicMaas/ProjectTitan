@@ -1,7 +1,6 @@
 #pragma once
 
 #include <pch.h>
-#include "core/managers/ResourceManager.h"
 
 struct CreateGraphicsPipelineInfo {
     vk::Device device;
@@ -44,6 +43,4 @@ public:
 
     vk::DescriptorSet createUBODescriptorSet();
     vk::DescriptorSet createTexSamplerDescriptorSet();
-
-    //vk::DescriptorSetLayout getDescriptorSetLayout() { return _descriptorSetLayout; }
 };

@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "core/managers/PipelineManager.h"
+#include "core/managers/ResourceManager.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"

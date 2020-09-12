@@ -2,8 +2,6 @@
 
 #include <pch.h>
 
-#include "Scene.h"
-
 class Renderer {
 public:
     static Renderer* Instance;

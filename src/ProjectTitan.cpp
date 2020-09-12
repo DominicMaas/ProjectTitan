@@ -7,7 +7,6 @@
 #include "Window.h"
 #include "core/managers/ResourceManager.h"
 #include "core/managers/PipelineManager.h"
-#include "core/Scene.h"
 #include "World.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -76,9 +75,9 @@ int main(void) {
     PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
     // Textures must be loaded in before the basic pipeline
-    ResourceManager::loadTexture("block_map", "textures/block_map.png");
-    ResourceManager::loadTexture("square", "textures/square.jpg");
-    ResourceManager::loadTexture("test", "textures/test.jpg");
+    ResourceManager::loadTexture("block_map", "textures/block_map.png", {});
+    ResourceManager::loadTexture("square", "textures/square.jpg", {});
+    ResourceManager::loadTexture("test", "textures/test.jpg", {});
 
     // Load in models
     ResourceManager::loadModel("backpack", "models/backpack.obj");

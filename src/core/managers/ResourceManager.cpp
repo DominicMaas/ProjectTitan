@@ -16,7 +16,7 @@ void ResourceManager::loadShader(std::string name, std::string path) {
     }
 }
 
-void ResourceManager::loadTexture(std::string name, std::string path) {
+void ResourceManager::loadTexture(std::string name, std::string path, LoadTextureInfo info) {
     spdlog::info("[Resource Manager] Loading texture '" + name + "'...");
 
     if (_textures.find(name) != _textures.end()) {
@@ -28,14 +28,14 @@ void ResourceManager::loadTexture(std::string name, std::string path) {
     auto* texture = new Texture2D();
 
     // load image
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(info.flipTexture);
     int width, height, texChannels;
     unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
 
     // If successful
     if (pixels) {
         // Load in the texture
-        texture->load(pixels, width, height);
+        texture->load(pixels, width, height, info);
         _textures.insert(name, texture);
     } else {
         spdlog::error("[Resource Manager] Could not load texture!");

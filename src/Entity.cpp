@@ -22,7 +22,7 @@ Entity::~Entity() {
     _world->getPhysicsWorld()->destroyRigidBody(_rigidBody);
 }
 
-void Entity::render(Shader &shader) {
+void Entity::render(vk::CommandBuffer &commandBuffer) {
     // Update the shader model
     //shader.setMat4("model", getModelMatrix());
 
@@ -30,7 +30,7 @@ void Entity::render(Shader &shader) {
     //_model->render(shader);
 }
 
-void Entity::update(long double delta) {
+void Entity::update(float deltaTime) {
 
 }
 

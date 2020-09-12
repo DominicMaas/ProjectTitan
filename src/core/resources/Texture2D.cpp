@@ -1,6 +1,6 @@
 #include "Texture2D.h"
-#include "Renderer.h"
-#include "managers/PipelineManager.h"
+#include "../Renderer.h"
+#include "../managers/PipelineManager.h"
 
 Texture2D::~Texture2D() {
     Renderer::Instance->Device.destroySampler(_textureSampler);
@@ -8,9 +8,14 @@ Texture2D::~Texture2D() {
     vmaDestroyImage(Renderer::Instance->Allocator, _textureImage, _allocation);
 }
 
-void Texture2D::load(unsigned char *pixels, int width, int height) {
+void Texture2D::load(unsigned char *pixels, int width, int height, LoadTextureInfo info) {
     this->_width = width;
     this->_height = height;
+
+    _pipeline = PipelineManager::getPipeline(info.pipeline);
+    if (_pipeline == nullptr) {
+        throw std::runtime_error("The specified pipeline provided to the texture does not exist!");
+    }
 
     auto imageSize = width * height * 4;
 
@@ -29,45 +34,42 @@ void Texture2D::load(unsigned char *pixels, int width, int height) {
     Renderer::Instance->createImage(_textureImage, _allocation, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
     // Transition image for transfer
-    Renderer::Instance->transitionImageLayout(_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+    Renderer::Instance->transitionImageLayout(_textureImage, info.format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
     // Transfer to GPU
     Renderer::Instance->copyBufferToImage(stagingBuffer, _textureImage, width, height);
 
     // Transition for shader usage
-    Renderer::Instance->transitionImageLayout(_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+    Renderer::Instance->transitionImageLayout(_textureImage, info.format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     // Cleanup staging buffers
     vmaDestroyBuffer(Renderer::Instance->Allocator, stagingBuffer, stagingBufferAlloc);
 
     // Create the texture image view
-    _textureImageView = Renderer::Instance->createImageView(_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+    _textureImageView = Renderer::Instance->createImageView(_textureImage, info.format, vk::ImageAspectFlagBits::eColor);
 
     // Setup sampling
     vk::SamplerCreateInfo samplerInfo = {
-            .magFilter = vk::Filter::eLinear,
-            .minFilter = vk::Filter::eLinear,
-            .addressModeU = vk::SamplerAddressMode::eRepeat,
-            .addressModeV = vk::SamplerAddressMode::eRepeat,
-            .addressModeW = vk::SamplerAddressMode::eRepeat,
+            .magFilter = info.filter,
+            .minFilter = info.filter,
+            .mipmapMode = info.mipmapMode,
+            .addressModeU = info.addressMode,
+            .addressModeV = info.addressMode,
+            .addressModeW = info.addressMode,
+            .mipLodBias = 0.0f,
             .anisotropyEnable = VK_TRUE,
             .maxAnisotropy = 16.0f,
-            .borderColor = vk::BorderColor::eIntOpaqueBlack,
-            .unnormalizedCoordinates = VK_FALSE,
             .compareEnable = VK_FALSE,
             .compareOp = vk::CompareOp::eAlways,
-            .mipmapMode = vk::SamplerMipmapMode::eLinear,
-            .mipLodBias = 0.0f,
             .minLod = 0.0f,
-            .maxLod = 0.0f
-    };
+            .maxLod = 0.0f,
+            .borderColor = vk::BorderColor::eIntOpaqueBlack,
+            .unnormalizedCoordinates = VK_FALSE };
 
     _textureSampler = Renderer::Instance->Device.createSampler(samplerInfo);
 
-    auto* pipeline = PipelineManager::getPipeline("basic");
-
     // Setup the descriptor set
-    _descriptorSet = pipeline->createTexSamplerDescriptorSet();
+    _descriptorSet = _pipeline->createTexSamplerDescriptorSet();
 
     // Bind the uniform buffer
     vk::DescriptorImageInfo imageInfo = {
@@ -86,6 +88,6 @@ void Texture2D::load(unsigned char *pixels, int width, int height) {
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 }
 
-void Texture2D::bind(vk::CommandBuffer &commandBuffer, vk::PipelineLayout pipelineLayout) const {
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 2, 1, &_descriptorSet, 0, nullptr);
+void Texture2D::bind(vk::CommandBuffer &commandBuffer) const {
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline->getPipelineLayout(), 2, 1, &_descriptorSet, 0, nullptr);
 }
