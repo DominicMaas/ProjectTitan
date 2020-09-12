@@ -1,5 +1,8 @@
 #include "Window.h"
 #include "core/managers/PipelineManager.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 Window::Window(const char *title, unsigned int initialWidth, unsigned int initialHeight) {
     this->_title = title;
@@ -9,21 +12,19 @@ Window::Window(const char *title, unsigned int initialWidth, unsigned int initia
 
 void Window::run() {
     // Setup for per-frame time logic
-    long double previousFrameTime = glfwGetTime();
-    long double deltaTime = 0;
-    long double deltaTimeAccum = 0;
+    float previousFrameTime = (float)glfwGetTime();
+    float deltaTime = 0.0f;
+    float deltaTimeAccum = 0.0f;
 
-    long double timeStep = 1.0/60.0; // Constant physics time step
+    float timeStep = 1.0f/60.0f; // Constant physics time step
 
     int frames = 0; // The framerate to display
-    long double lastFramesTime = glfwGetTime();
-    long double frameTime = 0;
-    int fps;
+    float lastFramesTime = (float)glfwGetTime();
 
     // Enter game loop
     while(!glfwWindowShouldClose(_window)) {
         // ---------- Per-frame time logic ---------- //
-        long double currentFrameTime = glfwGetTime(); // Current system time
+        float currentFrameTime = (float)glfwGetTime(); // Current system time
         deltaTime = currentFrameTime - previousFrameTime; // Time difference between frames
         previousFrameTime = currentFrameTime; // Update the previous time
 
@@ -33,8 +34,8 @@ void Window::run() {
         // Calculate frames
         frames++;
         if ((currentFrameTime - lastFramesTime ) >= 1.0) {
-            frameTime = 1000.0 / double(frames);
-            fps = frames;
+            _frameTime = 1000.0f / float(frames);
+            _fps = frames;
             frames = 0;
             lastFramesTime += 1.0f; // Reset timer
         }
@@ -333,6 +334,11 @@ bool Window::recreateSwapchain() {
         return false;
     }
 
+    if (!createDepthResources()) {
+        spdlog::error("[Window] Failed to create depth resources");
+        return false;
+    }
+
     if (!createFrameBuffers()) {
         spdlog::error("[Window] Failed to create the frame buffers");
         return false;
@@ -347,6 +353,10 @@ bool Window::recreateSwapchain() {
 }
 
 void Window::cleanupSwapchain() {
+    // Destroy the depth texture, image view and allocation
+    Renderer::Instance->Device.destroyImageView(_depthImageView);
+    vmaDestroyImage(Renderer::Instance->Allocator, _depthImage, _depthAllocation);
+
     // Destroy the frame buffers
     for (auto frameBuffer : _swapChainFrameBuffers) {
         _renderer->Device.destroyFramebuffer(frameBuffer);
@@ -973,4 +983,29 @@ vk::Extent2D Window::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabili
 
         return actualExtent;
     }
+}
+
+void Window::createImGuiContext() {
+    // Setup Platform/Renderer bindings for ImGui
+    ImGui_ImplGlfw_InitForOpenGL(_window, true);
+
+    auto* pipeline = PipelineManager::getPipeline("basic");
+
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = _instance;
+    init_info.PhysicalDevice = _renderer->PhysicalDevice;
+    init_info.Device = _renderer->Device;
+    //init_info.QueueFamily = g_QueueFamily;
+    init_info.Queue = _renderer->GraphicsQueue;
+    //init_info.PipelineCache = g_PipelineCache;
+    init_info.DescriptorPool = pipeline->getDescriptorPool();
+    //init_info.Allocator = _renderer->Allocator;
+    init_info.MinImageCount = _commandBuffers.size();
+    init_info.ImageCount = _commandBuffers.size();
+
+    ImGui_ImplVulkan_Init(&init_info, _renderPass);
+
+    auto commandBuffer = Renderer::Instance->beginSingleTimeCommands();
+    ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+    Renderer::Instance->endSingleTimeCommands(commandBuffer);
 }

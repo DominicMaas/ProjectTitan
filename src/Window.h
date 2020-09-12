@@ -41,7 +41,15 @@ public:
     std::function<void(vk::CommandBuffer&)> onRender;
     std::function<void()> onCleanUp;
 
+    void createImGuiContext();
+
+    [[nodiscard]] float getFrameTime() const { return _frameTime; }
+    [[nodiscard]] int getFPS() const { return _fps; }
+
 private:
+    float _frameTime = 0.0f;
+    int _fps;
+
     const int MAX_FRAMES_IN_FLIGHT = 3;
 
     GLFWwindow* _window;
@@ -212,4 +220,6 @@ private:
 
         return VK_FALSE;
     }
+
+
 };

@@ -1,33 +1,17 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 
-//#include <iostream>
-//#include "Shader.h"
-//#include "effects/RenderEffect.h"
-//#include "effects/SSAO.h"
-//#include "Camera.h"
-//#include "Chunk.h"
-//
-//#include "TextRenderer.h"
-//#include "Mesh.h"
-//#include "imgui.h"
-//#include "imgui_impl_glfw.h"
-//#include "imgui_impl_opengl3.h"
-//#include "core/ResourceManager.h"
-//#include "core/Model.h"
-//#include "effects/ShadowMapping.h"
 #define VMA_IMPLEMENTATION
 
 #include <pch.h>
 #include <reactphysics3d/reactphysics3d.h>
 #include "Window.h"
 #include "core/managers/ResourceManager.h"
-#include "core/managers/BlockManager.h"
 #include "core/managers/PipelineManager.h"
 #include "core/Scene.h"
 #include "World.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 bool mouseCaptured = true;
 
@@ -79,18 +63,6 @@ int main(void) {
         return -1;
     }
 
-    // Setup Dear ImGui context
-    // IMGUI_CHECKVERSION();
-    // ImGui::CreateContext();
-    // ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    // Setup Dear ImGui style
-    // ImGui::StyleColorsDark();
-
-    // Setup Platform/Renderer bindings for ImGui
-    // ImGui_ImplGlfw_InitForOpenGL(window, true);
-    // ImGui_ImplOpenGL3_Init();
-
     // Load in shaders
     ResourceManager::loadShader("basic", "shaders/vulkan_test");
     // ResourceManager::loadShader("shadow_depth", "shaders/shadow_depth");
@@ -110,6 +82,16 @@ int main(void) {
 
     // Load in models
     ResourceManager::loadModel("backpack", "models/backpack.obj");
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    w.createImGuiContext();
 
     // Start without mouse capture
     setMouseCapture(w.getGLFWWindow(), false);
@@ -151,19 +133,68 @@ int main(void) {
         // Render all chunks and entities within the world
         currentWorld->render(commandBuffer, *camera);
 
-        // TODO: Render GUI and debug stuff??
-        // ImGui_ImplOpenGL3_NewFrame();
-        // ImGui_ImplGlfw_NewFrame();
-        // ImGui::NewFrame();
+        // Start GUI frame
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // Render GUI
+
+        // Debugging window
+        {
+            ImGui::Begin("Debug");
+
+            ImGui::Text("Position: X: %f Y: %f Z: %f", camera->getPosition().x, camera->getPosition().y, camera->getPosition().z);
+            ImGui::Text("Frame Time: %f ms", w.getFrameTime());
+            ImGui::Text("FPS: %i", w.getFPS());
+            ImGui::Text("  ");
+            ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
+            ImGui::Text("  ");
+
+            ImGui::Text("G: Set sun look-at to current position");
+
+            ImGui::Text("  ");
+
+            //ImGui::Checkbox("Debug Renderer", &renderLines);
+
+            if (ImGui::Button("Reset World")) {
+                currentWorld->reset(true);
+            }
+
+            ImGui::SliderFloat3("Light Position", (float*)&currentWorld->SunPosition, -1.0f, 1.0f);
+
+            ImGui::End();
+        }
+
+        // Physics
+        {
+            ImGui::Begin("Physics");
+
+            ImGui::Text("Rigid Bodies: %i", currentWorld->getPhysicsWorld()->getNbRigidBodies());
+            ImGui::Text("Collision Bodies: %i", currentWorld->getPhysicsWorld()->getNbCollisionBodies());
+            ImGui::Text("World Body Colliders: %i", currentWorld->getWorldBody()->getNbColliders());
+
+            //if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
+            //    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
+            //} else {
+            //    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
+            //}
+
+            ImGui::End();
+        }
+
+        // Finish GUI frame
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     };
 
     // This cleanup function is called after rendering is complete, but before
     // engine resources are destroyed. (Some cleanup functions need to access renderer
     // resources to correctly cleanup)
     w.onCleanUp = [&]() {
-        // ImGui_ImplOpenGL3_Shutdown();
-        // ImGui_ImplGlfw_Shutdown();
-        // ImGui::DestroyContext();
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
 
         delete currentWorld;
         delete camera;
@@ -324,11 +355,7 @@ int main(void) {
         worldShader->use();
         currentWorld->postRender(camera, *worldShader);
 
-        // ---------- Prepare GUI for new frame ---------- //
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
 
         // ---------- Render ---------- //
 
@@ -374,69 +401,5 @@ int main(void) {
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
             physicsDebugMesh.render(*physicsShader);
             GLCall(glPolygonMode(GL_FRONT_AND_BACK, renderLines ? GL_LINE : GL_FILL));
-        }
-
-        // Debugging window
-        {
-            ImGui::Begin("Debug");
-
-            ImGui::Text("Position: X: %f Y: %f Z: %f", camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-            ImGui::Text("Frame Time: %Lf ms", frameTime);
-            ImGui::Text("FPS: %i", fps);
-            ImGui::Text("  ");
-            ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
-            ImGui::Text("  ");
-
-            ImGui::Text("G: Set sun look-at to current position");
-
-            ImGui::Text("  ");
-
-            ImGui::Checkbox("Debug Renderer", &renderLines);
-
-            ImGui::Checkbox("Show Shadow Depth Map", &displayShadowMap);
-
-            if (ImGui::Button("Reset World")) {
-                currentWorld->reset(true);
-            }
-
-            ImGui::SliderFloat3("Light Position", (float*)&currentWorld->SunPosition, -1.0f, 1.0f);
-
-            ImGui::End();
-        }
-
-        // Physics
-        {
-            ImGui::Begin("Physics");
-
-            ImGui::Text("Rigid Bodies: %i", currentWorld->getPhysicsWorld()->getNbRigidBodies());
-            ImGui::Text("Collision Bodies: %i", currentWorld->getPhysicsWorld()->getNbCollisionBodies());
-            ImGui::Text("World Body Colliders: %i", currentWorld->getWorldBody()->getNbColliders());
-
-            if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
-                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
-            } else {
-                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
-            }
-
-            ImGui::End();
-        }
-
-        // Render the debug GUI
-        ImGui::Render();
-
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        // ---------- End Frame ---------- //
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    delete currentWorld;
-
-
-
-    // Exit the program
-    glfwTerminate();
-    return 0;*/
+        }*/
 }
