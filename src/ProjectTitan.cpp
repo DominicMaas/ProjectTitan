@@ -1,7 +1,5 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
-#define VMA_IMPLEMENTATION
-
 #include <pch.h>
 #include <reactphysics3d/reactphysics3d.h>
 #include "Window.h"
@@ -75,7 +73,12 @@ int main(void) {
     PipelineManager::createPipeline("basic", { .shaderName = "basic" });
 
     // Textures must be loaded in before the basic pipeline
-    ResourceManager::loadTexture("block_map", "textures/block_map.png", {});
+    ResourceManager::loadTexture("block_map", "textures/block_map.png", {
+        .filter = vk::Filter::eNearest,
+        .addressMode = vk::SamplerAddressMode::eClampToEdge,
+        .mipmapMode = vk::SamplerMipmapMode::eNearest,
+    });
+
     ResourceManager::loadTexture("square", "textures/square.jpg", {});
     ResourceManager::loadTexture("test", "textures/test.jpg", {});
 
