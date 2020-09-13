@@ -26,9 +26,16 @@
 #include <vector>
 #include <tuple>
 
+struct Light {
+    glm::vec3 color;
+    glm::vec3 direction;
+    float ambient;
+};
+
 struct SceneUBO {
     glm::mat4 view;
     glm::mat4 proj;
+    Light light;
 };
 
 struct ModelUBO {

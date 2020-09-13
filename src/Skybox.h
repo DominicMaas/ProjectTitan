@@ -1,12 +1,18 @@
 #pragma once
 
 #include <pch.h>
-#include "core/managers/ResourceManager.h"
 #include "core/Mesh.h"
+#include "core/resources/Texture2D.h"
 
 class Skybox {
 private:
-    Mesh _mesh;
+    Mesh *_mesh;
+    Texture2D *_texture;
+    GraphicsPipeline *_pipeline;
+
+    vk::Buffer _uniformBuffer;
+    VmaAllocation _uniformAllocation;
+    vk::DescriptorSet _descriptorSet;
 
     const Vertex _skyboxVertices[36] = {
         // positions
@@ -54,8 +60,8 @@ private:
     };
 
 public:
+    Skybox();
     ~Skybox();
 
-    void setup(std::vector<std::string> faces);
-    void render(glm::mat4 viewMatrix, glm::mat4 projMatrix);
+    void render(vk::CommandBuffer &commandBuffer, glm::mat4 viewMatrix, glm::mat4 projMatrix);
 };

@@ -20,7 +20,7 @@ Camera::Camera(glm::vec3 position) {
     vk::DescriptorBufferInfo bufferInfo = {
             .buffer = _cameraUboBuffer,
             .offset = 0,
-            .range = sizeof(ModelUBO)
+            .range = sizeof(SceneUBO)
     };
 
     vk::WriteDescriptorSet descriptorWrite = {
@@ -32,6 +32,10 @@ Camera::Camera(glm::vec3 position) {
             .pBufferInfo = &bufferInfo };
 
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
+
+    SceneUBO.light.ambient = 0.2f;
+    SceneUBO.light.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    SceneUBO.light.direction = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // Run an initial update to get the correct values
     update();
@@ -66,15 +70,14 @@ void Camera::update() {
     _up = glm::normalize(glm::cross(_right, _front));
 
     // Write updates for the camera
-    SceneUBO ubo {};
-    ubo.view = getViewMatrix();
-    ubo.proj = getProjectionMatrix();
-    ubo.proj[1][1] *= -1; // Adjust for Vulkan coords, vs OpenGL coords
+    SceneUBO.view = getViewMatrix();
+    SceneUBO.proj = getProjectionMatrix();
+    SceneUBO.proj[1][1] *= -1; // Adjust for Vulkan coords, vs OpenGL coords
 
     // Copy to the correct memory location
     void* mappedData;
     vmaMapMemory(Renderer::Instance->Allocator, _cameraUboAllocation, &mappedData);
-    memcpy(mappedData, &ubo, sizeof(ubo));
+    memcpy(mappedData, &SceneUBO, sizeof(SceneUBO));
     vmaUnmapMemory(Renderer::Instance->Allocator, _cameraUboAllocation);
 }
 

@@ -9,6 +9,7 @@ struct CreateGraphicsPipelineInfo {
 
 struct PipelineInfo {
     std::string shaderName;
+    bool enableBlending = true;
 };
 
 struct DestroyGraphicsPipelineInfo {
@@ -43,4 +44,6 @@ public:
 
     vk::DescriptorSet createUBODescriptorSet();
     vk::DescriptorSet createTexSamplerDescriptorSet();
+
+    void createModelUBO(vk::Buffer &buffer, VmaAllocation &allocation, vk::DescriptorSet &descriptorSet);
 };

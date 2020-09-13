@@ -11,6 +11,7 @@
 #include "imgui_impl_vulkan.h"
 
 bool mouseCaptured = true;
+bool guiHasMouse = false;
 
 void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
     mouseCaptured = _mouseCapture;
@@ -27,10 +28,6 @@ void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
 bool renderPhysics = false;
 bool renderLines = false;
 bool displayShadowMap = false;
-
-bool mouseCaptured = true;
-bool guiHasMouse = false;
-
 
 void processKeyboardInput(GLFWwindow *window, long double delta) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -53,7 +50,7 @@ int main(void) {
     World* currentWorld = nullptr;
 
     // Create the window
-    Window w("Project Titan [Vulkan]", 800, 600);
+    Window w("Project Titan [Vulkan]", 1920, 1080);
 
     // Initialise window and renderer resources
     if (!w.init()) {
@@ -61,7 +58,8 @@ int main(void) {
     }
 
     // Load in shaders
-    ResourceManager::loadShader("basic", "shaders/vulkan_test");
+    ResourceManager::loadShader("main", "shaders/main");
+    ResourceManager::loadShader("skybox", "shaders/skybox");
     // ResourceManager::loadShader("shadow_depth", "shaders/shadow_depth");
     // ResourceManager::loadShader("debug", "shaders/basic");
     // ResourceManager::loadShader("backpack_shader", "shaders/model");
@@ -70,13 +68,27 @@ int main(void) {
     // ResourceManager::loadShader("debug_depth_quad", "shaders/debug_depth_quad");
 
     // The main pipeline used throughout the game, warning this is hard coded in some places
-    PipelineManager::createPipeline("basic", { .shaderName = "basic" });
+    PipelineManager::createPipeline("basic", { .shaderName = "main" });
+    PipelineManager::createPipeline("skybox", { .shaderName = "skybox", .enableBlending = false });
 
     // Textures must be loaded in before the basic pipeline
     ResourceManager::loadTexture("block_map", "textures/block_map.png", {
+        .pipeline = "skybox",
         .filter = vk::Filter::eNearest,
         .addressMode = vk::SamplerAddressMode::eClampToEdge,
-        .mipmapMode = vk::SamplerMipmapMode::eNearest,
+        .mipmapMode = vk::SamplerMipmapMode::eNearest
+    });
+
+    ResourceManager::loadTexture("skybox", std::vector<std::string>({
+        "textures/skybox/front.jpg",
+        "textures/skybox/back.jpg",
+        "textures/skybox/top.jpg",
+        "textures/skybox/bottom.jpg",
+        "textures/skybox/right.jpg",
+        "textures/skybox/left.jpg"
+    }), {
+        .addressMode = vk::SamplerAddressMode::eClampToEdge,
+        .cubeMap = true
     });
 
     ResourceManager::loadTexture("square", "textures/square.jpg", {});
@@ -100,12 +112,23 @@ int main(void) {
 
     // Set the window callbacks
     w.onMouseMove = [&](double xPos, double yPos) {
+        // Don't process mouse events if the GUI has access
+        if (guiHasMouse) {
+            return;
+        }
+
         if (mouseCaptured) {
             camera->processMouseInput((float)xPos, (float)yPos);
         }
     };
 
     w.onMouseButton = [&](int button, int action, int mods) {
+        // Don't process mouse events if the GUI has access
+        if (guiHasMouse) {
+            return;
+        }
+
+        // Clicking on the screen will capture the mouse
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             setMouseCapture(w.getGLFWWindow(), true);
         }
@@ -116,11 +139,18 @@ int main(void) {
     };
 
     w.onUpdate = [&](float deltaTime) {
+        // Update if the GUI wants the mouse
+        guiHasMouse = io.WantCaptureMouse;
+
         if (glfwGetKey(w.getGLFWWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
             setMouseCapture(w.getGLFWWindow(), false);
 
-        // Process camera inputs, this also updates the camera UBO for all objects
-        camera->processKeyboardInput(w.getGLFWWindow(), deltaTime);
+        // Process camera inputs
+        if (!io.WantCaptureKeyboard) {
+            camera->processKeyboardInput(w.getGLFWWindow(), deltaTime);
+        }
+
+        // Update camera UBOs
         camera->update();
 
         // Update the world
@@ -153,17 +183,15 @@ int main(void) {
             ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
             ImGui::Text("  ");
 
-            ImGui::Text("G: Set sun look-at to current position");
-
-            ImGui::Text("  ");
-
             //ImGui::Checkbox("Debug Renderer", &renderLines);
 
             if (ImGui::Button("Reset World")) {
                 currentWorld->reset(true);
             }
 
-            ImGui::SliderFloat3("Light Position", (float*)&currentWorld->SunPosition, -1.0f, 1.0f);
+            ImGui::SliderFloat3("Light Position", (float*)&camera->SceneUBO.light.direction, -1.0f, 1.0f);
+            ImGui::SliderFloat3("Light Color", (float*)&camera->SceneUBO.light.color, 0.0f, 1.0f);
+            ImGui::SliderFloat("Light Ambient", &camera->SceneUBO.light.ambient, 0.0f, 1.0f);
 
             ImGui::End();
         }

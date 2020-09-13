@@ -27,9 +27,9 @@ void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
     // End
     commandBuffer.end();
 
-    vk::SubmitInfo submitInfo = {
-            .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffer };
+    auto submitInfo = vk::SubmitInfo()
+        .setCommandBufferCount(1)
+        .setCommandBuffers(commandBuffer);
 
     // Submit and wait
     GraphicsQueue.submit(1, &submitInfo, nullptr);
@@ -57,7 +57,7 @@ void Renderer::copyBuffer(VkBuffer source, vk::Buffer destination, uint64_t size
 }
 
 void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
-                                     vk::ImageLayout newLayout) {
+                                     vk::ImageLayout newLayout, uint32_t layerCount) {
     auto commandBuffer = beginSingleTimeCommands();
 
     vk::ImageMemoryBarrier barrier = {
@@ -70,7 +70,7 @@ void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::Ima
             .subresourceRange.baseMipLevel = 0,
             .subresourceRange.levelCount = 1,
             .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1 };
+            .subresourceRange.layerCount = layerCount };
 
     vk::PipelineStageFlags sourceStage;
     vk::PipelineStageFlags destinationStage;
@@ -117,7 +117,7 @@ void Renderer::createBuffer(vk::Buffer &buffer, VmaAllocation &allocation, VmaAl
     }
 }
 
-void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage) {
+void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t width, uint32_t height, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, uint32_t layerCount, vk::ImageUsageFlags usage, vk::ImageCreateFlagBits flags) {
     assert(Allocator);
 
     vk::ImageCreateInfo imageInfo = {};
@@ -126,13 +126,14 @@ void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
+    imageInfo.arrayLayers = layerCount;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
     imageInfo.initialLayout = vk::ImageLayout::eUndefined;
     imageInfo.usage = usage;
     imageInfo.samples = numSamples;
-    imageInfo.sharingMode = vk::SharingMode::eExclusive;;
+    imageInfo.sharingMode = vk::SharingMode::eExclusive;
+    imageInfo.flags = flags;
 
     auto tempCreateInfo = VkImageCreateInfo(imageInfo);
 
@@ -144,12 +145,12 @@ void Renderer::createImage(vk::Image &image, VmaAllocation &allocation, uint32_t
     image = tempImage;
 }
 
-vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) {
+vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, vk::ImageViewType imageViewType, uint32_t layerCount) {
     assert(Device);
 
     vk::ImageViewCreateInfo createInfo = {
             .image = image,
-            .viewType = vk::ImageViewType::e2D,
+            .viewType = imageViewType,
             .format = format,
             .components.r = vk::ComponentSwizzle::eIdentity,
             .components.g = vk::ComponentSwizzle::eIdentity,
@@ -159,13 +160,13 @@ vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::
             .subresourceRange.baseMipLevel = 0,
             .subresourceRange.levelCount = 1,
             .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1
+            .subresourceRange.layerCount = layerCount
     };
 
     return Device.createImageView(createInfo);
 }
 
-void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {
+void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, uint32_t layerCount) {
     auto commandBuffer = beginSingleTimeCommands();
 
     vk::BufferImageCopy region = {
@@ -175,7 +176,7 @@ void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t wi
             .imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor,
             .imageSubresource.mipLevel = 0,
             .imageSubresource.baseArrayLayer = 0,
-            .imageSubresource.layerCount = 1,
+            .imageSubresource.layerCount = layerCount,
             .imageOffset = {0, 0, 0},
             .imageExtent = { width, height,1 }};
 

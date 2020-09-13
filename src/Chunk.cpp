@@ -15,13 +15,6 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     _mesh = new Mesh();
 
     // ------------------ Create Uniform Buffer ------------------ //
-    // This will be done on local memory for now, May copy over to GPU later
-    // on, since the mesh model should not be updated too often.
-    VmaAllocationInfo uniformBufferAllocInfo = {};
-    Renderer::Instance->createBuffer(_uniformBuffer, _uniformAllocation,uniformBufferAllocInfo,
-                                     sizeof(ModelUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
-                                     VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
 
     // Create the descriptor set to store the chunk position
     auto* pipeline = PipelineManager::getPipeline("basic");
@@ -29,25 +22,7 @@ Chunk::Chunk(glm::vec3 position, World *world) {
         throw std::invalid_argument("Unable to retrieve the specified pipeline ('basic')");
     }
 
-    // Allocate the descriptor set
-    _descriptorSet = pipeline->createUBODescriptorSet();
-
-    // Bind the uniform buffer
-    vk::DescriptorBufferInfo bufferInfo = {
-            .buffer = _uniformBuffer,
-            .offset = 0,
-            .range = sizeof(ModelUBO)
-    };
-
-    vk::WriteDescriptorSet descriptorWrite = {
-            .dstSet = _descriptorSet,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .pBufferInfo = &bufferInfo };
-
-    Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
+    pipeline->createModelUBO(_uniformBuffer, _uniformAllocation, _descriptorSet);
 
     ModelUBO ubo {};
     ubo.model = _modelMatrix;

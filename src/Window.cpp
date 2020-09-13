@@ -469,6 +469,10 @@ bool Window::createVulkanInstance() {
 }
 
 bool Window::setupDebugMessenger() {
+    if (!_enableValidationLayers) {
+        return true;
+    }
+
     vk::DebugUtilsMessengerCreateInfoEXT createInfo = {
             .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
                     | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
@@ -542,6 +546,7 @@ bool Window::selectDefaultDevice() {
     _renderer->PhysicalDevice = selectedDevice;
 
     _renderer->MSAASamples = _renderer->getMaxUsableSampleCount();
+    _renderer->MSAASamples = vk::SampleCountFlagBits::e4; // TODO: Make this a setting
 
     // Log information about the selected device
     auto properties = _renderer->PhysicalDevice.getProperties();
@@ -691,7 +696,7 @@ bool Window::createImageViews() {
 
     // Iterate over images
     for (int i = 0; i < _swapChainImages.size(); i++) {
-        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat, vk::ImageAspectFlagBits::eColor);
+        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1);
     }
 
     return true;
@@ -830,15 +835,15 @@ bool Window::createCommandPool() {
 void Window::createDepthResources() {
     vk::Format depthFormat = Renderer::Instance->findDepthFormat();
 
-    Renderer::Instance->createImage(_depthImageSet.image, _depthImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, depthFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment);
-    _depthImageSet.imageView = Renderer::Instance->createImageView(_depthImageSet.image, depthFormat, vk::ImageAspectFlagBits::eDepth);
+    Renderer::Instance->createImage(_depthImageSet.image, _depthImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, depthFormat, vk::ImageTiling::eOptimal, 1, vk::ImageUsageFlagBits::eDepthStencilAttachment, {});
+    _depthImageSet.imageView = Renderer::Instance->createImageView(_depthImageSet.image, depthFormat, vk::ImageAspectFlagBits::eDepth, vk::ImageViewType::e2D, 1);
 }
 
 void Window::createColorResources() {
     vk::Format colorFormat = _swapChainImageFormat;
 
-    Renderer::Instance->createImage(_colorImageSet.image, _colorImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, colorFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment);
-    _colorImageSet.imageView = Renderer::Instance->createImageView(_colorImageSet.image, colorFormat, vk::ImageAspectFlagBits::eColor);
+    Renderer::Instance->createImage(_colorImageSet.image, _colorImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, colorFormat, vk::ImageTiling::eOptimal, 1, vk::ImageUsageFlagBits::eColorAttachment, {});
+    _colorImageSet.imageView = Renderer::Instance->createImageView(_colorImageSet.image, colorFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1);
 }
 
 bool Window::createCommandBuffers() {

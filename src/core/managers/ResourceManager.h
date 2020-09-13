@@ -25,7 +25,12 @@ public:
     static void loadShader(std::string name, std::string path);
 
     // Loads a texture into the resource manager
-    static void loadTexture(std::string name, std::string path, LoadTextureInfo info);
+    static void loadTexture(std::string name, std::string path, LoadTextureInfo info)
+    {
+        loadTexture(name, std::vector<std::string>({path}), info);
+    }
+
+    static void loadTexture(std::string name, std::vector<std::string> paths, LoadTextureInfo info);
 
     // Loads a model into the resource manager
     static void loadModel(std::string name, std::string path);

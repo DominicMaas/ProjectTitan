@@ -33,6 +33,8 @@ private:
     float _lastMouseY;
 
 public:
+    SceneUBO SceneUBO;
+
     Camera(glm::vec3 position);
     ~Camera();
 

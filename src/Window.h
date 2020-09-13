@@ -90,10 +90,15 @@ private:
     ImageSet _colorImageSet;
 
     // Vulkan validation layers
+#ifdef DEBUG
     const bool _enableValidationLayers = true;
     const std::vector<const char*> _validationLayers = {
             "VK_LAYER_KHRONOS_validation"
     };
+#else
+    const bool _enableValidationLayers = false;
+    const std::vector<const char*> _validationLayers = {};
+#endif
 
     const std::vector<const char*> _deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME

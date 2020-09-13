@@ -33,7 +33,7 @@ private:
     boost::ptr_vector<Chunk> _chunks;
     boost::ptr_vector<Entity> _entities;
 
-    Skybox _worldSkybox;
+    Skybox *_worldSkybox;
 
     // Keep track of any futures
     std::vector<std::future<void>> _futures;
@@ -67,7 +67,6 @@ public:
     void updatePhysics(long double timeStep, long double accumulator);
 
     void render(vk::CommandBuffer &commandBuffer, Camera &c);
-    void postRender(Camera &c, Shader &shader);
 
     void reset(bool resetSeed);
 

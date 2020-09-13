@@ -25,7 +25,11 @@ file(GLOB_RECURSE DEP_FILES
 # We need these to recompile shaders when they change
 #file(GLOB_RECURSE DEP_SHADER_FILES
 #		${CMAKE_SOURCE_DIR}/res/shaders/*.*)
-SET(DEP_SHADER_FILES ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.frag ${CMAKE_SOURCE_DIR}/res/shaders/vulkan_test.vert) # TODO: Remove once shaders are fixed
+SET(DEP_SHADER_FILES
+		${CMAKE_SOURCE_DIR}/res/shaders/skybox.frag
+		${CMAKE_SOURCE_DIR}/res/shaders/skybox.vert
+		${CMAKE_SOURCE_DIR}/res/shaders/main.frag
+		${CMAKE_SOURCE_DIR}/res/shaders/main.vert) # TODO: Remove once shaders are fixed
 
 # Need Vulkan
 find_package(Vulkan REQUIRED FATAL_ERROR)
@@ -59,7 +63,7 @@ function(build_shader TARGET_OBJ SHADER_NAME)
 	add_custom_command(OUTPUT ${OUT_NAME}
 			COMMAND glslc ${FILE_NAME} -o ${OUT_NAME}
 			DEPENDS ${FILE_NAME}
-			COMMENT "Compiling ${SHADER_NAME}...")
+			COMMENT "Compiling ${SHADER_NAME} (${CMAKE_BINARY_DIR})...")
 	add_custom_target(MAKE_${SHADER_NAME} ALL DEPENDS ${OUT_NAME})
 	add_dependencies(${TARGET_OBJ} MAKE_${SHADER_NAME})
 endfunction()
@@ -78,3 +82,14 @@ add_custom_command(
 		"$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 		COMMENT "Copying Resources..."
 )
+
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+	message(" ")
+	message("CMAKE IN DEBUG MODE")
+	target_compile_definitions(${PROJECT_NAME} PUBLIC DEBUG=1)
+	message(" ")
+elseif(CMAKE_BUILD_TYPE MATCHES Release)
+	message(" ")
+	message("CMAKE IN RELEASE MODE")
+	message(" ")
+endif ()

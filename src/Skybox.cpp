@@ -1,60 +1,56 @@
 #include "Skybox.h"
+#include "core/managers/ResourceManager.h"
+#include "core/managers/PipelineManager.h"
+#include "core/Renderer.h"
 
-void Skybox::setup(std::vector<std::string> faces) {
-    // Get the shader
-
+Skybox::Skybox() {
     // Build the mesh
     std::vector<Vertex> vertices(std::begin(_skyboxVertices), std::end(_skyboxVertices));
-    //_mesh.rebuild(vertices, std::vector<unsigned int>(), std::vector<Texture>());
+    _mesh = new Mesh(vertices, std::vector<unsigned short>(), std::vector<Texture>());
+    _mesh->build();
 
-    // Generate textures
-    //GLCall(glGenTextures(1, &_texture));
-    //GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));
+    // Get a reference to the texture
+    _texture = ResourceManager::getTexture("skybox");
+    if (_texture == nullptr) {
+        throw std::runtime_error("The required texture for the skybox could not be found!");
+    }
 
-    // Load textures
-    //int width, height, nrChannels;
-    //for (unsigned int i = 0; i < faces.size(); i++) {
-    //    stbi_set_flip_vertically_on_load(false);
-    ///    unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-    //    stbi_set_flip_vertically_on_load(true);
-     //   if (data) {
-            //GLCall(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-            //             0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-            //));
-     //       stbi_image_free(data);
-     //   } else {
-            //std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-     //       stbi_image_free(data);
-     //   }
-   // }
-//
-    // Set texture settings
-    //GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    //GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    //GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    //GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    //GLCall(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE));
+    _pipeline = PipelineManager::getPipeline("skybox");
+    if (_pipeline == nullptr) {
+        throw std::runtime_error("The required pipeline for the skybox could not be found!");
+    }
 
-    //_shader->use();
-   // _shader->setInt("skybox", 0);
-}
+    // Create the uniform buffer
+    _pipeline->createModelUBO(_uniformBuffer, _uniformAllocation, _descriptorSet);
 
-void Skybox::render(glm::mat4 viewMatrix, glm::mat4 projMatrix) {
-    //GLCall(glDepthFunc(GL_LEQUAL));
+    ModelUBO ubo {};
+    ubo.model = glm::translate(glm::mat4(), glm::vec3(0,0,0));
 
-    //_shader->use();
-
-    // Keep skybox in player view
-   // glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
-
-    // Set the camera view and view position matrix
-    //_shader->setMat4("view", view);
-    //_shader->setMat4("projection", projMatrix);
-
-    //GLCall(glBindTexture(GL_TEXTURE_CUBE_MAP, _texture));
-    //_mesh.render(*_shader);
+    // Copy this data across to the local memory
+    // TODO: Maybe move this to the GPU memory?
+    void* mappedData;
+    vmaMapMemory(Renderer::Instance->Allocator, _uniformAllocation, &mappedData);
+    memcpy(mappedData, &ubo, sizeof(ubo));
+    vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 }
 
 Skybox::~Skybox() {
-    //glDeleteTextures(1, &_texture);
+    vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
+
+    delete _mesh;
 }
+
+void Skybox::render(vk::CommandBuffer &commandBuffer, glm::mat4 viewMatrix, glm::mat4 projMatrix) {
+    // Bind the skybox pipeline
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline->getVKPipeline());
+
+    // Bind the texture
+    _texture->bind(commandBuffer);
+
+    // Bind the static model position
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline->getPipelineLayout(), 1, 1, &_descriptorSet, 0, nullptr);
+
+    // Render the mesh
+    _mesh->render(commandBuffer);
+}
+

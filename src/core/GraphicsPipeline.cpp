@@ -139,7 +139,7 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
 
     // Color blending
     vk::PipelineColorBlendAttachmentState colorBlendAttachment = {
-            .blendEnable = VK_TRUE,
+            .blendEnable = _info.enableBlending,
             .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
             .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
             .colorBlendOp = vk::BlendOp::eAdd,
@@ -256,4 +256,33 @@ vk::DescriptorSet GraphicsPipeline::createTexSamplerDescriptorSet() {
             .pSetLayouts = descriptorSetLayout };
 
     return Renderer::Instance->Device.allocateDescriptorSets(descriptorAllocInfo)[0];
+}
+
+void GraphicsPipeline::createModelUBO(vk::Buffer &buffer, VmaAllocation &allocation, vk::DescriptorSet &descriptorSet) {
+    // This will be done on local memory for now, May copy over to GPU later
+    // on, since the mesh model should not be updated too often.
+    VmaAllocationInfo uniformBufferAllocInfo = {};
+    Renderer::Instance->createBuffer(buffer, allocation,uniformBufferAllocInfo,
+     sizeof(ModelUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+     VMA_ALLOCATION_CREATE_MAPPED_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // Allocate the descriptor set
+    descriptorSet = createUBODescriptorSet();
+
+    // Bind the uniform buffer
+    vk::DescriptorBufferInfo bufferInfo = {
+            .buffer = buffer,
+            .offset = 0,
+            .range = sizeof(ModelUBO)
+    };
+
+    vk::WriteDescriptorSet descriptorWrite = {
+            .dstSet = descriptorSet,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &bufferInfo };
+
+    Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 }

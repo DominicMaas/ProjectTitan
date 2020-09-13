@@ -18,6 +18,7 @@ private:
     VmaAllocation _indexAllocation;
 
     bool _built;
+    bool _hasIndices;
 
 public:
     // Create a new mesh with a set of vertices, indices and textures. The mesh will not be built

@@ -21,7 +21,10 @@ Mesh::~Mesh() {
     assert(Renderer::Instance->Allocator);
 
     vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
-    vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+
+    if (_hasIndices) {
+        vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+    }
 }
 
 
@@ -41,10 +44,16 @@ void Mesh::build() {
 
     // If the mesh has already been built, we need to destroy it first
     if (_built) {
-        vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+        if (_hasIndices) {
+            vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+        }
+
         vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
         _built = false;
     }
+
+    // Update this flag
+    _hasIndices = !Indices.empty();
 
     // ------------------ Create Vertex Buffer ------------------ //
 
@@ -68,35 +77,43 @@ void Mesh::build() {
                                      VMA_MEMORY_USAGE_GPU_ONLY);
 
     // ------------------ Create Index Buffer ------------------ //
-
     auto indexSize = sizeof(unsigned short) * Indices.size();
 
-    // ON CPU
     vk::Buffer stagingIndexBuffer = nullptr;
     VmaAllocation stagingIndexBufferAlloc = VK_NULL_HANDLE;
-    VmaAllocationInfo stagingIndexBufferAllocInfo = {};
-    Renderer::Instance->createBuffer(stagingIndexBuffer, stagingIndexBufferAlloc, stagingIndexBufferAllocInfo,
-                                     vertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
-                                     VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-    // Copy to buffer
-    memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) indexSize);
+    if (_hasIndices) {
+        // ON CPU
+        VmaAllocationInfo stagingIndexBufferAllocInfo = {};
+        Renderer::Instance->createBuffer(stagingIndexBuffer, stagingIndexBufferAlloc, stagingIndexBufferAllocInfo,
+                                         vertexSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+                                         VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-    // On GPU
-    VmaAllocationInfo indexBufferAllocInfo = {};
-    Renderer::Instance->createBuffer(_indexBuffer, _indexAllocation, indexBufferAllocInfo, indexSize,
-                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                     VMA_MEMORY_USAGE_GPU_ONLY);
+        // Copy to buffer
+        memcpy(stagingIndexBufferAllocInfo.pMappedData, Indices.data(), (size_t) indexSize);
+
+        // On GPU
+        VmaAllocationInfo indexBufferAllocInfo = {};
+        Renderer::Instance->createBuffer(_indexBuffer, _indexAllocation, indexBufferAllocInfo, indexSize,
+                                         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                         VMA_MEMORY_USAGE_GPU_ONLY);
+    }
 
     // ------------------ Copy Buffers ------------------ //
 
     Renderer::Instance->copyBuffer(stagingVertexBuffer, _vertexBuffer, vertexSize);
-    Renderer::Instance->copyBuffer(stagingIndexBuffer, _indexBuffer, indexSize);
+
+    if (_hasIndices) {
+        Renderer::Instance->copyBuffer(stagingIndexBuffer, _indexBuffer, indexSize);
+    }
 
     // ------------------ Destroy Staging Buffers ------------------ //
 
     vmaDestroyBuffer(Renderer::Instance->Allocator, stagingVertexBuffer, stagingVertexBufferAlloc);
-    vmaDestroyBuffer(Renderer::Instance->Allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
+
+    if (_hasIndices) {
+        vmaDestroyBuffer(Renderer::Instance->Allocator, stagingIndexBuffer, stagingIndexBufferAlloc);
+    }
 
     _built = true;
 }
@@ -114,6 +131,10 @@ void Mesh::render(vk::CommandBuffer &commandBuffer) {
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
     // Draw
-    commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
-    commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
+    if (_hasIndices) {
+        commandBuffer.bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint16);
+        commandBuffer.drawIndexed(Indices.size(), 1, 0, 0, 0);
+    } else {
+        commandBuffer.draw(Vertices.size(), 1, 0, 0);
+    }
 }

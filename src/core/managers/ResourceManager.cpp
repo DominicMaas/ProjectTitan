@@ -16,7 +16,7 @@ void ResourceManager::loadShader(std::string name, std::string path) {
     }
 }
 
-void ResourceManager::loadTexture(std::string name, std::string path, LoadTextureInfo info) {
+void ResourceManager::loadTexture(std::string name, std::vector<std::string> paths, LoadTextureInfo info) {
     spdlog::info("[Resource Manager] Loading texture '" + name + "'...");
 
     if (_textures.find(name) != _textures.end()) {
@@ -27,23 +27,42 @@ void ResourceManager::loadTexture(std::string name, std::string path, LoadTextur
     // The texture the image will be stored in
     auto* texture = new Texture2D();
 
-    // load image
+    // Set how the image should be loaded
     stbi_set_flip_vertically_on_load(info.flipTexture);
-    int width, height, texChannels;
-    unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
 
-    // If successful
-    if (pixels) {
-        // Load in the texture
-        texture->load(pixels, width, height, info);
-        _textures.insert(name, texture);
-    } else {
-        spdlog::error("[Resource Manager] Could not load texture!");
-        delete texture;
+    std::vector<unsigned char*> inputTextures;
+    int width, height, texChannels;
+    bool success = true;
+
+    // Load the images
+    for (std::string &path : paths) {
+        // Load this image
+        unsigned char* pixels = stbi_load(path.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+
+        // If successful
+        if (pixels) {
+            inputTextures.push_back(pixels);
+        } else {
+            // Report the error
+            spdlog::error("[Resource Manager] Could not load texture! ({})", path);
+            success = false;
+
+            // Free any loose data
+            stbi_image_free(pixels);
+        }
     }
 
-    // Free image resources
-    stbi_image_free(pixels);
+    // Create the texture if successful
+    if (success) {
+
+        texture->load(inputTextures, width, height, info);
+        _textures.insert(name, texture);
+    }
+
+    // Free allocated image resources
+    for (auto* tex : inputTextures) {
+        stbi_image_free(tex);
+    }
 }
 
 void ResourceManager::loadModel(std::string name, std::string path) {

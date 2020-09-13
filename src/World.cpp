@@ -73,17 +73,7 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     }
 
     // Setup skybox
-    //std::vector<std::string> faces
-   // {
-   //     "textures/skybox/right.jpg",
-   //     "textures/skybox/left.jpg",
-   //     "textures/skybox/top.jpg",
-   //     "textures/skybox/bottom.jpg",
-    //    "textures/skybox/front.jpg",
-   //     "textures/skybox/back.jpg"
-    //};
-
-    //this->_worldSkybox.setup(faces);
+    _worldSkybox = new Skybox();
 }
 
 World::World(std::string worldName, reactphysics3d::PhysicsCommon *physics) : World(0, worldName, physics) {}
@@ -97,6 +87,7 @@ World::~World() {
     _entities.release();
     _entities.clear();
 
+    delete _worldSkybox;
     delete _worldGen;
 }
 
@@ -179,11 +170,9 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     for (Entity &entity : _entities) {
         entity.render(commandBuffer);
     }
-}
 
-void World::postRender(Camera &c, Shader &shader) {
     // Render the skybox
-    //this->_worldSkybox.render(c.getViewMatrix(), c.getProjectionMatrix());
+    this->_worldSkybox->render(commandBuffer, c.getViewMatrix(), c.getProjectionMatrix());
 }
 
 void World::reset(bool resetSeed) {
