@@ -197,13 +197,13 @@ void Window::drawFrame() {
         return;
     }
 
-    // Record the command buffers for this index
-    recordCommandBuffers(imageIndex);
-
     // Check if a previous frame is using this image (i.e. there is its fence to wait on)
     if (VkFence(_imagesInFlight[imageIndex]) != VK_NULL_HANDLE) {
         _renderer->Device.waitForFences(1, &_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
+
+    // Record the command buffers for this index
+    recordCommandBuffers(imageIndex);
 
     // Mark the image as now being in use by this frame
     _imagesInFlight[imageIndex] = _inFlightFences[_currentFrame];
@@ -268,8 +268,10 @@ void Window::recordCommandBuffers(int i) {
     vk::RenderPassBeginInfo renderPassInfo = {
             .renderPass = _renderPass,
             .framebuffer = _swapChainFrameBuffers[i],
-            .renderArea.extent = _swapChainExtent,
-            .renderArea.offset = {0, 0},
+            .renderArea = {
+                    .offset = {0, 0},
+                    .extent = _swapChainExtent
+            },
             .clearValueCount = 2,
             .pClearValues = clearValues
     };
@@ -984,7 +986,7 @@ vk::SurfaceFormatKHR Window::chooseSwapSurfaceFormat(const std::vector<vk::Surfa
 
 vk::PresentModeKHR Window::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR> &availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+        if (availablePresentMode == vk::PresentModeKHR::eFifoRelaxed) { //eMailbox
             return availablePresentMode;
         }
     }

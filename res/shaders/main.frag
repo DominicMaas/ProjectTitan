@@ -19,7 +19,8 @@ layout(location = 0) out vec4 outColor;
 void main() {
     vec4 objectTexture = texture(texSampler, inTexCoords);
 
-    vec3 lightDir = vec3(inView * vec4(inLight.direction, 0.0));
+    //vec3 lightDir = vec3(inView * vec4(inLight.direction, 0.0));
+    vec3 lightDir = inLight.direction;
     vec3 norm = normalize(inNormal);
 
     // Diffuse

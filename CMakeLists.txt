@@ -45,6 +45,10 @@ add_subdirectory(extern/assimp)
 # Add libraries
 SET(PLATFORM_LIBRARIES glfw glm freetype reactphysics3d spdlog assimp)
 
+if(MSVC)
+	target_compile_options(assimp PRIVATE /W3)
+endif()
+
 # Includes
 include_directories("${CMAKE_SOURCE_DIR}/includes")
 

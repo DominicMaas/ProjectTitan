@@ -66,11 +66,14 @@ void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::Ima
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = image,
-            .subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor,
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = layerCount };
+            .subresourceRange = {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = layerCount
+            }
+    };
 
     vk::PipelineStageFlags sourceStage;
     vk::PipelineStageFlags destinationStage;
@@ -152,15 +155,19 @@ vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::
             .image = image,
             .viewType = imageViewType,
             .format = format,
-            .components.r = vk::ComponentSwizzle::eIdentity,
-            .components.g = vk::ComponentSwizzle::eIdentity,
-            .components.b = vk::ComponentSwizzle::eIdentity,
-            .components.a = vk::ComponentSwizzle::eIdentity,
-            .subresourceRange.aspectMask = aspectFlags,
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = layerCount
+            .components = {
+                    .r = vk::ComponentSwizzle::eIdentity,
+                    .g = vk::ComponentSwizzle::eIdentity,
+                    .b = vk::ComponentSwizzle::eIdentity,
+                    .a = vk::ComponentSwizzle::eIdentity,
+            },
+            .subresourceRange = {
+                    .aspectMask = aspectFlags,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = layerCount
+            }
     };
 
     return Device.createImageView(createInfo);
@@ -173,10 +180,12 @@ void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t wi
             .bufferOffset = 0,
             .bufferRowLength = 0,
             .bufferImageHeight = 0,
-            .imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor,
-            .imageSubresource.mipLevel = 0,
-            .imageSubresource.baseArrayLayer = 0,
-            .imageSubresource.layerCount = layerCount,
+            .imageSubresource = {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = layerCount,
+            },
             .imageOffset = {0, 0, 0},
             .imageExtent = { width, height,1 }};
 

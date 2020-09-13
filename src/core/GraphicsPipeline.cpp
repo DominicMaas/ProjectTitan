@@ -130,11 +130,11 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
             .depthWriteEnable = VK_TRUE,
             .depthCompareOp = vk::CompareOp::eLess,
             .depthBoundsTestEnable = VK_FALSE,
-            .minDepthBounds = 0.0f,
-            .maxDepthBounds = 1.0f,
             .stencilTestEnable = VK_FALSE,
             .front = {},
-            .back = {}
+            .back = {},
+            .minDepthBounds = 0.0f,
+            .maxDepthBounds = 1.0f,
     };
 
     // Color blending
