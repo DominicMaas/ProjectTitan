@@ -280,30 +280,30 @@ void Chunk::rebuild() {
     // Rebuild the visual mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
-    //if (_collider != nullptr) {
-    //    _world->getWorldBody()->removeCollider(_collider);
-    //}
+    if (_collider != nullptr) {
+        _world->getWorldBody()->removeCollider(_collider);
+    }
 
     // Create the polygon vertex array
-    //auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-    //        _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
-    //        _mesh->Indices.data(), 3 * sizeof(int),
-    //        reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-    //        reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+    auto* triangleArray = new reactphysics3d::TriangleVertexArray(
+            _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
+            _mesh->Indices.data(), 3 * sizeof(unsigned short),
+            reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+            reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_SHORT_TYPE);
 
     // Convert the chunk position into physics coords
-    //reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
-    //reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
+    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
+    reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
 
     // Perform the mesh collider rebuild
-    //auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
-    //physicsMesh->addSubpart(triangleArray);
+    auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
+    physicsMesh->addSubpart(triangleArray);
 
     // Create a physics shape based on this mesh
-    //auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
+    auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
 
     // Create the collider for this chunk and add it to the world body
-    //_collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
+    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
 
     // The chunk has been rebuilt
     _changed = false;

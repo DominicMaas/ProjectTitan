@@ -12,6 +12,8 @@
 
 bool mouseCaptured = true;
 bool guiHasMouse = false;
+bool renderPhysics = false;
+bool renderLines = false;
 
 void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
     mouseCaptured = _mouseCapture;
@@ -22,27 +24,6 @@ void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
-
-/*
-
-bool renderPhysics = false;
-bool renderLines = false;
-bool displayShadowMap = false;
-
-void processKeyboardInput(GLFWwindow *window, long double delta) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        setMouseCapture(window, false);
-
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        // Create test entity
-        const reactphysics3d::Vector3 halfExtents(1.0, 1.0, 1.0);
-        auto* boxShape = currentWorld->getPhysicsCommon()->createBoxShape(halfExtents);
-        currentWorld->addEntity(new Entity(currentWorld, ResourceManager::getModel("backpack"), boxShape, camera.getPosition(), glm::vec3()));
-    }
-
-    // Process camera inputs
-    camera.processKeyboardInput(window, delta);
-}*/
 
 int main(void) {
     // Variables that we will need
@@ -69,6 +50,7 @@ int main(void) {
 
     // The main pipeline used throughout the game, warning this is hard coded in some places
     PipelineManager::createPipeline("basic", { .shaderName = "main" });
+    PipelineManager::createPipeline("basic_lines", { .shaderName = "main" });
     PipelineManager::createPipeline("skybox", { .shaderName = "skybox", .enableBlending = false });
 
     // Textures must be loaded in before the basic pipeline
@@ -109,6 +91,26 @@ int main(void) {
 
     // Start without mouse capture
     setMouseCapture(w.getGLFWWindow(), false);
+
+    // Physics engine for the game
+    reactphysics3d::PhysicsCommon physicsCommon;
+
+    // Create the main camera and scene
+    camera = new Camera(glm::vec3(8, 40, 8));
+    camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
+
+    // The world
+    currentWorld = new World("Test World", &physicsCommon);
+
+    // Physics debugging
+    Mesh physicsDebugMesh;
+
+    reactphysics3d::DebugRenderer &debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_AABB, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
+    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
 
     // Set the window callbacks
     w.onMouseMove = [&](double xPos, double yPos) {
@@ -165,6 +167,21 @@ int main(void) {
         // Render all chunks and entities within the world
         currentWorld->render(commandBuffer, *camera);
 
+        // Physics debug rendering
+        if (renderPhysics) {
+            std::vector<Vertex> debugVertices;
+
+            auto triangles = debugRenderer.getTriangles();
+            for (auto const &i : triangles) {
+                debugVertices.push_back(Vertex{glm::vec3(i.point1.x, i.point1.y, i.point1.z)});
+                debugVertices.push_back(Vertex{glm::vec3(i.point2.x, i.point2.y, i.point2.z)});
+                debugVertices.push_back(Vertex{glm::vec3(i.point3.x, i.point3.y, i.point3.z)});
+            }
+
+            physicsDebugMesh.rebuild(debugVertices, std::vector<unsigned short>(), std::vector<Texture>());
+            physicsDebugMesh.render(commandBuffer);
+        }
+
         // Start GUI frame
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -183,7 +200,7 @@ int main(void) {
             ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
             ImGui::Text("  ");
 
-            //ImGui::Checkbox("Debug Renderer", &renderLines);
+            ImGui::Checkbox("Debug Renderer", &renderLines);
 
             if (ImGui::Button("Reset World")) {
                 currentWorld->reset(true);
@@ -204,11 +221,11 @@ int main(void) {
             ImGui::Text("Collision Bodies: %i", currentWorld->getPhysicsWorld()->getNbCollisionBodies());
             ImGui::Text("World Body Colliders: %i", currentWorld->getWorldBody()->getNbColliders());
 
-            //if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
-            //    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
-            //} else {
-            //    currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
-            //}
+            if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
+                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
+            } else {
+                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
+            }
 
             ImGui::End();
         }
@@ -230,16 +247,6 @@ int main(void) {
         delete camera;
     };
 
-    // Physics engine for the game
-    reactphysics3d::PhysicsCommon physicsCommon;
-
-    // Create the main camera and scene
-    camera = new Camera(glm::vec3(8, 40, 8));
-    camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
-
-    // The world
-    currentWorld = new World("Test World", &physicsCommon);
-
     // Run the engine
     w.run();
 
@@ -252,20 +259,6 @@ int main(void) {
 
 
     /*
-    // Physics debugging
-    Mesh physicsDebugMesh;
-
-    reactphysics3d::DebugRenderer &debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_AABB, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
-
-
-    //renderEffects.push_back(SSAO());
-    ShadowMapping shadowMapping;
-
     // Create a rigid body in the world
     //reactphysics3d::Vector3 position(0, 100, 0);
     //reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();

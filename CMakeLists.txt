@@ -23,13 +23,8 @@ file(GLOB_RECURSE DEP_FILES
 		${CMAKE_SOURCE_DIR}/deps/*.cpp)
 
 # We need these to recompile shaders when they change
-#file(GLOB_RECURSE DEP_SHADER_FILES
-#		${CMAKE_SOURCE_DIR}/res/shaders/*.*)
-SET(DEP_SHADER_FILES
-		${CMAKE_SOURCE_DIR}/res/shaders/skybox.frag
-		${CMAKE_SOURCE_DIR}/res/shaders/skybox.vert
-		${CMAKE_SOURCE_DIR}/res/shaders/main.frag
-		${CMAKE_SOURCE_DIR}/res/shaders/main.vert) # TODO: Remove once shaders are fixed
+file(GLOB_RECURSE DEP_SHADER_FILES
+		${CMAKE_SOURCE_DIR}/res/shaders/*.*)
 
 # Need Vulkan
 find_package(Vulkan REQUIRED FATAL_ERROR)

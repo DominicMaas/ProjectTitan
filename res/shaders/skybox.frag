@@ -5,9 +5,9 @@ layout( location = 0 ) in vec3 vert_texcoord;
 
 layout( set = 2, binding = 0 ) uniform samplerCube Cubemap;
 
-layout( location = 0 ) out vec4 frag_color;
+layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    frag_color = texture( Cubemap, vert_texcoord );
+    outColor = texture( Cubemap, vert_texcoord );
 }
