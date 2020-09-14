@@ -159,6 +159,14 @@ int main(void) {
         currentWorld->update(deltaTime, *camera);
     };
 
+    w.onUpdatePhysics = [&](float timeStep, float deltaTimeAccum) {
+        currentWorld->updatePhysics(timeStep, deltaTimeAccum);
+    };
+
+    w.onUpdatePhysicsWorld = [&](float timeStep) {
+        currentWorld->getPhysicsWorld()->update(timeStep);
+    };
+
     w.onRender = [&](vk::CommandBuffer& commandBuffer) {
         // Bind the descriptor set for the camera (position 0), all objects within
         // the scene will use this, so only bind at the start of the frame

@@ -54,14 +54,18 @@ void Window::run() {
         // one or several physics steps
         while (deltaTimeAccum >= timeStep) {
             // Update the physics world with a constant time step
-            // TODO: currentWorld->getPhysicsWorld()->update(timeStep);
+            if (onUpdatePhysicsWorld) {
+                onUpdatePhysicsWorld(timeStep);
+            }
 
             // Decrease the accumulated time
             deltaTimeAccum -= timeStep;
         }
 
         // Update all objects within the world
-        // TODO: currentWorld->updatePhysics(timeStep, deltaTimeAccum);
+        if (onUpdatePhysics) {
+            onUpdatePhysics(timeStep, deltaTimeAccum);
+        }
 
         // ---------- Render ---------- //
 
@@ -72,9 +76,13 @@ void Window::run() {
         glfwPollEvents();
     }
 
+    // Wait for the device to be idle before continuing
     _renderer->Device.waitIdle();
 
     // Clean up user resources
+    if (onCleanUp) {
+        onCleanUp();
+    }
 
     // Clean up resources
     cleanup();
@@ -385,11 +393,6 @@ void Window::cleanup() {
         _renderer->Device.destroySemaphore(_imageAvailableSemaphores[i]);
         _renderer->Device.destroySemaphore(_renderFinishedSemaphores[i]);
         _renderer->Device.destroyFence(_inFlightFences[i]);
-    }
-
-    // Clean up user resources
-    if (onCleanUp) {
-        onCleanUp();
     }
 
     // Destroy any resources

@@ -38,6 +38,8 @@ public:
     std::function<void(double, double)> onMouseMove;
     std::function<void(int, int)> onWindowResize;
     std::function<void(float)> onUpdate;
+    std::function<void(float, float)> onUpdatePhysics;
+    std::function<void(float)> onUpdatePhysicsWorld;
     std::function<void(vk::CommandBuffer&)> onRender;
     std::function<void()> onCleanUp;
 
