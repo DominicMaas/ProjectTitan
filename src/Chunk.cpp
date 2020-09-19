@@ -74,9 +74,9 @@ void Chunk::load() {
     for (int x = 0; x < CHUNK_WIDTH; x++)
         for (int y = 0; y < CHUNK_HEIGHT; y++)
             for (int z = 0; z < CHUNK_WIDTH; z++) {
-                _blocks[x][y][z].setMaterial(
+                _blocks[x][y][z].material =
                         _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,
-                                                                       _position.z + z));
+                                                                       _position.z + z);
             }
 
     _loaded = true;
@@ -107,7 +107,7 @@ bool Chunk::isTransparent(int x, int y, int z) {
     return false;
 }
 
-unsigned int Chunk::getBlockType(int x, int y, int z) {
+unsigned char Chunk::getBlockType(int x, int y, int z) {
     if ((y >= CHUNK_HEIGHT))
         return BlockManager::BLOCK_AIR;
 
@@ -128,7 +128,7 @@ unsigned int Chunk::getBlockType(int x, int y, int z) {
         return c->getBlockType(cLocal.x, cLocal.y, cLocal.z);
     }
 
-    return _blocks[x][y][z].getMaterial();
+    return _blocks[x][y][z].material;
 }
 
 void Chunk::rebuild() {
@@ -147,7 +147,7 @@ void Chunk::rebuild() {
                 Block b = _blocks[x][y][z];
 
                 // Don't render Air
-                if (b.getMaterial() == BlockManager::BLOCK_AIR)
+                if (b.material == BlockManager::BLOCK_AIR)
                     continue;
 
                 // Check all edges of the block
@@ -164,7 +164,7 @@ void Chunk::rebuild() {
 
                 // Get block data
                 glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
-                BlockManager::getTextureFromId(b.getMaterial(), texCoords);
+                BlockManager::getTextureFromId(b.material, texCoords);
 
                 // Front
                 if (isTransparent(x, y, z - 1)) {

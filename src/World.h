@@ -13,7 +13,6 @@
 #include "Chunk.h"
 #include "Camera.h"
 #include "Entity.h"
-#include "Skybox.h"
 
 #include "worldgen/BaseWorldGen.h"
 #include "worldgen/StandardWorldGen.h"
@@ -32,8 +31,6 @@ private:
 
     boost::ptr_vector<Chunk> _chunks;
     boost::ptr_vector<Entity> _entities;
-
-    Skybox *_worldSkybox;
 
     // Keep track of any futures
     std::vector<std::future<void>> _futures;
@@ -60,6 +57,8 @@ private:
 public:
     World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics);
     World(std::string worldName, reactphysics3d::PhysicsCommon *physics);
+
+    int RenderDistance = 8;
 
     ~World();
 

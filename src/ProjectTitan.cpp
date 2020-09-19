@@ -61,20 +61,9 @@ int main(void) {
         .mipmapMode = vk::SamplerMipmapMode::eNearest
     });
 
-    ResourceManager::loadTexture("skybox", std::vector<std::string>({
-        "textures/skybox/front.jpg",
-        "textures/skybox/back.jpg",
-        "textures/skybox/top.jpg",
-        "textures/skybox/bottom.jpg",
-        "textures/skybox/right.jpg",
-        "textures/skybox/left.jpg"
-    }), {
-        .addressMode = vk::SamplerAddressMode::eClampToEdge,
-        .cubeMap = true
-    });
-
     ResourceManager::loadTexture("square", "textures/square.jpg", {});
     ResourceManager::loadTexture("test", "textures/test.jpg", {});
+    ResourceManager::loadTexture("backpack_texture", "models/diffuse.jpg", {});
 
     // Load in models
     ResourceManager::loadModel("backpack", "models/backpack.obj");
@@ -111,6 +100,8 @@ int main(void) {
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, true);
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
     debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
+
+    Entity* backpackEntity = new Entity(currentWorld, ResourceManager::getModel("backpack"), nullptr, glm::vec3(0,40,0), glm::vec3(0,0,0));
 
     // Set the window callbacks
     w.onMouseMove = [&](double xPos, double yPos) {
@@ -175,6 +166,9 @@ int main(void) {
         // Render all chunks and entities within the world
         currentWorld->render(commandBuffer, *camera);
 
+        ResourceManager::getTexture("backpack_texture")->bind(commandBuffer);
+        backpackEntity->render(commandBuffer);
+
         // Physics debug rendering
         if (renderPhysics) {
             std::vector<Vertex> debugVertices;
@@ -206,6 +200,7 @@ int main(void) {
             ImGui::Text("FPS: %i", w.getFPS());
             ImGui::Text("  ");
             ImGui::Text("Rendered Chunks: %i", currentWorld->ChunksRendered);
+            ImGui::SliderInt("Render Distance", &currentWorld->RenderDistance, 0, 32);
             ImGui::Text("  ");
 
             ImGui::Checkbox("Debug Renderer", &renderLines);
@@ -214,9 +209,9 @@ int main(void) {
                 currentWorld->reset(true);
             }
 
-            ImGui::SliderFloat3("Light Position", (float*)&camera->SceneUBO.light.direction, -1.0f, 1.0f);
-            ImGui::SliderFloat3("Light Color", (float*)&camera->SceneUBO.light.color, 0.0f, 1.0f);
-            ImGui::SliderFloat("Light Ambient", &camera->SceneUBO.light.ambient, 0.0f, 1.0f);
+            ImGui::SliderFloat3("Light Direction", (float*)&camera->SceneUBO.light.direction, -1.0f, 1.0f);
+            ImGui::SliderFloat3("Light Diffuse", (float*)&camera->SceneUBO.light.diffuse, 0.0f, 1.0f);
+            ImGui::SliderFloat3("Light Ambient", (float*)&camera->SceneUBO.light.ambient, 0.0f, 1.0f);
 
             ImGui::End();
         }
@@ -250,6 +245,8 @@ int main(void) {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+
+        delete backpackEntity;
 
         delete currentWorld;
         delete camera;

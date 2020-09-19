@@ -22,6 +22,10 @@ public:
     void updatePhysics(long double timeStep, long double accumulator);
 
 private:
+    vk::Buffer _uniformBuffer;
+    VmaAllocation _uniformAllocation;
+    vk::DescriptorSet _descriptorSet;
+
     glm::vec3 _position;
     glm::vec3 _rotation;
 

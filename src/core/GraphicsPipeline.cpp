@@ -215,7 +215,7 @@ void GraphicsPipeline::create(CreateGraphicsPipelineInfo createInfo) {
     poolSizes[1].descriptorCount = static_cast<uint32_t>(1000);
 
     vk::DescriptorPoolCreateInfo poolInfo = {
-            .maxSets = static_cast<uint32_t>(1000),
+            .maxSets = static_cast<uint32_t>(10000),
             .poolSizeCount = 2,
             .pPoolSizes = poolSizes };
 

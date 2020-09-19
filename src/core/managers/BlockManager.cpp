@@ -1,6 +1,6 @@
 #include "BlockManager.h"
 
-void BlockManager::getTextureFromId(unsigned int id, glm::vec2 array[BLOCK_FACE_SIZE][TEX_COORD_SIZE]) {
+void BlockManager::getTextureFromId(unsigned char id, glm::vec2 array[BLOCK_FACE_SIZE][TEX_COORD_SIZE]) {
     if (id == BlockManager::BLOCK_GRASS) {
         array[Top][TopLeft] = grassTopTexture[TopLeft];
         array[Top][TopRight] = grassTopTexture[TopRight];

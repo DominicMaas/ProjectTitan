@@ -32,7 +32,7 @@ private:
 
     bool isTransparent(int x, int y, int z);
 
-    unsigned int getBlockType(int x, int y, int z);
+    unsigned char getBlockType(int x, int y, int z);
 
     World *_world;
 

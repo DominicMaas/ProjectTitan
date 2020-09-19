@@ -9,7 +9,7 @@ public:
 
     // Get the theoretical block type for the given x, y, z position, returns
     // and unsigned int that relates to a certain block type.
-    virtual unsigned int getTheoreticalBlockType(int x, int y, int z) { return 0; };
+    virtual unsigned char getTheoreticalBlockType(int x, int y, int z) { return 0; };
 
     // Get the seed that was used for this world
     int getSeed() { return _seed; }

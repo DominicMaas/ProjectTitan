@@ -11,7 +11,7 @@ public:
 
     // Get the theoretical block type for the given x, y, z position, returns
     // and unsigned int that relates to a certain block type.
-    unsigned int getTheoreticalBlockType(int x, int y, int z) override;
+    unsigned char getTheoreticalBlockType(int x, int y, int z) override;
 
     int Seed;
 

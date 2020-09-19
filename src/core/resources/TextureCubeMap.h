@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pch.h>
+/*#include <pch.h>
 #include "../GraphicsPipeline.h"
 #include "../ImageSet.h"
 
@@ -11,9 +11,10 @@ struct LoadTextureInfo {
     vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear;
     vk::Format format = vk::Format::eR8G8B8A8Srgb;
     bool flipTexture = true;
+    bool cubeMap = false;
 };
 
-class Texture2D {
+class TextureCubeMap {
 private:
     ImageSet _textureImageSet;
 
@@ -29,12 +30,13 @@ private:
     unsigned int _mipmapLevels;
 
 public:
-    Texture2D() {}
-    ~Texture2D();
+    TextureCubeMap() {}
+    ~TextureCubeMap();
 
-    void load(unsigned char* data, int width, int height, LoadTextureInfo info);
+    void load(std::vector<unsigned char*> data, int width, int height, LoadTextureInfo info);
     void bind(vk::CommandBuffer &commandBuffer) const;
 
-    [[nodiscard]] int getWidth() const { return _width; }
-    [[nodiscard]] int getHeight() const { return _height; }
+    int getWidth() const { return _width; }
+    int getHeight() const { return _height; }
 };
+*/

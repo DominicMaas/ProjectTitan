@@ -9,13 +9,13 @@ public:
 
     constexpr static const float TEX_X_STEP = 0.0625;
 
-    static void getTextureFromId(unsigned int id, glm::vec2 array[BLOCK_FACE_SIZE][TEX_COORD_SIZE]);
+    static void getTextureFromId(unsigned char id, glm::vec2 array[BLOCK_FACE_SIZE][TEX_COORD_SIZE]);
 
-    static const int BLOCK_AIR = 0;
-    static const int BLOCK_GRASS = 1;
-    static const int BLOCK_DIRT = 2;
-    static const int BLOCK_STONE = 3;
-    static const int BLOCK_WATER = 4;
+    static const unsigned char BLOCK_AIR = 0;
+    static const unsigned char BLOCK_GRASS = 1;
+    static const unsigned char BLOCK_DIRT = 2;
+    static const unsigned char BLOCK_STONE = 3;
+    static const unsigned char BLOCK_WATER = 4;
 
     enum TexCoord {
         TopRight = 0,

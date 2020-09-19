@@ -33,9 +33,13 @@ Camera::Camera(glm::vec3 position) {
 
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 
-    SceneUBO.light.ambient = 0.2f;
-    SceneUBO.light.color = glm::vec3(1.0f, 1.0f, 1.0f);
-    SceneUBO.light.direction = glm::vec3(0.0f, 0.0f, 0.0f);
+    SceneUBO.light.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+    SceneUBO.light.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+    SceneUBO.light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+
+    SceneUBO.light.direction = glm::vec3(0.0f, 0.0, 0.0f);
+
+    SceneUBO.camPos = _position;
 
     // Run an initial update to get the correct values
     update();
@@ -71,8 +75,16 @@ void Camera::update() {
 
     // Write updates for the camera
     SceneUBO.view = getViewMatrix();
-    SceneUBO.proj = getProjectionMatrix();
-    SceneUBO.proj[1][1] *= -1; // Adjust for Vulkan coords, vs OpenGL coords
+
+    // matrix does perspective divide and flips vulkan y axis
+    const glm::mat4 clip(1.0f, 0.0f, 0.0f, 0.0f,
+                         0.0f,-1.0f, 0.0f, 0.0f,
+                         0.0f, 0.0f, 0.5f, 0.0f,
+                         0.0f, 0.0f, 0.5f, 1.0f);
+
+    SceneUBO.proj = clip * getProjectionMatrix();
+
+    SceneUBO.camPos = _position;
 
     // Copy to the correct memory location
     void* mappedData;

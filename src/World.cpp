@@ -71,9 +71,6 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     } else {
         _worldGen = new StandardWorldGen(seed, 0.75f, 5, 0.5f, 2.0f, glm::vec3(0, 0, 0));
     }
-
-    // Setup skybox
-    _worldSkybox = new Skybox();
 }
 
 World::World(std::string worldName, reactphysics3d::PhysicsCommon *physics) : World(0, worldName, physics) {}
@@ -87,7 +84,6 @@ World::~World() {
     _entities.release();
     _entities.clear();
 
-    delete _worldSkybox;
     delete _worldGen;
 }
 
@@ -104,7 +100,7 @@ void World::update(float deltaTime, Camera &c) {
     // Rebuild any chunks
     rebuildChunks();
 
-    float renderDistance = 8 * CHUNK_WIDTH;
+    int renderDistance = (RenderDistance+1) * CHUNK_WIDTH;
 
     // Calculation about the camera position and render distance
     int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
@@ -135,7 +131,7 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     Frustum frustum = Frustum::GetFrustum(c.getProjectionMatrix() * c.getViewMatrix());
 
     // The render distance
-    float renderDistance = 8 * CHUNK_WIDTH;
+    int renderDistance = RenderDistance * CHUNK_WIDTH;
 
     // Bind the blocks texture
     auto* basicTexture = ResourceManager::getTexture("block_map");
@@ -170,9 +166,6 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
     for (Entity &entity : _entities) {
         entity.render(commandBuffer);
     }
-
-    // Render the skybox
-    this->_worldSkybox->render(commandBuffer, c.getViewMatrix(), c.getProjectionMatrix());
 }
 
 void World::reset(bool resetSeed) {

@@ -31,7 +31,7 @@ StandardWorldGen::StandardWorldGen(int seed, float scale, int octaves, float per
     }
 }
 
-unsigned int StandardWorldGen::getTheoreticalBlockType(int x, int y, int z) {
+unsigned char StandardWorldGen::getTheoreticalBlockType(int x, int y, int z) {
     // Variables needed
     float halfWidth = CHUNK_WIDTH / 2;
     float halfHeight = CHUNK_HEIGHT / 2;
@@ -55,7 +55,7 @@ unsigned int StandardWorldGen::getTheoreticalBlockType(int x, int y, int z) {
     }
 
     float normalizedHeight = abs((noiseHeight + 1) / (2.0f * _maxPossibleHeight * 1.4f));
-    float height = (int)glm::clamp(glm::clamp(normalizedHeight, 0.0f, std::numeric_limits<float>::max()) * CHUNK_HEIGHT,
+    int height = (int)glm::clamp(glm::clamp(normalizedHeight, 0.0f, std::numeric_limits<float>::max()) * CHUNK_HEIGHT,
                               0.0f, (float) CHUNK_HEIGHT);
 
     // Water base Level

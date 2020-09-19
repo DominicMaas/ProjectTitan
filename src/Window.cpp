@@ -270,7 +270,7 @@ void Window::recordCommandBuffers(int i) {
     _commandBuffers[i].begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
 
     vk::ClearValue clearValues[2];
-    clearValues[0].color = { std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f })};
+    clearValues[0].color = { std::array<float, 4>({ (1.0f/255)*139, (1.0f/255)*136, (1.0f/255)*142, 1.0f })};
     clearValues[1].depthStencil = {1.0f, 0};
 
     vk::RenderPassBeginInfo renderPassInfo = {
@@ -442,7 +442,7 @@ bool Window::createVulkanInstance() {
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = VK_API_VERSION_1_0
+        .apiVersion = VK_API_VERSION_1_2
     };
 
     vk::InstanceCreateInfo createInfo {
@@ -617,7 +617,6 @@ bool Window::createMemoryAllocator() {
     allocatorInfo.physicalDevice = _renderer->PhysicalDevice;
     allocatorInfo.device = _renderer->Device;
     allocatorInfo.instance = _instance;
-    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
 
     if (vmaCreateAllocator(&allocatorInfo, &_renderer->Allocator) != VK_SUCCESS) {
         return false;
@@ -701,7 +700,7 @@ bool Window::createImageViews() {
 
     // Iterate over images
     for (int i = 0; i < _swapChainImages.size(); i++) {
-        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1);
+        _swapChainImageViews[i] = Renderer::Instance->createImageView(_swapChainImages[i], _swapChainImageFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1, 1);
     }
 
     return true;
@@ -840,15 +839,15 @@ bool Window::createCommandPool() {
 void Window::createDepthResources() {
     vk::Format depthFormat = Renderer::Instance->findDepthFormat();
 
-    Renderer::Instance->createImage(_depthImageSet.image, _depthImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, depthFormat, vk::ImageTiling::eOptimal, 1, vk::ImageUsageFlagBits::eDepthStencilAttachment, {});
-    _depthImageSet.imageView = Renderer::Instance->createImageView(_depthImageSet.image, depthFormat, vk::ImageAspectFlagBits::eDepth, vk::ImageViewType::e2D, 1);
+    Renderer::Instance->createImage(_depthImageSet.image, _depthImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, depthFormat, vk::ImageTiling::eOptimal, 1, 1, vk::ImageUsageFlagBits::eDepthStencilAttachment, {});
+    _depthImageSet.imageView = Renderer::Instance->createImageView(_depthImageSet.image, depthFormat, vk::ImageAspectFlagBits::eDepth, vk::ImageViewType::e2D, 1, 1);
 }
 
 void Window::createColorResources() {
     vk::Format colorFormat = _swapChainImageFormat;
 
-    Renderer::Instance->createImage(_colorImageSet.image, _colorImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, colorFormat, vk::ImageTiling::eOptimal, 1, vk::ImageUsageFlagBits::eColorAttachment, {});
-    _colorImageSet.imageView = Renderer::Instance->createImageView(_colorImageSet.image, colorFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1);
+    Renderer::Instance->createImage(_colorImageSet.image, _colorImageSet.allocation, _swapChainExtent.width, _swapChainExtent.height, _renderer->MSAASamples, colorFormat, vk::ImageTiling::eOptimal, 1, 1, vk::ImageUsageFlagBits::eColorAttachment, {});
+    _colorImageSet.imageView = Renderer::Instance->createImageView(_colorImageSet.image, colorFormat, vk::ImageAspectFlagBits::eColor, vk::ImageViewType::e2D, 1, 1);
 }
 
 bool Window::createCommandBuffers() {

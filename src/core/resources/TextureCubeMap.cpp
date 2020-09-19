@@ -1,14 +1,14 @@
-#include "Texture2D.h"
+/*#include "TextureCubeMap.h"
 #include "../Renderer.h"
 #include "../managers/PipelineManager.h"
 
-Texture2D::~Texture2D() {
+TextureCubeMap::~TextureCubeMap() {
     Renderer::Instance->Device.destroySampler(_textureSampler);
     Renderer::Instance->Device.destroyImageView(_textureImageSet.imageView);
     vmaDestroyImage(Renderer::Instance->Allocator, _textureImageSet.image, _textureImageSet.allocation);
 }
 
-void Texture2D::load(unsigned char* data, int width, int height, LoadTextureInfo info) {
+void TextureCubeMap::load(std::vector<unsigned char*> data, int width, int height, LoadTextureInfo info) {
     this->_width = width;
     this->_height = height;
 
@@ -22,7 +22,18 @@ void Texture2D::load(unsigned char* data, int width, int height, LoadTextureInfo
     vk::ImageCreateFlagBits createFlags = {};
     vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
 
-    auto imageSize = width * height * 4;
+    // Can only pass in multiple textures if creating a cube map
+    if (data.size() > 1 && !info.cubeMap) {
+        throw std::runtime_error("You can only specify multiple textures if creating a cubemap!");
+    }
+
+    if (info.cubeMap) {
+        createFlags = vk::ImageCreateFlagBits::eCubeCompatible;
+        imageViewType = vk::ImageViewType::eCube;
+    }
+
+    auto imageSize = width * height * 4 * data.size();
+    auto layerSize = imageSize / data.size();
 
     // ON CPU
     vk::Buffer stagingBuffer = nullptr;
@@ -33,25 +44,28 @@ void Texture2D::load(unsigned char* data, int width, int height, LoadTextureInfo
                                      VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     // Copy the into the staging buffer.
-    memcpy(stagingBufferAllocInfo.pMappedData, data, imageSize);
+    for (int i = 0; i < data.size(); ++i)
+    {
+        memcpy(static_cast<char*>(stagingBufferAllocInfo.pMappedData) + (layerSize * i), data[i], layerSize);
+    }
 
     // ON GPU
-    Renderer::Instance->createImage(_textureImageSet.image, _textureImageSet.allocation, width, height, vk::SampleCountFlagBits::e1, info.format, vk::ImageTiling::eOptimal, 1, _mipmapLevels, vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, createFlags);
+    Renderer::Instance->createImage(_textureImageSet.image, _textureImageSet.allocation, width, height, vk::SampleCountFlagBits::e1, info.format, vk::ImageTiling::eOptimal, data.size(), vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, createFlags);
 
     // Transition image for transfer
-    Renderer::Instance->transitionImageLayout(_textureImageSet.image, info.format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 1, _mipmapLevels);
+    Renderer::Instance->transitionImageLayout(_textureImageSet.image, info.format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, data.size());
 
     // Transfer to GPU
-    Renderer::Instance->copyBufferToImage(stagingBuffer, _textureImageSet.image, width, height, 1);
+    Renderer::Instance->copyBufferToImage(stagingBuffer, _textureImageSet.image, width, height, data.size());
 
-    // Still on eTransferDstOptimal while generating mipmaps
-    Renderer::Instance->generateMipmaps(_textureImageSet.image, info.format, _width, _height, _mipmapLevels);
+    // Transition for shader usage
+    Renderer::Instance->transitionImageLayout(_textureImageSet.image, info.format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, data.size());
 
     // Cleanup staging buffers
     vmaDestroyBuffer(Renderer::Instance->Allocator, stagingBuffer, stagingBufferAlloc);
 
     // Create the texture image view
-    _textureImageSet.imageView = Renderer::Instance->createImageView(_textureImageSet.image, info.format, vk::ImageAspectFlagBits::eColor, imageViewType, 1, _mipmapLevels);
+    _textureImageSet.imageView = Renderer::Instance->createImageView(_textureImageSet.image, info.format, vk::ImageAspectFlagBits::eColor, imageViewType, data.size());
 
     // Setup sampling
     vk::SamplerCreateInfo samplerInfo = {
@@ -67,7 +81,7 @@ void Texture2D::load(unsigned char* data, int width, int height, LoadTextureInfo
             .compareEnable = VK_FALSE,
             .compareOp = vk::CompareOp::eAlways,
             .minLod = 0.0f,
-            .maxLod = static_cast<float>(_mipmapLevels),
+            .maxLod = 0.0f,
             .borderColor = vk::BorderColor::eIntOpaqueBlack,
             .unnormalizedCoordinates = VK_FALSE };
 
@@ -93,6 +107,7 @@ void Texture2D::load(unsigned char* data, int width, int height, LoadTextureInfo
     Renderer::Instance->Device.updateDescriptorSets(descriptorWrite, nullptr);
 }
 
-void Texture2D::bind(vk::CommandBuffer &commandBuffer) const {
+void TextureCubeMap::bind(vk::CommandBuffer &commandBuffer) const {
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline->getPipelineLayout(), 2, 1, &_descriptorSet, 0, nullptr);
 }
+*/
