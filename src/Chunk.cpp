@@ -35,12 +35,10 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 
     // Create the blocks
-    _blocks = new Block[CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH];
+    _blocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH);
 }
 
 Chunk::~Chunk() {
-    delete[] _blocks;
-
     // Remove the world collider
     if (_collider != nullptr) {
         _world->getWorldBody()->removeCollider(_collider);

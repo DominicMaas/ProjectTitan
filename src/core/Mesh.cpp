@@ -20,10 +20,12 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned short> indices, st
 Mesh::~Mesh() {
     assert(Renderer::Instance->Allocator);
 
-    vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
+    if (_built) {
+        vmaDestroyBuffer(Renderer::Instance->Allocator, _vertexBuffer, _vertexAllocation);
 
-    if (_hasIndices) {
-        vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+        if (_hasIndices) {
+            vmaDestroyBuffer(Renderer::Instance->Allocator, _indexBuffer, _indexAllocation);
+        }
     }
 }
 

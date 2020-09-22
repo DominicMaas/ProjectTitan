@@ -50,5 +50,5 @@ enum ColliderCategory {
     COLLIDER_WORLD_GROUND = 0x0002
 };
 
-static const int CHUNK_HEIGHT = 64;
+static const int CHUNK_HEIGHT = 128;
 static const int CHUNK_WIDTH = 16;

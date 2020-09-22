@@ -37,7 +37,7 @@ Camera::Camera(glm::vec3 position) {
     SceneUBO.light.diffuse = glm::vec3(0.5f, 0.5f, 0.5f);
     SceneUBO.light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    SceneUBO.light.direction = glm::vec3(0.0f, 0.0, 0.0f);
+    SceneUBO.light.direction = glm::vec3(-0.2f, -0.2f, -0.2f);
 
     SceneUBO.camPos = _position;
 

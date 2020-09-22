@@ -24,7 +24,7 @@ private:
 
     // Data
     glm::vec3 _position;
-    Block* _blocks;
+    std::vector<unsigned char> _blocks;
 
     Mesh* _mesh;
 
@@ -43,12 +43,12 @@ private:
 
     void setBlockArrayType(int x, int y, int z, unsigned char type)
     {
-        _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = Block { .material = type };
+        _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
     }
 
     unsigned char getBlockArrayType(int x, int y, int z)
     {
-        return _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x].material;
+        return _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
     }
 
 
