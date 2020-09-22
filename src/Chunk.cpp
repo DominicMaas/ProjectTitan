@@ -35,25 +35,10 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 
     // Create the blocks
-    _blocks = new Block **[CHUNK_WIDTH];
-    for (int i = 0; i < CHUNK_WIDTH; i++) {
-        _blocks[i] = new Block *[CHUNK_HEIGHT];
-
-        for (int j = 0; j < CHUNK_HEIGHT; j++) {
-            _blocks[i][j] = new Block[CHUNK_WIDTH];
-        }
-    }
+    _blocks = new Block[CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH];
 }
 
 Chunk::~Chunk() {
-    // Delete the blocks
-    for (int i = 0; i < CHUNK_WIDTH; ++i) {
-        for (int j = 0; j < CHUNK_HEIGHT; ++j) {
-            delete[] _blocks[i][j];
-        }
-
-        delete[] _blocks[i];
-    }
     delete[] _blocks;
 
     // Remove the world collider
@@ -74,9 +59,10 @@ void Chunk::load() {
     for (int x = 0; x < CHUNK_WIDTH; x++)
         for (int y = 0; y < CHUNK_HEIGHT; y++)
             for (int z = 0; z < CHUNK_WIDTH; z++) {
-                _blocks[x][y][z].material =
-                        _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,
-                                                                       _position.z + z);
+                auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,
+                                                                               _position.z + z);
+
+                setBlockArrayType(x, y, z, material);
             }
 
     _loaded = true;
@@ -128,7 +114,7 @@ unsigned char Chunk::getBlockType(int x, int y, int z) {
         return c->getBlockType(cLocal.x, cLocal.y, cLocal.z);
     }
 
-    return _blocks[x][y][z].material;
+    return getBlockArrayType(x, y, z);;
 }
 
 void Chunk::rebuild() {
@@ -144,10 +130,10 @@ void Chunk::rebuild() {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             for (int z = 0; z < CHUNK_WIDTH; z++) {
                 // Get the id at this position
-                Block b = _blocks[x][y][z];
+                char material = getBlockType(x, y, z);
 
                 // Don't render Air
-                if (b.material == BlockManager::BLOCK_AIR)
+                if (material == BlockManager::BLOCK_AIR)
                     continue;
 
                 // Check all edges of the block
@@ -164,7 +150,7 @@ void Chunk::rebuild() {
 
                 // Get block data
                 glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
-                BlockManager::getTextureFromId(b.material, texCoords);
+                BlockManager::getTextureFromId(material, texCoords);
 
                 // Front
                 if (isTransparent(x, y, z - 1)) {
@@ -308,3 +294,5 @@ void Chunk::rebuild() {
     // The chunk has been rebuilt
     _changed = false;
 }
+
+

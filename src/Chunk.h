@@ -24,7 +24,7 @@ private:
 
     // Data
     glm::vec3 _position;
-    Block ***_blocks;
+    Block* _blocks;
 
     Mesh* _mesh;
 
@@ -33,7 +33,6 @@ private:
     bool isTransparent(int x, int y, int z);
 
     unsigned char getBlockType(int x, int y, int z);
-
     World *_world;
 
     bool _changed = true;
@@ -41,6 +40,18 @@ private:
     bool _loading = false;
 
     reactphysics3d::Collider* _collider = nullptr;
+
+    void setBlockArrayType(int x, int y, int z, unsigned char type)
+    {
+        _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = Block { .material = type };
+    }
+
+    unsigned char getBlockArrayType(int x, int y, int z)
+    {
+        return _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x].material;
+    }
+
+
 public:
     Chunk(glm::vec3 position, World *world);
 
