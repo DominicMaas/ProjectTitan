@@ -49,28 +49,30 @@ private:
 
     void setBlockArrayType(int x, int y, ChunkLayer layer, unsigned char type)
     {
-        switch(layer)
+        switch (layer)
         {
             case LAYER_BACKGROUND:
-                _backgroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
+                _backgroundBlocks[x + CHUNK_WIDTH * y] = type; //Block { .material = type };
                 break;
             case LAYER_FOREGROUND:
-                _foregroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
+                _foregroundBlocks[x + CHUNK_WIDTH * y] = type; //Block { .material = type };
                 break;
         }
     }
 
     unsigned char getBlockArrayType(int x, int y, ChunkLayer layer)
     {
-        switch(layer)
+        switch (layer)
         {
             case LAYER_BACKGROUND:
-                return _backgroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
+                return _backgroundBlocks[x + CHUNK_WIDTH * y];//.material;
                 break;
             case LAYER_FOREGROUND:
-                return _foregroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
+                return _foregroundBlocks[x + CHUNK_WIDTH * y];//.material;
                 break;
         }
+
+        return BlockManager::BLOCK_AIR;
     }
 
 

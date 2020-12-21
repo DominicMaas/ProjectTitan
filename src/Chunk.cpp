@@ -58,14 +58,12 @@ void Chunk::load() {
     for (int x = 0; x < CHUNK_WIDTH; x++)
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,0);
-
             setBlockArrayType(x, y, ChunkLayer::LAYER_BACKGROUND, material);
         }
 
     for (int x = 0; x < CHUNK_WIDTH; x++)
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,1);
-
             setBlockArrayType(x, y, ChunkLayer::LAYER_FOREGROUND, material);
         }
 
@@ -192,8 +190,7 @@ void Chunk::rebuild() {
     for (int x = 0; x < CHUNK_WIDTH; x++) {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             // Get the id at this position
-            //unsigned char material = getBlockType(x, y, ChunkLayer::LAYER_FOREGROUND);
-            char material = BlockManager::BLOCK_DIRT;
+            unsigned char material = getBlockType(x, y, ChunkLayer::LAYER_FOREGROUND);
 
             // Don't render Air
             if (material == BlockManager::BLOCK_AIR)

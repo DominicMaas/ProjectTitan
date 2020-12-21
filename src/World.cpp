@@ -28,10 +28,11 @@ void World::loadChunks() {
     // Loop through all the chunks
     for (Chunk &chunk : _chunks) {
         // If the chunk needs to be loaded, and it's not currently loading
-        if (!chunk.isLoaded() && !chunk.isLoaded()) {
-
+        if (!chunk.isLoaded()) {
             //_futures.push_back(std::async(std::launch::async, loadChunk, chunk));
-            loadChunk(chunk);
+
+            //loadChunk(chunk);
+            chunk.load();
             chunksLoaded++;
         }
 
