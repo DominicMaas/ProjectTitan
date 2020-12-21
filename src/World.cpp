@@ -104,13 +104,11 @@ void World::update(float deltaTime, Camera &c) {
 
     // Calculation about the camera position and render distance
     int cWorldX = ((int) floor(c.getPosition().x / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
-    int cWorldZ = ((int) floor(c.getPosition().z / CHUNK_WIDTH) * CHUNK_WIDTH) - CHUNK_WIDTH;
 
     // Generate new chunks
-    for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH)
-    for (float z = cWorldZ - renderDistance; z <= cWorldZ + renderDistance; z += CHUNK_WIDTH) {
-        if (findChunk(glm::vec3(x, 0, z)) == NULL) {
-            _chunks.push_back(new Chunk(glm::vec3(x, 0, z), this));
+    for (float x = cWorldX - renderDistance; x <= cWorldX + renderDistance; x += CHUNK_WIDTH) {
+        if (findChunk(glm::vec2(x, 0)) == NULL) {
+            _chunks.push_back(new Chunk(glm::vec2(x, 0), this));
         }
     }
 
@@ -147,15 +145,14 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
             continue;
 
         // The chunk is not in the players view distance
-        if (abs(chunk.getCenter().x - c.getPosition().x) >= renderDistance ||
-            abs(chunk.getCenter().z - c.getPosition().z) >= renderDistance)
-            continue;
+        //if (abs(chunk.getCenter().x - c.getPosition().x) >= renderDistance)
+        //    continue;
 
         // TODO: Fix this when lighting is working
         // Ensure the chunk is in the frustum
-        bool isVisible = frustum.isBoxVisible(chunk.getPosition(), chunk.getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
-        if (!isVisible)
-            continue;
+        //bool isVisible = frustum.isBoxVisible(chunk.getPosition(), chunk.getPosition() + glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_WIDTH));
+        //if (!isVisible)
+        //    continue;
 
         ChunksRendered++;
 
@@ -175,13 +172,12 @@ void World::reset(bool resetSeed) {
     }
 }
 
-Chunk *World::findChunk(glm::vec3 position) {
+Chunk *World::findChunk(glm::vec2 position) {
     // Loop through all the chunks
     for (Chunk &chunk : _chunks) {
-        glm::vec3 chunkPos = chunk.getPosition();
+        glm::vec2 chunkPos = chunk.getPosition();
 
-        if ((position.x >= chunkPos.x) && (position.z >= chunkPos.z) && (position.x < chunkPos.x + CHUNK_WIDTH) &&
-            (position.z < chunkPos.z + CHUNK_WIDTH)) {
+        if ((position.x >= chunkPos.x) && (position.x < chunkPos.x + CHUNK_WIDTH)) {
             return &chunk;
         }
     }

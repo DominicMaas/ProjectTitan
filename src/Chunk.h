@@ -12,6 +12,11 @@
 #include "core/Mesh.h"
 #include "core/BlockMap.h"
 
+enum ChunkLayer {
+    LAYER_BACKGROUND = 0x0001,
+    LAYER_FOREGROUND = 0x0002
+};
+
 // Define World class to prevent compile Issues (Probably a better way to do it)
 class World;
 class Mesh;
@@ -23,16 +28,17 @@ private:
     vk::DescriptorSet _descriptorSet;
 
     // Data
-    glm::vec3 _position;
-    std::vector<unsigned char> _blocks;
+    glm::vec2 _position;
+    std::vector<unsigned char> _backgroundBlocks;
+    std::vector<unsigned char> _foregroundBlocks;
 
     Mesh* _mesh;
 
     glm::mat4 _modelMatrix;
 
-    bool isTransparent(int x, int y, int z);
+    bool isTransparent(int x, int y, ChunkLayer layer);
 
-    unsigned char getBlockType(int x, int y, int z);
+    unsigned char getBlockType(int x, int y, ChunkLayer layer);
     World *_world;
 
     bool _changed = true;
@@ -41,19 +47,35 @@ private:
 
     reactphysics3d::Collider* _collider = nullptr;
 
-    void setBlockArrayType(int x, int y, int z, unsigned char type)
+    void setBlockArrayType(int x, int y, ChunkLayer layer, unsigned char type)
     {
-        _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
+        switch(layer)
+        {
+            case LAYER_BACKGROUND:
+                _backgroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
+                break;
+            case LAYER_FOREGROUND:
+                _foregroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x] = type; //Block { .material = type };
+                break;
+        }
     }
 
-    unsigned char getBlockArrayType(int x, int y, int z)
+    unsigned char getBlockArrayType(int x, int y, ChunkLayer layer)
     {
-        return _blocks[z * CHUNK_WIDTH * CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
+        switch(layer)
+        {
+            case LAYER_BACKGROUND:
+                return _backgroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
+                break;
+            case LAYER_FOREGROUND:
+                return _foregroundBlocks[CHUNK_HEIGHT + y * CHUNK_WIDTH + x];//.material;
+                break;
+        }
     }
 
 
 public:
-    Chunk(glm::vec3 position, World *world);
+    Chunk(glm::vec2 position, World *world);
 
     ~Chunk();
 
@@ -67,9 +89,9 @@ public:
 
     void setChanged() { _changed = true; }
 
-    glm::vec3 getPosition() { return _position; }
+    glm::vec2 getPosition() { return _position; }
 
-    glm::vec3 getCenter() { return glm::vec3(_position.x + (CHUNK_WIDTH / 2), 0, _position.z + (CHUNK_WIDTH / 2)); }
+    glm::vec2 getCenter() { return glm::vec2(_position.x + (CHUNK_WIDTH / 2), 0); }
 
     bool isLoaded() {
         return _loaded;

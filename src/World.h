@@ -73,7 +73,7 @@ public:
     static const int LOADED_CHUNKS_PER_FRAME = 3;
     static const int REBUILD_CHUNKS_PER_FRAME = 2;
 
-    Chunk *findChunk(glm::vec3 position);
+    Chunk *findChunk(glm::vec2 position);
 
     // Get the world generator for this world
     BaseWorldGen *getWorldGen() { return _worldGen; }

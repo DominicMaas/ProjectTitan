@@ -3,13 +3,13 @@
 #include "core/managers/PipelineManager.h"
 #include "core/Renderer.h"
 
-Chunk::Chunk(glm::vec3 position, World *world) {
+Chunk::Chunk(glm::vec2 position, World *world) {
     // Set chunk details
     _position = position;
     _world = world;
 
     // Update the model matrix to the correct position
-    _modelMatrix = glm::translate(glm::mat4(1.0f), _position);
+    _modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(_position, 0));
 
     // Create a new empty mesh
     _mesh = new Mesh();
@@ -35,7 +35,8 @@ Chunk::Chunk(glm::vec3 position, World *world) {
     vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 
     // Create the blocks
-    _blocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_WIDTH);
+    _backgroundBlocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT);
+    _foregroundBlocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT);
 }
 
 Chunk::~Chunk() {
@@ -55,13 +56,18 @@ void Chunk::load() {
 
     // Build height map
     for (int x = 0; x < CHUNK_WIDTH; x++)
-        for (int y = 0; y < CHUNK_HEIGHT; y++)
-            for (int z = 0; z < CHUNK_WIDTH; z++) {
-                auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,
-                                                                               _position.z + z);
+        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+            auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,0);
 
-                setBlockArrayType(x, y, z, material);
-            }
+            setBlockArrayType(x, y, ChunkLayer::LAYER_BACKGROUND, material);
+        }
+
+    for (int x = 0; x < CHUNK_WIDTH; x++)
+        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+            auto material = _world->getWorldGen()->getTheoreticalBlockType(_position.x + x, _position.y + y,1);
+
+            setBlockArrayType(x, y, ChunkLayer::LAYER_FOREGROUND, material);
+        }
 
     _loaded = true;
     _loading = false;
@@ -82,22 +88,22 @@ void Chunk::render(vk::CommandBuffer &commandBuffer) {
     _mesh->render(commandBuffer);
 }
 
-bool Chunk::isTransparent(int x, int y, int z) {
+bool Chunk::isTransparent(int x, int y, ChunkLayer layer) {
     if (y < 0) return false;
 
-    if (getBlockType(x, y, z) == BlockManager::BLOCK_AIR)
+    if (getBlockType(x, y, layer) == BlockManager::BLOCK_AIR)
         return true;
 
     return false;
 }
 
-unsigned char Chunk::getBlockType(int x, int y, int z) {
+unsigned char Chunk::getBlockType(int x, int y, ChunkLayer layer) {
     if ((y >= CHUNK_HEIGHT))
         return BlockManager::BLOCK_AIR;
 
-    if ((x < 0) || (z < 0) || (x >= CHUNK_WIDTH) || (z >= CHUNK_WIDTH)) {
+    if ((x < 0) || (x >= CHUNK_WIDTH)) {
         // Calculate world coordinates
-        glm::vec3 worldPos(x, y, z);
+        glm::vec2 worldPos(x, y);
         worldPos += _position;
 
         // Find the chunk that contains these coordinates
@@ -105,14 +111,24 @@ unsigned char Chunk::getBlockType(int x, int y, int z) {
 
         // This is "air", render the side of the face
         if (c == nullptr || !c->isLoaded())
-            return _world->getWorldGen()->getTheoreticalBlockType(worldPos.x, worldPos.y, worldPos.z);
+        {
+            switch (layer)
+            {
+                case LAYER_BACKGROUND:
+                    return _world->getWorldGen()->getTheoreticalBlockType(worldPos.x, worldPos.y, 0);
+                    break;
+                case LAYER_FOREGROUND:
+                    return _world->getWorldGen()->getTheoreticalBlockType(worldPos.x, worldPos.y, 1);
+                    break;
+            }
+        }
 
         // Calculate local space coordinates
-        glm::vec3 cLocal = worldPos -= c->getPosition();
-        return c->getBlockType(cLocal.x, cLocal.y, cLocal.z);
+        glm::vec2 cLocal = worldPos -= c->getPosition();
+        return c->getBlockType(cLocal.x, cLocal.y, layer);
     }
 
-    return getBlockArrayType(x, y, z);;
+    return getBlockArrayType(x, y, layer);
 }
 
 void Chunk::rebuild() {
@@ -124,147 +140,109 @@ void Chunk::rebuild() {
 
     int currIndex = 0;
 
+    /*for (int x = 0; x < CHUNK_WIDTH; x++) {
+        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+            // Get the id at this position
+            char material = getBlockType(x, y, ChunkLayer::LAYER_BACKGROUND);
+
+            // Don't render Air
+            if (material == BlockManager::BLOCK_AIR)
+                continue;
+
+            // Check all edges of the block
+            int index = 0;
+
+            //if (isTransparent(x, y, z)) index |= 1;
+            //if (isTransparent(x + 1, y, z)) index |= 2;
+            //if (isTransparent(x + 1, y + 1, z)) index |= 4;
+            //if (isTransparent(x, y + 1, z)) index |= 8;
+            //if (isTransparent(x, y, z + 1)) index |= 16;
+            //if (isTransparent(x + 1, y, z + 1)) index |= 32;
+            //if (isTransparent(x + 1, y + 1, z + 1)) index |= 64;
+            //if (isTransparent(x, y + 1, z + 1)) index |= 128;
+
+            // Get block data
+            glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
+            BlockManager::getTextureFromId(material, texCoords);
+
+            // Front
+            //if (isTransparent(x, y, z - 1)) {
+            vertices.push_back(
+                    Vertex(1 + x, 1 + y, 0, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopRight]));
+            vertices.push_back(
+                    Vertex(1 + x, 0 + y, 0, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomRight]));
+            vertices.push_back(
+                    Vertex(0 + x, 0 + y, 0, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomLeft]));
+            vertices.push_back(
+                    Vertex(0 + x, 1 + y, 0, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopLeft]));
+
+            indices.push_back(currIndex + 0);
+            indices.push_back(currIndex + 1);
+            indices.push_back(currIndex + 3);
+
+            indices.push_back(currIndex + 1);
+            indices.push_back(currIndex + 2);
+            indices.push_back(currIndex + 3);
+
+            currIndex += 4;
+            //}
+        }
+    }*/
+
     for (int x = 0; x < CHUNK_WIDTH; x++) {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
-            for (int z = 0; z < CHUNK_WIDTH; z++) {
-                // Get the id at this position
-                char material = getBlockType(x, y, z);
+            // Get the id at this position
+            //unsigned char material = getBlockType(x, y, ChunkLayer::LAYER_FOREGROUND);
+            char material = BlockManager::BLOCK_DIRT;
 
-                // Don't render Air
-                if (material == BlockManager::BLOCK_AIR)
-                    continue;
+            // Don't render Air
+            if (material == BlockManager::BLOCK_AIR)
+                continue;
 
-                // Check all edges of the block
-                int index = 0;
+            // Check all edges of the block
+            int index = 0;
 
-                if (isTransparent(x, y, z)) index |= 1;
-                if (isTransparent(x + 1, y, z)) index |= 2;
-                if (isTransparent(x + 1, y + 1, z)) index |= 4;
-                if (isTransparent(x, y + 1, z)) index |= 8;
-                if (isTransparent(x, y, z + 1)) index |= 16;
-                if (isTransparent(x + 1, y, z + 1)) index |= 32;
-                if (isTransparent(x + 1, y + 1, z + 1)) index |= 64;
-                if (isTransparent(x, y + 1, z + 1)) index |= 128;
+            //if (isTransparent(x, y, z)) index |= 1;
+            //if (isTransparent(x + 1, y, z)) index |= 2;
+            //if (isTransparent(x + 1, y + 1, z)) index |= 4;
+            //if (isTransparent(x, y + 1, z)) index |= 8;
+            //if (isTransparent(x, y, z + 1)) index |= 16;
+            //if (isTransparent(x + 1, y, z + 1)) index |= 32;
+            //if (isTransparent(x + 1, y + 1, z + 1)) index |= 64;
+            //if (isTransparent(x, y + 1, z + 1)) index |= 128;
 
-                // Get block data
-                glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
-                BlockManager::getTextureFromId(material, texCoords);
+            // Get block data
+            glm::vec2 texCoords[BlockManager::BLOCK_FACE_SIZE][BlockManager::TEX_COORD_SIZE];
+            BlockManager::getTextureFromId(material, texCoords);
 
-                // Front
-                if (isTransparent(x, y, z - 1)) {
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomRight]));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomLeft]));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopLeft]));
+            // Front
+            //if (isTransparent(x, y, z - 1)) {
+            vertices.push_back(
+                    Vertex(1 + x, 1 + y, 1, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopRight]));
+            vertices.push_back(
+                    Vertex(1 + x, 0 + y, 1, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomRight]));
+            vertices.push_back(
+                    Vertex(0 + x, 0 + y, 1, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::BottomLeft]));
+            vertices.push_back(
+                    Vertex(0 + x, 1 + y, 1, 0, 0, -1, texCoords[BlockManager::Front][BlockManager::TopLeft]));
 
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
+            indices.push_back(currIndex + 0);
+            indices.push_back(currIndex + 1);
+            indices.push_back(currIndex + 3);
 
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
+            indices.push_back(currIndex + 1);
+            indices.push_back(currIndex + 2);
+            indices.push_back(currIndex + 3);
 
-                    currIndex += 4;
-                }
-
-                // Back
-                if (isTransparent(x, y, z + 1)) {
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::BottomLeft]));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::BottomRight]));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 0, 1, texCoords[BlockManager::Back][BlockManager::TopLeft]));
-
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
-
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
-
-                    currIndex += 4;
-                }
-
-                // Right
-                if (isTransparent(x - 1, y, z)) {
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::TopLeft]));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::BottomLeft]));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, -1, 0, 0, texCoords[BlockManager::Right][BlockManager::BottomRight]));
-
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
-
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
-
-                    currIndex += 4;
-                }
-
-                // Left
-                if (isTransparent(x + 1, y, z)) {
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::BottomLeft]));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::TopLeft]));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 1, 0, 0, texCoords[BlockManager::Left][BlockManager::BottomRight]));
-
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
-
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
-
-                    currIndex += 4;
-                }
-
-                // Down
-                if (isTransparent(x, y - 1, z)) {
-                    vertices.push_back(Vertex(0 + x, 0 + y, 0 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::TopLeft]));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 0 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(1 + x, 0 + y, 1 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::BottomRight]));
-                    vertices.push_back(Vertex(0 + x, 0 + y, 1 + z, 0, -1, 0, texCoords[BlockManager::Bottom][BlockManager::BottomLeft]));
-
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
-
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
-
-                    currIndex += 4;
-                }
-
-                // Up
-                if (isTransparent(x, y + 1, z)) {
-                    vertices.push_back(Vertex(1 + x, 1 + y, 1 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::BottomRight]));
-                    vertices.push_back(Vertex(1 + x, 1 + y, 0 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::TopRight]));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 0 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::TopLeft]));
-                    vertices.push_back(Vertex(0 + x, 1 + y, 1 + z, 0, 1, 0, texCoords[BlockManager::Top][BlockManager::BottomLeft]));
-
-                    indices.push_back(currIndex + 0);
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 3);
-
-                    indices.push_back(currIndex + 1);
-                    indices.push_back(currIndex + 2);
-                    indices.push_back(currIndex + 3);
-
-                    currIndex += 4;
-                }
-            }
+            currIndex += 4;
+            //}
         }
     }
 
     // Rebuild the visual mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
-    if (_collider != nullptr) {
+    /*if (_collider != nullptr) {
         _world->getWorldBody()->removeCollider(_collider);
     }
 
@@ -287,7 +265,7 @@ void Chunk::rebuild() {
     auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
 
     // Create the collider for this chunk and add it to the world body
-    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);
+    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);*/
 
     // The chunk has been rebuilt
     _changed = false;
