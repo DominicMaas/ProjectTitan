@@ -3,7 +3,6 @@
 #include <pch.h>
 
 #include <limits>
-#include <reactphysics3d/reactphysics3d.h>
 
 #include "Camera.h"
 #include "core/managers/BlockManager.h"
@@ -45,7 +44,7 @@ private:
     bool _loaded = false;
     bool _loading = false;
 
-    reactphysics3d::Collider* _collider = nullptr;
+    b2Body* _physicsBody = nullptr;
 
     void setBlockArrayType(int x, int y, ChunkLayer layer, unsigned char type)
     {

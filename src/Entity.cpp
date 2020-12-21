@@ -2,18 +2,27 @@
 #include "core/managers/PipelineManager.h"
 #include "core/Renderer.h"
 
-Entity::Entity(World *world, Model *model, reactphysics3d::CollisionShape* shape, glm::vec2 position, glm::vec2 rotation) {
+Entity::Entity(World *world, Model *model, b2PolygonShape* shape, glm::vec2 position, glm::vec2 rotation) {
     this->_world = world;
     this->_model = model;
     this->_position = position;
     this->_rotation = rotation;
 
-    // Setup physics
-    //_rigidBody = world->getPhysicsWorld()->createRigidBody(getPhysicsPosition());
-    //_rigidBody->setType(reactphysics3d::BodyType::DYNAMIC);
+    // Setup physics (only if a shape is provided)
+    if (shape != nullptr) {
+        b2BodyDef bodyDef;
+        bodyDef.type = b2_dynamicBody;
+        bodyDef.position.Set(this->_position.x, this->_position.y);
 
-    // Setup the collider
-    //_collider = _rigidBody->addCollider(shape, reactphysics3d::Transform::identity());
+        _physicsBody = world->getPhysicsWorld()->CreateBody(&bodyDef);
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = shape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = 0.3f;
+
+        _physicsBody->CreateFixture(&fixtureDef);
+    }
 
     // ------------------ Create Uniform Buffer ------------------ //
 
@@ -25,23 +34,22 @@ Entity::Entity(World *world, Model *model, reactphysics3d::CollisionShape* shape
 
     pipeline->createModelUBO(_uniformBuffer, _uniformAllocation, _descriptorSet);
 
-    ModelUBO ubo {};
-    ubo.model = getModelMatrix();
+    _ubo.model = getModelMatrix();
 
     // Copy this data across to the local memory
     // TODO: Maybe move this to the GPU memory?
     void* mappedData;
     vmaMapMemory(Renderer::Instance->Allocator, _uniformAllocation, &mappedData);
-    memcpy(mappedData, &ubo, sizeof(ubo));
+    memcpy(mappedData, &_ubo, sizeof(_ubo));
     vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
 }
 
 Entity::~Entity() {
-    // Remove collider
-    //_rigidBody->removeCollider(_collider);
-
-    // Remove rigid body
-    //_world->getPhysicsWorld()->destroyRigidBody(_rigidBody);
+    // Remove the physics body
+    if (_physicsBody != nullptr) {
+        _world->getPhysicsWorld()->DestroyBody(_physicsBody);
+        _physicsBody = nullptr;
+    }
 
     vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
 }
@@ -60,16 +68,20 @@ void Entity::update(float deltaTime) {
 }
 
 void Entity::updatePhysics(long double timeStep, long double accumulator) {
-    // Compute the time interpolation factor
-    //auto factor = accumulator / timeStep;
+    if (_physicsBody != nullptr) {
+        auto position = _physicsBody->GetPosition();
 
-    // Get the updated transform of the body
-    //auto currTransform = _rigidBody->getTransform();
-    //auto prevTransform = getPhysicsPosition();
+        // Update the internal physics position
+        setPosition(glm::vec2(position.x, position.y));
 
-    //setPosition(glm::vec3(currTransform.getPosition().x, currTransform.getPosition().y, currTransform.getPosition().z));
+        // Rebuild the model matrix
+        _ubo.model = getModelMatrix();
 
-    // Compute the interpolated transform of the rigid body
-    //auto interpolatedTransform = reactphysics3d::Transform::interpolateTransforms(prevTransform, currTransform, factor);
-    //setPosition(glm::vec3(interpolatedTransform.getPosition().x, interpolatedTransform.getPosition().y, interpolatedTransform.getPosition().z));
+        // TODO: THIS IS UGLY
+
+        void* mappedData;
+        vmaMapMemory(Renderer::Instance->Allocator, _uniformAllocation, &mappedData);
+        memcpy(mappedData, &_ubo, sizeof(_ubo));
+        vmaUnmapMemory(Renderer::Instance->Allocator, _uniformAllocation);
+    }
 }

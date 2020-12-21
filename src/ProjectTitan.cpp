@@ -1,7 +1,6 @@
 // ProjectTitan.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
 #include <pch.h>
-#include <reactphysics3d/reactphysics3d.h>
 #include "Window.h"
 #include "core/managers/ResourceManager.h"
 #include "core/managers/PipelineManager.h"
@@ -13,6 +12,7 @@
 bool mouseCaptured = true;
 bool guiHasMouse = false;
 bool renderPhysics = false;
+bool renderWorld = true;
 bool renderLines = false;
 
 void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
@@ -25,7 +25,7 @@ void setMouseCapture(GLFWwindow *window, bool _mouseCapture) {
     }
 }
 
-int main(void) {
+int main() {
     // Variables that we will need
     Camera* camera = nullptr;
     World* currentWorld = nullptr;
@@ -75,33 +75,17 @@ int main(void) {
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-
     w.createImGuiContext();
 
     // Start without mouse capture
     setMouseCapture(w.getGLFWWindow(), false);
-
-    // Physics engine for the game
-    reactphysics3d::PhysicsCommon physicsCommon;
 
     // Create the main camera and scene
     camera = new Camera(glm::vec3(8, 40, 8));
     camera->setProjectionMatrix(glm::perspective(glm::radians(60.0f), (float) 800 / (float) 600, 0.1f, 1000.0f));
 
     // The world
-    currentWorld = new World("Test World", &physicsCommon);
-
-    // Physics debugging
-    Mesh physicsDebugMesh;
-
-    reactphysics3d::DebugRenderer &debugRenderer = currentWorld->getPhysicsWorld()->getDebugRenderer();
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_AABB, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLISION_SHAPE, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::COLLIDER_BROADPHASE_AABB, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_NORMAL, true);
-    debugRenderer.setIsDebugItemDisplayed(reactphysics3d::DebugRenderer::DebugItem::CONTACT_POINT, true);
-
-    Entity* backpackEntity = new Entity(currentWorld, ResourceManager::getModel("backpack"), nullptr, glm::vec3(0,40,0), glm::vec3(0,0,0));
+    currentWorld = new World("Test World");
 
     // Set the window callbacks
     w.onMouseMove = [&](double xPos, double yPos) {
@@ -155,7 +139,11 @@ int main(void) {
     };
 
     w.onUpdatePhysicsWorld = [&](float timeStep) {
-        currentWorld->getPhysicsWorld()->update(timeStep);
+        int32 velocityIterations = 6;
+        int32 positionIterations = 2;
+        float correctTimeStep = 1.0f / 60.0f;
+
+        currentWorld->getPhysicsWorld()->Step(correctTimeStep, velocityIterations, positionIterations);
     };
 
     w.onRender = [&](vk::CommandBuffer& commandBuffer) {
@@ -163,25 +151,15 @@ int main(void) {
         // the scene will use this, so only bind at the start of the frame
         camera->bind(commandBuffer);
 
-        // Render all chunks and entities within the world
-        currentWorld->render(commandBuffer, *camera);
-
-        ResourceManager::getTexture("backpack_texture")->bind(commandBuffer);
-        backpackEntity->render(commandBuffer);
+        if (renderWorld) {
+            // Render all chunks and entities within the world
+            currentWorld->render(commandBuffer, *camera);
+        }
 
         // Physics debug rendering
         if (renderPhysics) {
-            std::vector<Vertex> debugVertices;
-
-            auto triangles = debugRenderer.getTriangles();
-            for (auto const &i : triangles) {
-                debugVertices.push_back(Vertex{glm::vec3(i.point1.x, i.point1.y, i.point1.z)});
-                debugVertices.push_back(Vertex{glm::vec3(i.point2.x, i.point2.y, i.point2.z)});
-                debugVertices.push_back(Vertex{glm::vec3(i.point3.x, i.point3.y, i.point3.z)});
-            }
-
-            physicsDebugMesh.rebuild(debugVertices, std::vector<unsigned short>(), std::vector<Texture>());
-            physicsDebugMesh.render(commandBuffer);
+            currentWorld->getDebugDraw()->setCommandBuffer(commandBuffer); // Sooooo Ugly
+            currentWorld->getPhysicsWorld()->DebugDraw();
         }
 
         // Start GUI frame
@@ -220,15 +198,11 @@ int main(void) {
         {
             ImGui::Begin("Physics");
 
-            ImGui::Text("Rigid Bodies: %i", currentWorld->getPhysicsWorld()->getNbRigidBodies());
-            ImGui::Text("Collision Bodies: %i", currentWorld->getPhysicsWorld()->getNbCollisionBodies());
-            ImGui::Text("World Body Colliders: %i", currentWorld->getWorldBody()->getNbColliders());
-
-            if (ImGui::Checkbox("Draw Physics Colliders", &renderPhysics)) {
-                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(true);
-            } else {
-                currentWorld->getPhysicsWorld()->setIsDebugRenderingEnabled(false);
-            }
+            ImGui::Text("Bodies: %i", currentWorld->getPhysicsWorld()->GetBodyCount());
+            ImGui::Text("Contacts: %i", currentWorld->getPhysicsWorld()->GetContactCount());
+            ImGui::Text("Joints: %i", currentWorld->getPhysicsWorld()->GetJointCount());
+            ImGui::Checkbox("Draw Physics Colliders", &renderPhysics);
+            ImGui::Checkbox("Draw World", &renderWorld);
 
             ImGui::End();
         }
@@ -245,8 +219,6 @@ int main(void) {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-
-        delete backpackEntity;
 
         delete currentWorld;
         delete camera;

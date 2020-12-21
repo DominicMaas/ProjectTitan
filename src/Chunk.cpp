@@ -41,8 +41,9 @@ Chunk::Chunk(glm::vec2 position, World *world) {
 
 Chunk::~Chunk() {
     // Remove the world collider
-    if (_collider != nullptr) {
-        _world->getWorldBody()->removeCollider(_collider);
+    if (_physicsBody != nullptr) {
+        _world->getPhysicsWorld()->DestroyBody(_physicsBody);
+        _physicsBody = nullptr;
     }
 
     vmaDestroyBuffer(Renderer::Instance->Allocator, _uniformBuffer, _uniformAllocation);
@@ -239,30 +240,29 @@ void Chunk::rebuild() {
     // Rebuild the visual mesh
     _mesh->rebuild(vertices, indices, std::vector<Texture>());
 
-    /*if (_collider != nullptr) {
-        _world->getWorldBody()->removeCollider(_collider);
+    // Rebuild the physics body
+    if (_physicsBody != nullptr) {
+         _world->getPhysicsWorld()->DestroyBody(_physicsBody);
+        _physicsBody = nullptr;
     }
 
-    // Create the polygon vertex array
-    auto* triangleArray = new reactphysics3d::TriangleVertexArray(
-            _mesh->Vertices.size(), _mesh->Vertices.data(), sizeof(Vertex), indices.size() / 3,
-            _mesh->Indices.data(), 3 * sizeof(unsigned short),
-            reactphysics3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
-            reactphysics3d::TriangleVertexArray::IndexDataType::INDEX_SHORT_TYPE);
+    b2BodyDef bodyDef;
+    bodyDef.type = b2_staticBody;
+    bodyDef.position.Set(this->_position.x, this->_position.y);
 
-    // Convert the chunk position into physics coords
-    reactphysics3d::Quaternion orientation = reactphysics3d::Quaternion::identity();
-    reactphysics3d::Transform transform(reactphysics3d::Vector3(_position.x, _position.y, _position.z), orientation);
+    _physicsBody = _world->getPhysicsWorld()->CreateBody(&bodyDef);
 
-    // Perform the mesh collider rebuild
-    auto physicsMesh = _world->getPhysicsCommon()->createTriangleMesh();
-    physicsMesh->addSubpart(triangleArray);
+    // Build the physics mesh
+    std::vector<b2Vec2> physicsVertices;
+    for (auto &v : vertices) {
+        physicsVertices.emplace_back(v.Position.x, v.Position.y);
+    }
 
-    // Create a physics shape based on this mesh
-    auto physicsMeshShape = _world->getPhysicsCommon()->createConcaveMeshShape(physicsMesh);
+    b2ChainShape physicsMesh;
+    physicsMesh.CreateLoop(physicsVertices.data(), vertices.size());
 
-    // Create the collider for this chunk and add it to the world body
-    _collider = _world->getWorldBody()->addCollider(physicsMeshShape, transform);*/
+    // 0 mass for world (static body)
+    _physicsBody->CreateFixture(&physicsMesh, 0.0f);
 
     // The chunk has been rebuilt
     _changed = false;

@@ -18,6 +18,8 @@
 #include <spdlog/spdlog.h>
 #include <vk_mem_alloc.h>
 
+#include <box2d/box2d.h>
+
 #include <optional>
 #include <set>
 #include <algorithm>

@@ -43,8 +43,13 @@ void World::loadChunks() {
 }
 
 World::World(int seed, std::string worldName) {
+    _physicsDebugDraw = new DebugDraw();
+
     // Create the physics world
-    _physicsWorld = new b2World(b2Vec2(0.0f, -9.81));
+    _physicsWorld = new b2World(b2Vec2(0.0f, -0.4));
+    _physicsWorld->SetDebugDraw(_physicsDebugDraw);
+
+    _physicsDebugDraw->SetFlags(b2Draw::e_shapeBit);
 
     // World properties
     _sunDirection = glm::vec3(0.0f, -1.0f, 0.8f);
@@ -63,6 +68,12 @@ World::World(int seed, std::string worldName) {
     } else {
         _worldGen = new StandardWorldGen(seed, 0.75f, 5, 0.5f, 2.0f, glm::vec3(0, 0, 0));
     }
+
+    // TEMP
+    b2PolygonShape shape;
+    shape.SetAsBox(10.0f, 10.0f);
+
+    _entities.push_back(new Entity(this, ResourceManager::getModel("backpack"), &shape, glm::vec2(0,40), glm::vec2(0,0)));
 }
 
 World::World(std::string worldName) : World(0, worldName) {}
@@ -77,6 +88,7 @@ World::~World() {
     _entities.clear();
 
     delete _physicsWorld;
+    delete _physicsDebugDraw;
 
     delete _worldGen;
 }
@@ -113,9 +125,9 @@ void World::update(float deltaTime, Camera &c) {
 }
 
 void World::updatePhysics(long double timeStep, long double accumulator) {
-    int32 velocityIterations = 6;
-    int32 positionIterations = 2;
-    _physicsWorld->Step(timeStep, velocityIterations, positionIterations);
+    for (Entity &entity : _entities) {
+        entity.updatePhysics(timeStep, accumulator);
+    }
 }
 
 void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
@@ -153,6 +165,9 @@ void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {
         // Render the chunk
         chunk.render(commandBuffer);
     }
+
+    // TODO: REMOVE THIS (ONLY HERE FOR BACKPACK ENTITY)
+    ResourceManager::getTexture("backpack_texture")->bind(commandBuffer);
 
     for (Entity &entity : _entities) {
         entity.render(commandBuffer);

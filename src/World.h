@@ -17,6 +17,8 @@
 #include "worldgen/BaseWorldGen.h"
 #include "worldgen/StandardWorldGen.h"
 
+#include "core/DebugDraw.h"
+
 // Define Chunk class to prevent compile Issues (Probably a better way to do it)
 class Chunk;
 class Entity;
@@ -25,6 +27,7 @@ class World {
 private:
     // Physics
     b2World *_physicsWorld;
+    DebugDraw *_physicsDebugDraw;
 
     boost::ptr_vector<Chunk> _chunks;
     boost::ptr_vector<Entity> _entities;
@@ -77,6 +80,8 @@ public:
 
     // Physics
     b2World *getPhysicsWorld() { return _physicsWorld; };
+    DebugDraw *getDebugDraw() { return _physicsDebugDraw; }
+
 
     int ChunksRendered;
     int ChunksFrustumCulled;
