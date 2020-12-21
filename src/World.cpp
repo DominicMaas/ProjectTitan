@@ -42,18 +42,9 @@ void World::loadChunks() {
     }
 }
 
-World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics) {
-    reactphysics3d::PhysicsWorld::WorldSettings settings;
-    settings.gravity = reactphysics3d::Vector3(0, -9.81, 0);
-
+World::World(int seed, std::string worldName) {
     // Create the physics world
-    _physicsCommon = physics;
-    _physicsWorld = _physicsCommon->createPhysicsWorld(settings);
-
-    // Create a collision body for this world
-    _worldBody = _physicsWorld->createRigidBody(reactphysics3d::Transform());
-    _worldBody->setType(reactphysics3d::BodyType::STATIC);
-    _worldBody->enableGravity(false);
+    _physicsWorld = new b2World(b2Vec2(0.0f, -9.81));
 
     // World properties
     _sunDirection = glm::vec3(0.0f, -1.0f, 0.8f);
@@ -74,7 +65,7 @@ World::World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *phy
     }
 }
 
-World::World(std::string worldName, reactphysics3d::PhysicsCommon *physics) : World(0, worldName, physics) {}
+World::World(std::string worldName) : World(0, worldName) {}
 
 World::~World() {
     // Remove all chunks
@@ -84,6 +75,8 @@ World::~World() {
     // Remove all entities
     _entities.release();
     _entities.clear();
+
+    delete _physicsWorld;
 
     delete _worldGen;
 }
@@ -120,9 +113,9 @@ void World::update(float deltaTime, Camera &c) {
 }
 
 void World::updatePhysics(long double timeStep, long double accumulator) {
-    for (Entity &entity : _entities) {
-        entity.updatePhysics(timeStep, accumulator);
-    }
+    int32 velocityIterations = 6;
+    int32 positionIterations = 2;
+    _physicsWorld->Step(timeStep, velocityIterations, positionIterations);
 }
 
 void World::render(vk::CommandBuffer &commandBuffer, Camera &c) {

@@ -36,13 +36,12 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glm)
 add_subdirectory(extern/freetype2)
-add_subdirectory(extern/reactphysics3d)
 add_subdirectory(extern/box2d)
 add_subdirectory(extern/spdlog)
 add_subdirectory(extern/assimp)
 
 # Add libraries
-SET(PLATFORM_LIBRARIES glfw glm freetype reactphysics3d box2d spdlog assimp)
+SET(PLATFORM_LIBRARIES glfw glm freetype box2d spdlog assimp)
 
 if(MSVC)
 	target_compile_options(assimp PRIVATE /W3)

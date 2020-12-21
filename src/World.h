@@ -6,7 +6,7 @@
 #include <future>
 #include <thread>
 
-#include <reactphysics3d/reactphysics3d.h>
+#include <box2d/box2d.h>
 #include <boost/concept_check.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
@@ -24,10 +24,7 @@ class Entity;
 class World {
 private:
     // Physics
-    reactphysics3d::PhysicsWorld *_physicsWorld;
-    reactphysics3d::PhysicsCommon *_physicsCommon;
-
-    reactphysics3d::RigidBody *_worldBody;
+    b2World *_physicsWorld;
 
     boost::ptr_vector<Chunk> _chunks;
     boost::ptr_vector<Entity> _entities;
@@ -55,8 +52,8 @@ private:
     BaseWorldGen *_worldGen;
 
 public:
-    World(int seed, std::string worldName, reactphysics3d::PhysicsCommon *physics);
-    World(std::string worldName, reactphysics3d::PhysicsCommon *physics);
+    World(int seed, std::string worldName);
+    World(std::string worldName);
 
     int RenderDistance = 8;
 
@@ -79,9 +76,7 @@ public:
     BaseWorldGen *getWorldGen() { return _worldGen; }
 
     // Physics
-    reactphysics3d::PhysicsWorld *getPhysicsWorld() { return _physicsWorld; };
-    reactphysics3d::PhysicsCommon *getPhysicsCommon() { return _physicsCommon; };
-    reactphysics3d::RigidBody *getWorldBody() { return _worldBody; };
+    b2World *getPhysicsWorld() { return _physicsWorld; };
 
     int ChunksRendered;
     int ChunksFrustumCulled;
