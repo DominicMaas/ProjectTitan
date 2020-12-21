@@ -16,3 +16,6 @@
 [submodule "extern/assimp"]
 	path = extern/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "extern/box2d"]
+	path = extern/box2d
+	url = https://github.com/erincatto/box2d
