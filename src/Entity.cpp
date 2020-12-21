@@ -2,7 +2,7 @@
 #include "core/managers/PipelineManager.h"
 #include "core/Renderer.h"
 
-Entity::Entity(World *world, Model *model, reactphysics3d::CollisionShape* shape, glm::vec3 position, glm::vec3 rotation) {
+Entity::Entity(World *world, Model *model, reactphysics3d::CollisionShape* shape, glm::vec2 position, glm::vec2 rotation) {
     this->_world = world;
     this->_model = model;
     this->_position = position;
